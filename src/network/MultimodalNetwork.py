@@ -41,7 +41,6 @@ class MultimodalNetwork:
             else:
                 self.graph.add_edge(node_from, node_to, type=edge_type, modes = modes, travel_time_functions = travel_time_functions,
                                     original_edge_id=original_edge_id)
-            
         
     def getNeighbors(self, node_id):
         return list(self.graph.adj[node_id])

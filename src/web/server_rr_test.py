@@ -6,7 +6,7 @@ Created on Oct 29, 2019
 
 from flask import Flask, request, session, g, redirect, \
     url_for, abort, render_template, flash
-from geojson import Feature, Point, dumps, GeometryCollection, FeatureCollection
+from geojson import Feature, Point, dumps, GeometryCollection, FeatureCollection, dump, loads
 import requests
 
 from database.PostgisDataManager import PostgisDataManager
@@ -16,6 +16,8 @@ from _datetime import datetime
 import time
 import sys
 from datetime import timedelta
+from geojson.geometry import LineString, MultiLineString
+from flask.cli import ScriptInfo
 
 
 app = Flask(__name__)
@@ -49,13 +51,15 @@ ROUTE = [
 ]
 
 graph = None
+dataManager = PostgisDataManager()
+region = "berlin"
 
 @app.route('/rr_test')
 def mapbox_gl():
     global graph
-    #load = LoadMultimodalNetwork("berlin")
-    #graph = load.load()
-
+    load = LoadMultimodalNetwork("berlin")
+    graph = load.load()
+    
     return render_template('rr_test.html', 
         ACCESS_KEY=MAPBOX_ACCESS_KEY
     )
@@ -63,11 +67,9 @@ def mapbox_gl():
 @app.route('/receiver', methods = ['POST', 'GET'])
 def worker():
     # read json + reply
-    global graph
+    global graph, dataManager, region
     data = request.get_json(force=True)
-    dataManager = PostgisDataManager()
     
-    region = "berlin"
     
     map_coord = {}
     
@@ -107,7 +109,7 @@ def worker():
     }
     '''
     
-    target_colors = computeRelativeReachability(source, targets, timestamp)
+    target_colors, paths_public, paths_private = computeRelativeReachability(source, targets, timestamp)
     print(target_colors)
     
     target_markers = []
@@ -119,9 +121,16 @@ def worker():
         target_markers.append(feature)
     
     gc = FeatureCollection(target_markers)
+    ml_public = MultiLineString(paths_public)
+    ml_private = MultiLineString(paths_private)
+    
     print(gc)
-    #return dumps(gc)
-    return gc
+    print(ml_public)
+    
+    res = {"markers":gc, "paths_public": ml_public, "paths_private": ml_private}
+    return res
+    #return dumps(res)
+    #return gc, ml_public
 
 def computeRelativeReachability(source, targets, timestamp): 
     dij = Dijsktra(graph)
@@ -130,6 +139,17 @@ def computeRelativeReachability(source, targets, timestamp):
     tt_public = dij.shortestPathToSetPublic(source, timestamp, targets, {graph.PEDESTRIAN, graph.PUBLIC})
     total = time.time() - start
     print ("Process time: " + str(total))
+    
+    paths_public = []
+    start = time.time()
+    for t in targets:
+        path = dij.reconstructPathToNode(t)
+        pathGeom = getPathGeometry(path)
+        #print(pathGeom)
+        paths_public.append(pathGeom)
+        
+    total = time.time() - start
+    print ("Path Process time: " + str(total))
     
     '''
     for t in targets:
@@ -158,6 +178,17 @@ def computeRelativeReachability(source, targets, timestamp):
     total = time.time() - start
     print ("Process time: " + str(total))
     
+    paths_private = []
+    start = time.time()
+    for t in targets:
+        path = dij.reconstructPathToNode(t)
+        pathGeom = getPathGeometry(path)
+        #print(pathGeom)
+        paths_private.append(pathGeom)
+        
+    total = time.time() - start
+    print ("Path Private Process time: " + str(total))
+    
     target_colors = {}
     for t in targets:
         if tt_public[t] <=  tt_private[t]:
@@ -165,8 +196,48 @@ def computeRelativeReachability(source, targets, timestamp):
         else: 
             target_colors[t] = 'r'
             
-    return target_colors
-            
+    return target_colors, paths_public, paths_private
+
+def getPathGeometry(path): 
+    global graph, dataManager, region
+    
+    path_geometry = [] 
+    for i in range(len(path) -1):
+        node_from_id = path[i]
+        node_to_id = path[i+1]
+       
+        node_from = graph.getNode(node_from_id)
+        node_to = graph.getNode(node_to_id)
+       
+        if node_from["type"] == graph.ROAD and node_to["type"] == graph.ROAD:
+            #retrieve geometry from database
+            edge = graph.getEdge(node_from_id, node_to_id)
+            original_edge = edge["original_edge_id"]
+            if edge["type"] == graph.ROAD:
+                #print("ROAD")
+                geometry = dataManager.getRoadGeometry(original_edge, region)
+                line = loads(geometry)
+                coord = line.coordinates
+                if i < len(path) - 2:
+                    coord = coord[:-1]
+                path_geometry.extend(coord)
+            elif edge["type"] == graph.TRANSFER:
+                #print("TRANSFER")
+                geometry = dataManager.getLinkGeometry(original_edge, edge["edge_position"], region)
+                print(original_edge)
+                line = loads(geometry)
+                coord = line.coordinates
+                if i < len(path) - 2:
+                    coord = coord[:-1]
+                path_geometry.extend(coord)
+        else:
+            #print("DIRECT")
+            path_geometry.append([node_from['lon'], node_from['lat']])
+            if i == len(path) - 2:
+                path_geometry.append([node_to['lon'], node_to['lat']]) 
+     
+    #print(path_geometry)
+    return LineString(path_geometry)        
            
 
 def createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, osm_source, osm_target, source_ratio):

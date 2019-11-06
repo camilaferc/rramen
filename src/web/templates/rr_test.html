@@ -90,6 +90,12 @@
                 
             });
 
+            map.on('error', e => {
+                // Hide those annoying non-error errors
+                if (e && e.error !== 'Error: Not Found')
+                    console.error(e);
+            });
+
             
             var startLon = -1;
             var startLat = -1;
@@ -99,7 +105,7 @@
             var delay = 250;
             var prevent = false;
 
-            var timestamp = new Date();
+            var timestamp = new Date().getTime();
             var time_changed = false;
 
             var i = 0;
@@ -240,7 +246,7 @@
                 	$("#dateTimePicker").flatpickr({
                 		enableTime: true,
                 		dateFormat: "F, d Y H:i",
-                		defaultDate: timestamp,
+                		defaultDate: date.getTime(),
                 		onChange: function(selectedDates, dateStr, instance) {
                             selectedDates.forEach(function (date){
             					//console.log(date)
@@ -254,7 +260,7 @@
                 if(selectedValue == "now"){
                 	var picker = document.getElementById ( "dateTimePicker" ) ;
                 	picker.style.display = "none" ;
-                	timestamp = new Date()
+                	timestamp = new Date().getTime()
                 }
             }
 
@@ -319,13 +325,15 @@
                	else {
             		// ajax the JSON to the server
             		if(!time_changed){
-            			timestamp = new Date();
+            			timestamp = new Date().getTime();
                 	}
             		console.log(timestamp)
             		var data_input = {"startLon": startLon, "startLat": startLat, "targets":targets, "timestamp":timestamp}
 					
             		$.post("receiver", JSON.stringify(data_input) , function(res){
-						//console.log(res)
+						console.log(res)
+						console.log(res[1])
+						console.log(res["markers"])
 						//console.log(res.features[0].properties)
 						
 						/*map.addSource("rr", {
@@ -338,7 +346,7 @@
 		                    "type": "circle",
 		                    "source": {
 			                    "type": "geojson",
-			                    "data": res
+			                    "data": res["markers"]
 			                },
 		                    'paint': {
 		                    	'circle-radius': 10,
@@ -351,6 +359,39 @@
 									"b", '#223b53',
 									/* other */ '#ccc'
 								]
+		                    }
+		                });
+		                map.addLayer({
+		                    "id": "paths_public_layer",
+		                    "type": "line",
+		                    "source": {
+			                    "type": "geojson",
+			                    "data": res["paths_public"]
+			                },
+			                "layout": {
+		                        "line-join": "round",
+		                        "line-cap": "round"
+		                    },
+		                    "paint": {
+		                        "line-color": "#223b53",
+		                        "line-width": 4
+		                    }
+		                });
+
+		                map.addLayer({
+		                    "id": "paths_private_layer",
+		                    "type": "line",
+		                    "source": {
+			                    "type": "geojson",
+			                    "data": res["paths_private"]
+			                },
+			                "layout": {
+		                        "line-join": "round",
+		                        "line-cap": "round"
+		                    },
+		                    "paint": {
+		                        "line-color": "#ff0000",
+		                        "line-width": 4
 		                    }
 		                });
             		}); 

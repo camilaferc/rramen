@@ -106,17 +106,12 @@ class LoadTransportationNetwork:
             
             row = cursor.fetchone()
             
-            count = 0
             while row is not None:
                 (stop_id, stop_lat, stop_lon, stop_type, stop_parent) = row
                 if stop_lat >= min_lat and stop_lat <= max_lat and stop_lon >= min_long and stop_lon <= max_long:
                     self.stops[stop_id] = {'lat':stop_lat, 'lon':stop_lon, 'type':stop_type, 'parent':stop_parent}
-                else:
-                    #print(str(stop_id) + " outside the mbr!")
-                    count += 1
                 
                 row = cursor.fetchone()
-            print(count)
                 
         except IOError as e:
             print("I/O error({0}): {1}".format(e.errno, e.strerror))
@@ -451,16 +446,18 @@ class LoadTransportationNetwork:
                     {self.graph.PEDESTRIAN:ConstantFunction(edge_time)})
             self.graph.addEdge(source, parent_id, self.graph.TRANSFER, {self.graph.PEDESTRIAN}, 
                     {self.graph.PEDESTRIAN:ConstantFunction(edge_time)})
+            
         elif source_ratio == 1.0:
             #transfer node is equal to the target
             self.graph.addEdge(parent_id, target, self.graph.TRANSFER, {self.graph.PEDESTRIAN}, 
                     {self.graph.PEDESTRIAN:ConstantFunction(edge_time)})
             self.graph.addEdge(target, parent_id, self.graph.TRANSFER, {self.graph.PEDESTRIAN}, 
                     {self.graph.PEDESTRIAN:ConstantFunction(edge_time)})
+            
         else:
             node_id = self.current_node_id
             self.current_node_id += 1
-            self.graph.addNode(node_id, link['lat'], link['lon'], self.graph.TRANSFER)
+            self.graph.addNode(node_id, link['lat'], link['lon'], self.graph.ROAD)
             
             #splitting edge
             length = link['edge_length']
@@ -481,6 +478,8 @@ class LoadTransportationNetwork:
                     {self.graph.PEDESTRIAN:ConstantFunction(edge_time)})
             self.graph.addEdge(node_id, parent_id, self.graph.TRANSFER, {self.graph.PEDESTRIAN}, 
                     {self.graph.PEDESTRIAN:ConstantFunction(edge_time)})
+            
+            
         return parent_id
         
     def addLinkToSuperNode(self, node_id, parent_node_id):
@@ -489,6 +488,7 @@ class LoadTransportationNetwork:
         self.graph.addEdge(node_id, parent_node_id, self.graph.TRANSFER, {self.graph.PEDESTRIAN}, 
                     {self.graph.PEDESTRIAN:ConstantFunction(0)})
         
+    '''    
     def addLinkToRoadNetworkSourceTarget(self, node_id, parent):
         link = self.links[parent]
         source = self.osm_mapping[link['source']]
@@ -511,4 +511,5 @@ class LoadTransportationNetwork:
                                        {self.graph.PEDESTRIAN:ConstantFunction(target_time)})
         self.graph.addEdge(target, node_id, self.graph.TRANSFER, {self.graph.PEDESTRIAN}, 
                                        {self.graph.PEDESTRIAN:ConstantFunction(target_time)})
-         
+    
+    '''     

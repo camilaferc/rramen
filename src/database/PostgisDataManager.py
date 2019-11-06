@@ -38,5 +38,56 @@ class PostgisDataManager:
         
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)
+            
+    def getRoadGeometry(self, edge_id, region):
+        sql = """SELECT ST_AsGeoJSON(geom_way) from roadnet_{}
+            WHERE id = {} ;    
+            """
+        sql = sql.format(region, edge_id)
+        
+        try:
+            self.connection.connect();
+ 
+            cursor = self.connection.getCursor()
+            
+            cursor.execute(sql)
+            (geometry, ) = cursor.fetchone()
+            
+            #print(geometry)
+            
+            self.connection.close()
+            return geometry
+        
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
+            
+    def getLinkGeometry(self, edge_id, edge_pos, region):
+        if edge_pos == 1:
+            sql = """SELECT ST_AsGeoJSON(source_point_geom) from links_{}
+                WHERE link_id = {} ;    
+                """
+                
+        if edge_pos == 2:
+            sql = """SELECT ST_AsGeoJSON(point_target_geom) from links_{}
+                WHERE link_id = {} ;    
+                """
+                
+        sql = sql.format(region, edge_id)
+        
+        try:
+            self.connection.connect();
+ 
+            cursor = self.connection.getCursor()
+            
+            cursor.execute(sql)
+            (geometry, ) = cursor.fetchone()
+            
+            #print(geometry)
+            
+            self.connection.close()
+            return geometry
+        
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
         
         
