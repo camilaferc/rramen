@@ -14,6 +14,9 @@ class Dijsktra:
     def __init__(self, graph):
         self.graph = graph
         self.parents = {}
+        
+    def getParentTree(self):
+        return self.parents
     
     def shortestPathToSetPrivate(self, s, departure_time, targets, allowed_modes):
         q = Q.PriorityQueue()

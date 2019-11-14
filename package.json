@@ -1,0 +1,33 @@
+{
+  "name": "relative_reachability",
+  "version": "1.0.0",
+  "description": "Demo that displays the relative reachability of selected targets.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/camilaferc/relative_reachability.git"
+  },
+  "keywords": [
+    "Relative",
+    "Reachability",
+    "Mapbox",
+    "GL",
+    "Transportation",
+    "Network"
+  ],
+  "author": "Camila F. Costa",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/camilaferc/relative_reachability/issues"
+  },
+  "homepage": "https://github.com/camilaferc/relative_reachability#readme",
+  "devDependencies": {
+    "@babel/core": "^7.7.2"
+  },
+  "dependencies": {
+    "mapbox-gl": "^1.5.0"
+  }
+}

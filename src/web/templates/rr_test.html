@@ -1,7 +1,7 @@
 <html>
     <head>
         <meta charset='utf-8' />
-        <title></title>
+        <title>Relative Reachability - TEST</title>
         <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
         <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v1.5.0/mapbox-gl.js'></script>
 		<link href='https://api.tiles.mapbox.com/mapbox-gl-js/v1.5.0/mapbox-gl.css' rel='stylesheet' />
@@ -23,7 +23,7 @@
     			transform: translate(28px, 56px, 0);
 			}
 			.container{
-    			height: 100%;
+    			height: 100vh;
     			display: -webkit-flex;
     			display: flex;
     			-webkit-flex-direction: row;
@@ -40,7 +40,6 @@
 			}
 			
         </style>
-        <title>Relative Reachability - TEST </title>
     </head>
     <body>
     <div class="container">
@@ -109,8 +108,10 @@
             var time_changed = false;
 
             var i = 0;
+            var targetId = 0;
 
             var markers = []
+            var popups = []
             
             map.on('click', function(e) {
             	timer = setTimeout(function() {
@@ -132,16 +133,35 @@
                                 // create a HTML element for each feature
                                 startLon = longitude;
             					startLat = latitude;
+            					
                     			var el = document.createElement('div');
                     			el.className = 'marker';
                     			el.style.right = '-5px';
                                 el.style.top = '-12px';
 
+                                el.addEventListener('click', e => {
+                                    e.stopPropagation();
+                                    //functions
+                                    console.log("source" + " clicked")
+                                    
+                                    var popup = new mapboxgl.Popup({closeOnClick: false, anchor: 'top'})
+                                    .setLngLat({lat:latitude, lng: longitude})
+                                    .setHTML("<strong>source</strong>")
+                                    .addTo(map);
+
+                                    popup.on('close', function(e) {
+                                        console.log("popup closed")
+                                    })
+
+                                    popups.push(popup);
+                                    
+                                }, true);
+
                     			// make a marker for each feature and add to the map
                     			var marker = new mapboxgl.Marker(el)
                       				.setLngLat(e.lngLat)
                       				.addTo(map);
-
+                  				
                       			markers.push(marker);
 
                       			document.getElementById('inputSource').value = str;
@@ -157,13 +177,50 @@
                     				el.className = 'marker';
                     				el.style.right = '-5px';
                                   	el.style.top = '-12px';
+                                  	el.setAttribute("id", targetId);
+
+                                  	el.addEventListener('click', e => {
+                                        e.stopPropagation();
+                                        //functions
+                                        console.log("marker" + el.id + " clicked");
+
+                                        if (map.getLayer("rr_layer")) {
+                                    		if (!map.getLayer("paths"+el.id)) {
+                                    			$.post("path", JSON.stringify(el.id) , function(res){
+                                					//console.log(marker_id)
+													var geom = res["path_geom"];
+													var tt_public = res["tt_public"];
+                                	                var tt_private = res["tt_private"];
+													
+                                	                console.log(tt_public, tt_private);
+
+													var html = '<font color="blue">' + tt_public + ' min </font><br><font color="red">' + tt_private + ' min </font>'
+                                	                var popup = new mapboxgl.Popup({closeOnClick: false, anchor: 'top'})
+                                                    .setLngLat({lat:latitude, lng: longitude})
+                                                    .setHTML(html)
+                                                    .addTo(map);
+
+                                	                addPathLayer(el.id, geom);
+
+                                	                popup.on('close', function(e) {
+                                                        console.log("popup closed")
+                                                        map.removeLayer("paths"+el.id)
+                                                        map.removeSource("paths"+el.id);
+                                                    })
+
+                                                    popups.push(popup);
+                                        		});
+                            				}
+                        				}
+                                    }, true);
 
                     				// make a marker for each feature and add to the map
                     				var marker = new mapboxgl.Marker(el)
                       				.setLngLat(e.lngLat)
                       				.addTo(map);
 
-                    				markers.push(marker);   
+                    				markers.push(marker); 
+                    				targetId = targetId + 1;  
 
                     				document.getElementById('inputTarget').value = str; 
 
@@ -177,6 +234,42 @@
                     				el.className = 'marker';
                     				el.style.right = '-5px';
                                   	el.style.top = '-12px';
+                                  	el.setAttribute("id", targetId);
+
+                                  	el.addEventListener('click', e => {
+                                        e.stopPropagation();
+                                        //functions
+                                        console.log("marker" + el.id + " clicked");
+                                        
+                                        if (map.getLayer("rr_layer")) {
+                                    		if (!map.getLayer("paths"+el.id)) {
+                                    			$.post("path", JSON.stringify(el.id) , function(res){
+                                					//console.log(marker_id)
+													var geom = res["path_geom"];
+													var tt_public = res["tt_public"];
+                                	                var tt_private = res["tt_private"];
+													
+                                	                console.log(tt_public, tt_private);
+
+													var html = '<font color="blue">' + tt_public + ' min </font><br><font color="red">' + tt_private + ' min </font>'
+                                	                var popup = new mapboxgl.Popup({closeOnClick: false, anchor: 'top'})
+                                                    .setLngLat({lat:latitude, lng: longitude})
+                                                    .setHTML(html)
+                                                    .addTo(map);
+
+                                	                addPathLayer(el.id, geom);
+
+                                	                popup.on('close', function(e) {
+                                                        console.log("popup closed")
+                                                        map.removeLayer("paths"+el.id)
+                                                        map.removeSource("paths"+el.id);
+                                                    })
+
+                                                    popups.push(popup);
+                                        		});
+                            				}
+                        				}
+                                    }, true);
 
                     				// make a marker for each feature and add to the map
                     				var marker = new mapboxgl.Marker(el)
@@ -184,6 +277,7 @@
                       				.addTo(map);
 
                     				markers.push(marker);
+                    				targetId = targetId + 1;
 
                     				document.getElementById('targetNode'+i).value = str;
 
@@ -246,7 +340,7 @@
                 	$("#dateTimePicker").flatpickr({
                 		enableTime: true,
                 		dateFormat: "F, d Y H:i",
-                		defaultDate: date.getTime(),
+                		defaultDate: new Date().getTime(),
                 		onChange: function(selectedDates, dateStr, instance) {
                             selectedDates.forEach(function (date){
             					//console.log(date)
@@ -265,12 +359,22 @@
             }
 
             function clearFields() {
+                console.log("clearing map")
             	document.getElementById('inputSource').value = "";
             	document.getElementById('inputTarget').value = "";
 
             	var j;
             	for (j = 0; j < markers.length; j++) {
             		markers[j].remove();
+            		/*
+            		if (map.getLayer("paths"+j)) {
+            			map.removeLayer("paths"+ j);
+                    	map.removeSource("paths"+ j);
+            		}*/
+            		console.log(popups[j])
+            		if (popups[j]){
+            			popups[j].remove();
+                	}
             	}
 
             	for (j = 1; j <= i ; j++) {
@@ -278,12 +382,6 @@
                 	element.parentNode.removeChild(element);
             	}
 
-            	//var parent = document.getElementById("input_frame");
-            	//var brs = parent.getElementsByTagName('br');
-            	//while (brs.length) {
-            	//  brs[0].parentNode.removeChild(brs[0]);
-            	//}
-            	
             	var new_target = document.getElementById ("new_target") ;
             	new_target.parentNode.removeChild(new_target);
             	
@@ -308,10 +406,13 @@
             	time_changed = false;
 				
 				i = 0;
+				targetId = 0;
             	
             	startLon = -1;
             	startLat = -1;
             	targets = []
+            	markers = []
+            	popups = []
             }
 
             function getResults() {
@@ -331,9 +432,9 @@
             		var data_input = {"startLon": startLon, "startLat": startLat, "targets":targets, "timestamp":timestamp}
 					
             		$.post("receiver", JSON.stringify(data_input) , function(res){
-						console.log(res)
-						console.log(res[1])
-						console.log(res["markers"])
+						//console.log(res)
+						//console.log(res[1])
+						//console.log(res["markers"])
 						//console.log(res.features[0].properties)
 						
 						/*map.addSource("rr", {
@@ -346,7 +447,7 @@
 		                    "type": "circle",
 		                    "source": {
 			                    "type": "geojson",
-			                    "data": res["markers"]
+			                    "data": res
 			                },
 		                    'paint': {
 		                    	'circle-radius': 10,
@@ -361,6 +462,7 @@
 								]
 		                    }
 		                });
+		                /*
 		                map.addLayer({
 		                    "id": "paths_public_layer",
 		                    "type": "line",
@@ -393,19 +495,37 @@
 		                        "line-color": "#ff0000",
 		                        "line-width": 4
 		                    }
-		                });
+		                });*/
             		}); 
                	}        
             }
 
-			/*'circle-color': {
-		                    		"type": "categorical"
-		                            property: 'marker-color',
-		                             stops: [
-		                                ["r", '#ff0000'],
-		                                ["b", '#223b53']
-		                            ]          
-		   },*/
+            function addPathLayer(marker_id, geom){
+            	map.addLayer({
+                    "id": "paths"+marker_id,
+                    "type": "line",
+                    "source": {
+	                    "type": "geojson",
+	                    "data": geom
+	                },
+	                "layout": {
+                        "line-join": "round",
+                        "line-cap": "round"
+                    },
+                    'paint': {
+                    	"line-width": 6,
+                    	// color routes by type
+                    	// https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions-match
+                    	'line-color': [
+							'match',
+							['get', 'line-color'],
+							"r", '#ff0000',
+							"b", '#223b53',
+							/* other */ '#ccc'
+						]
+                    }
+                });
+            }
 
         </script>
 		

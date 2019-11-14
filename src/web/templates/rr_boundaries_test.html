@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset='utf-8' />
+<title>Create a hover effect</title>
+<meta name='viewport'
+	content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+<script
+	src='https://api.tiles.mapbox.com/mapbox-gl-js/v1.5.0/mapbox-gl.js'></script>
+<link
+	href='https://api.tiles.mapbox.com/mapbox-gl-js/v1.5.0/mapbox-gl.css'
+	rel='stylesheet' />
+<style>
+body {
+	margin: 0;
+	padding: 0;
+}
+
+#map {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: 100%;
+}
+</style>
+</head>
+<body>
+
+	<div id='map'></div>
+	<script>
+	mapboxgl.accessToken = '{{ ACCESS_KEY }}';
+	
+    var map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/streets-v9',
+        center: [13.4050, 52.5200],
+        zoom: 10
+    });
+    
+    /*var map = new mapboxgl.Map({
+    	container: 'map',
+    	style: 'mapbox://styles/mapbox/streets-v11',
+    	center: [-100.486052, 37.830348],
+    	zoom: 2
+    });*/
+    
+var hoveredStateId =  null;
+var hoveredSubRegionId =  null;
+ 
+map.on('load', function () {
+
+map.addSource("states", {
+"type": "geojson",
+"data": "static/Berlin_AL9.GeoJson?2"
+});
+
+map.addSource("sub-regions", {
+	"type": "geojson",
+	"data": "static/Adlershof_AL10.GeoJson?2"
+	});
+
+/*
+	map.addSource("states", {
+		"type": "geojson",
+		"data": "https://docs.mapbox.com/mapbox-gl-js/assets/us_states.geojson"
+	});
+*/
+ 
+// The feature-state dependent fill-opacity expression will render the hover effect
+// when a feature's hover state is set to true.
+map.addLayer({
+"id": "state-fills",
+"type": "fill",
+"source": "states",
+"layout": {},
+"paint": {
+"fill-color": "#627BC1",
+"fill-opacity": ["case",
+["boolean", ["feature-state", "hover"], false],
+	0.5,
+	0
+]
+}
+});
+
+map.addLayer({
+	"id": "sub-regions-fills",
+	"type": "fill",
+	"source": "sub-regions",
+	"layout": {},
+	"paint": {
+	"fill-color": "#FFFF00",
+	"fill-opacity": ["case",
+	["boolean", ["feature-state", "hover"], false],
+		0.5,
+		0
+	]
+	}
+	});
+
+ 
+map.addLayer({
+"id": "state-borders",
+"type": "line",
+"source": "states",
+"layout": {},
+"paint": {
+"line-color": "#627BC1",
+"line-width": 2
+}
+});
+
+map.addLayer({
+	"id": "sub-region-borders",
+	"type": "line",
+	"source": "sub-regions",
+	"layout": {},
+	"paint": {
+	"line-color": "#FFFF00",
+	"line-width": 2
+	}
+	});
+
+/*map.on('mousemove', function(e) {
+    var features = map.queryRenderedFeatures(e.point, { layers: ['state-fills'] });
+    console.log(features);
+    //features[0].id = 0;
+    console.log(features.id);
+    console.log(features[0]);
+    console.log(features[0].properties);
+    console.log(features[0].id);
+    hoveredStateId = features[0].properties.id;
+    if (!features[0].id){
+    	features[0].id = hoveredStateId;
+    }
+    map.setFeatureState({source: 'states', id: hoveredStateId}, { hover: true});
+});*/
+
+ 
+// When the user moves their mouse over the state-fill layer, we'll update the
+// feature state for the feature under the mouse.
+map.on("mousemove", "state-fills", function(e) {
+	if (e.features.length > 0) {
+		//console.log(e.features[0])
+		//console.log(e.features[0].properties)
+		//console.log(e.features[0].properties.id)
+		if (hoveredStateId) {
+			console.log("hoveredStateId not empty!")
+			map.setFeatureState({source: 'states', id: hoveredStateId}, { hover: false});
+		}
+		hoveredStateId = e.features[0].id;
+		//hoveredStateId = e.features[0].properties.id;
+		console.log(hoveredStateId)
+		map.setFeatureState({source: 'states', id: hoveredStateId}, { hover: true});
+	}
+});
+ 
+// When the mouse leaves the state-fill layer, update the feature state of the
+// previously hovered feature.
+map.on("mouseleave", "state-fills", function() {
+	if (hoveredStateId) {
+		map.setFeatureState({source: 'states', id: hoveredStateId}, { hover: false});
+	}
+	hoveredStateId =  null;
+});
+
+map.on("mousemove", "sub-regions-fills", function(e) {
+	if (e.features.length > 0) {
+		if (hoveredSubRegionId) {
+			console.log("hoveredStateId not empty!")
+			map.setFeatureState({source: 'sub-regions', id: hoveredSubRegionId}, { hover: false});
+		}
+		hoveredSubRegionId = e.features[0].id;
+		console.log(hoveredSubRegionId)
+		//console.log(e.features[0].geometry.coordinates[0][0])
+		map.setFeatureState({source: 'sub-regions', id: hoveredSubRegionId}, { hover: true});
+	}
+});
+ 
+// When the mouse leaves the state-fill layer, update the feature state of the
+// previously hovered feature.
+map.on("mouseleave", "sub-regions-fills", function() {
+	if (hoveredSubRegionId) {
+		map.setFeatureState({source: 'sub-regions', id: hoveredSubRegionId}, { hover: false});
+	}
+	hoveredSubRegionId =  null;
+	});
+
+});
+
+
+</script>
+
+</body>
+</html>

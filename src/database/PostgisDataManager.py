@@ -3,13 +3,95 @@ Created on Oct 31, 2019
 
 @author: camila
 '''
-from database.PostGISConnection import PostGISConnection
+import time
+
+from geojson import Feature, FeatureCollection
 import psycopg2
+import json
+
+from database.PostGISConnection import PostGISConnection
+
 
 class PostgisDataManager:
     
     def __init__(self):
         self.connection = PostGISConnection()
+        self.timeGeom = 0
+        
+    def getNeighborhoodsPolygons(self, region):
+        sql = """SELECT id, name, level, parent, ST_AsGeoJSON(polygon) as polygon
+                FROM neighborhoods_{};
+            ;   
+            """
+        sql = sql.format(region);
+        
+        try:
+            features = []
+            self.connection.connect();
+ 
+            cursor = self.connection.getCursor()
+            
+            cursor.execute(sql)
+            row = cursor.fetchone()
+            
+            while row is not None:
+                (nid, name, level, parent, polygon) = row
+                properties = {'name': name, 'level':level, 'parent': parent}
+                #print(nid, name, level, parent)
+                #print(polygon)
+                geometry = json.loads(polygon)
+                feature = Feature(geometry = geometry, properties = properties, id = nid)
+                #print(feature)
+                features.append(feature)
+    
+                row = cursor.fetchone()
+            
+            self.connection.close()
+            return FeatureCollection(features)
+        
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)  
+            
+        
+    def getPointsWithinPolygon(self, region, coordinates):
+        sql = """SELECT osm_source_id as id FROM roadnet_{0} as p,
+                (SELECT {1}  as polygon) as pol
+                 WHERE ST_Within(source_location, polygon)
+                UNION 
+                SELECT osm_target_id as id FROM roadnet_{0} as p,
+                (SELECT {1} as polygon) as pol
+                WHERE ST_Within(target_location, polygon)
+            ;   
+            """
+        sql_polygon = "ST_MakePolygon( ST_GeomFromText('LINESTRING("
+        
+        for c in coordinates:
+            sql_polygon += str(c[0]) + " " + str(c[1]) + ","
+        
+        sql_polygon = sql_polygon[:-1]
+        
+        sql_polygon += ")'))"
+        sql = sql.format(region, sql_polygon)
+        
+        try:
+            ids = set()
+            self.connection.connect();
+ 
+            cursor = self.connection.getCursor()
+            
+            cursor.execute(sql)
+            row = cursor.fetchone()
+            
+            while row is not None:
+                (node_id,) = row
+                ids.add(node_id)
+                row = cursor.fetchone()
+            
+            self.connection.close()
+            return ids
+        
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
 
     def getClosestEdge(self, lat, lon, region):
         sql = """SELECT id, osm_source_id, osm_target_id, 
@@ -46,6 +128,7 @@ class PostgisDataManager:
         sql = sql.format(region, edge_id)
         
         try:
+            start = time.time()
             self.connection.connect();
  
             cursor = self.connection.getCursor()
@@ -56,6 +139,8 @@ class PostgisDataManager:
             #print(geometry)
             
             self.connection.close()
+            total = time.time() - start
+            self.timeGeom += total
             return geometry
         
         except (Exception, psycopg2.DatabaseError) as error:

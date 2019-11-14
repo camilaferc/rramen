@@ -4,20 +4,22 @@ Created on Oct 29, 2019
 @author: camila
 '''
 
+from _datetime import datetime
+from datetime import timedelta
+import sys
+import time
+
 from flask import Flask, request, session, g, redirect, \
     url_for, abort, render_template, flash
+from flask.cli import ScriptInfo
 from geojson import Feature, Point, dumps, GeometryCollection, FeatureCollection, dump, loads
+from geojson.geometry import LineString, MultiLineString
 import requests
 
 from database.PostgisDataManager import PostgisDataManager
 from load.LoadMultimodalNetwork import LoadMultimodalNetwork
+from path.Path import Path
 from shortest_path.Dijkstra import Dijsktra
-from _datetime import datetime
-import time
-import sys
-from datetime import timedelta
-from geojson.geometry import LineString, MultiLineString
-from flask.cli import ScriptInfo
 
 
 app = Flask(__name__)
@@ -28,46 +30,78 @@ MAPBOX_ACCESS_KEY = 'pk.eyJ1IjoiY2FtaWxhZmVyYyIsImEiOiJjazB3aGJ5emkwMzNqM29tbWxk
 #app.config.from_envvar('APP_CONFIG_FILE', silent=True)
 #MAPBOX_ACCESS_KEY = app.config['MAPBOX_ACCESS_KEY']
 
-ROUTE = [
-    {"lat": 64.0027441, "long": -22.7066262, "name": "Keflavik Airport", "is_stop_location": True},
-    {"lat": 64.0317168, "long": -22.1092311, "name": "Hafnarfjordur", "is_stop_location": True},
-    {"lat": 63.99879, "long": -21.18802, "name": "Hveragerdi", "is_stop_location": True},
-    {"lat": 63.4194089, "long": -19.0184548, "name": "Vik", "is_stop_location": True},
-    {"lat": 63.5302354, "long": -18.8904333, "name": "Thakgil", "is_stop_location": True},
-    {"lat": 64.2538507, "long": -15.2222918, "name": "Hofn", "is_stop_location": True},
-    {"lat": 64.913435, "long": -14.01951, "is_stop_location": False},
-    {"lat": 65.2622588, "long": -14.0179538, "name": "Seydisfjordur", "is_stop_location": True},
-    {"lat": 65.2640083, "long": -14.4037548, "name": "Egilsstadir", "is_stop_location": True},
-    {"lat": 66.0427545, "long": -17.3624953, "name": "Husavik", "is_stop_location": True},
-    {"lat": 65.659786, "long": -20.723364, "is_stop_location": False},
-    {"lat": 65.3958953, "long": -20.9580216, "name": "Hvammstangi", "is_stop_location": True},
-    {"lat": 65.0722555, "long": -21.9704238, "is_stop_location": False},
-    {"lat": 65.0189519, "long": -22.8767959, "is_stop_location": False},
-    {"lat": 64.8929619, "long": -23.7260926, "name": "Olafsvik", "is_stop_location": True},
-    {"lat": 64.785334, "long": -23.905765, "is_stop_location": False},
-    {"lat": 64.174537, "long": -21.6480148, "name": "Mosfellsdalur", "is_stop_location": True},
-    {"lat": 64.0792223, "long": -20.7535337, "name": "Minniborgir", "is_stop_location": True},
-    {"lat": 64.14586, "long": -21.93955, "name": "Reykjavik", "is_stop_location": True},
-]
 
 graph = None
 dataManager = PostgisDataManager()
 region = "berlin"
+id_map = {}
+parent_tree_public = {}
+parent_tree_private = {}
+tt_public = {}
+tt_private = {}
 
 @app.route('/rr_test')
 def mapbox_gl():
     global graph
-    load = LoadMultimodalNetwork("berlin")
-    graph = load.load()
+    
+    if not graph:
+        load = LoadMultimodalNetwork("berlin")
+        graph = load.load()
     
     return render_template('rr_test.html', 
         ACCESS_KEY=MAPBOX_ACCESS_KEY
     )
     
+@app.route('/rr_region_test')
+def rr_region():
+    global graph
+    if not graph:
+        load = LoadMultimodalNetwork("berlin")
+        graph = load.load()
+    
+    return render_template('rr_region_test.html', 
+        ACCESS_KEY=MAPBOX_ACCESS_KEY
+    )
+    
+@app.route('/rr_boundaries_test')
+def rr_boundaries():
+    global graph
+    
+    #load = LoadMultimodalNetwork("berlin")
+    #graph = load.load()
+    
+    return render_template('rr_boundaries_test.html', 
+        ACCESS_KEY=MAPBOX_ACCESS_KEY
+    )
+    
+@app.route('/rr_neighborhood_test')
+def rr_neighborhood():
+    global graph
+    
+    if not graph:
+        load = LoadMultimodalNetwork("berlin")
+        graph = load.load()
+    polygons = dataManager.getNeighborhoodsPolygons(region)
+    return render_template('rr_neighborhood_test.html', 
+        ACCESS_KEY=MAPBOX_ACCESS_KEY,
+        polygons = polygons
+    )
+    
+@app.route('/rr_rectangle_test')
+def rr_rectangle():
+    global graph
+    #load = LoadMultimodalNetwork("berlin")
+    #graph = load.load()
+    
+    return render_template('rr_rectangle_test.html', 
+        ACCESS_KEY=MAPBOX_ACCESS_KEY
+    )
+    
+    
 @app.route('/receiver', methods = ['POST', 'GET'])
 def worker():
     # read json + reply
-    global graph, dataManager, region
+    global graph, dataManager, region, id_map, tt_public, tt_private
     data = request.get_json(force=True)
     
     
@@ -82,12 +116,15 @@ def worker():
     
     targets_coord = data['targets']
     targets = set()
-    for t in targets_coord:
+    id_map = {}
+    for i in range(len(targets_coord)):
+        t = targets_coord[i]
         (edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat) = dataManager.getClosestEdge(t['lat'], t['lon'], region)
         
         node_id = createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, osm_source, osm_target, source_ratio)
         targets.add(node_id)
         map_coord[node_id] = (t['lat'], t['lon'])
+        id_map[i] = node_id
     
     print(source) 
     print(targets) 
@@ -97,19 +134,8 @@ def worker():
     timestamp = datetime.fromtimestamp(time/1000)
     print(timestamp)
     
-    '''
-    properties_red = {
-            'icon': 'campsite',
-            'marker-color': '#ff0000',
-    }
     
-    properties_blue = {
-            'icon': 'campsite',
-            'marker-color': '#0000FF',
-    }
-    '''
-    
-    target_colors, paths_public, paths_private = computeRelativeReachability(source, targets, timestamp)
+    target_colors, tt_public, tt_private = computeRelativeReachability(source, targets, timestamp)
     print(target_colors)
     
     target_markers = []
@@ -121,35 +147,107 @@ def worker():
         target_markers.append(feature)
     
     gc = FeatureCollection(target_markers)
-    ml_public = MultiLineString(paths_public)
-    ml_private = MultiLineString(paths_private)
     
-    print(gc)
-    print(ml_public)
+    #print(gc)
     
-    res = {"markers":gc, "paths_public": ml_public, "paths_private": ml_private}
-    return res
+    return gc
     #return dumps(res)
     #return gc, ml_public
+    
+
+@app.route('/receiver_region', methods = ['POST', 'GET'])
+def worker_region():
+    # read json + reply
+    global graph, dataManager, region, id_map, tt_public, tt_private
+    data = request.get_json(force=True)
+    
+    
+    startLat = data['startLat']
+    startLon = data['startLon']
+    (edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat) = dataManager.getClosestEdge(startLat, startLon, region)
+    source = createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, osm_source, osm_target, source_ratio)
+    print(graph.getNode(source))
+    
+    
+    polygon_coord = data['coordinates'][0]
+    polygon_points = dataManager.getPointsWithinPolygon(region, polygon_coord)
+    #print(polygon_points)
+    
+    targets = set()
+    osm_mapping = graph.getOsmMapping()
+    map_coord = {}
+    for p in polygon_points:
+        node_id = osm_mapping[p]
+        targets.add(node_id)
+        node = graph.getNode(node_id)
+        map_coord[node_id] = (node['lat'], node['lon'])
+    
+    print(source) 
+    print(len(targets)) 
+    
+    #timestamp = datetime.today()
+    time = data['timestamp']
+    timestamp = datetime.fromtimestamp(time/1000)
+    print(timestamp)
+    
+    
+    target_colors, tt_public, tt_private = computeRelativeReachability(source, targets, timestamp)
+    print(target_colors)
+    
+    target_markers = []
+    for t in target_colors:
+        t_coord = map_coord[t]
+        point = Point([t_coord[1], t_coord[0]])
+        properties = {'marker-color': target_colors[t]}
+        feature = Feature(geometry = point, properties = properties)
+        target_markers.append(feature)
+    
+    gc = FeatureCollection(target_markers)
+    
+    return gc
+    
+    
+@app.route('/path', methods = ['POST', 'GET'])
+def getPathGeometry():
+    global id_map, tt_public, tt_private
+    marker_id = int(request.get_json(force=True))
+    print(marker_id)
+    node_id = id_map[marker_id]
+    paths = []
+    
+    pathPublic = Path(parent_tree_public)
+    pathPublicGeom = pathPublic.getPathGeometry(graph, node_id, region)
+    
+    properties = {'line-color': 'b'}
+    feature = Feature(geometry = pathPublicGeom, properties = properties)
+    paths.append(feature)
+    
+    pathPrivate = Path(parent_tree_private)
+    pathPrivateGeom = pathPrivate.getPathGeometry(graph, node_id, region)
+    properties = {'line-color': 'r'}
+    feature = Feature(geometry = pathPrivateGeom, properties = properties)
+    paths.append(feature)
+    
+    tt_node_public = round(tt_public[node_id]/60)
+    tt_node_private = round(tt_private[node_id]/60)
+    
+    fc = FeatureCollection(paths)
+    res = {"path_geom": fc, "tt_public": tt_node_public, "tt_private": tt_node_private}
+    print(res)
+    return res
+    
 
 def computeRelativeReachability(source, targets, timestamp): 
+    global parent_tree_public, parent_tree_private
     dij = Dijsktra(graph)
+    parent_tree_public = {}
+    parent_tree_private = {}
     
     start = time.time()
     tt_public = dij.shortestPathToSetPublic(source, timestamp, targets, {graph.PEDESTRIAN, graph.PUBLIC})
+    parent_tree_public = dij.getParentTree()
     total = time.time() - start
     print ("Process time: " + str(total))
-    
-    paths_public = []
-    start = time.time()
-    for t in targets:
-        path = dij.reconstructPathToNode(t)
-        pathGeom = getPathGeometry(path)
-        #print(pathGeom)
-        paths_public.append(pathGeom)
-        
-    total = time.time() - start
-    print ("Path Process time: " + str(total))
     
     '''
     for t in targets:
@@ -175,70 +273,27 @@ def computeRelativeReachability(source, targets, timestamp):
         
     start = time.time()
     tt_private = dij.shortestPathToSetPrivate(source, timestamp, targets, {graph.PRIVATE})
+    parent_tree_private = dij.getParentTree()
     total = time.time() - start
     print ("Process time: " + str(total))
     
-    paths_private = []
-    start = time.time()
-    for t in targets:
-        path = dij.reconstructPathToNode(t)
-        pathGeom = getPathGeometry(path)
-        #print(pathGeom)
-        paths_private.append(pathGeom)
-        
-    total = time.time() - start
-    print ("Path Private Process time: " + str(total))
-    
     target_colors = {}
     for t in targets:
-        if tt_public[t] <=  tt_private[t]:
+        if t not in tt_public:
+            print(t)
+            print("not found by public transit")
+            target_colors[t] = 'n'
+        elif t not in tt_private:
+            print(t)
+            print("not found by car")
+            target_colors[t] = 'n'
+        elif tt_public[t] <=  tt_private[t]:
             target_colors[t] = 'b'
         else: 
             target_colors[t] = 'r'
             
-    return target_colors, paths_public, paths_private
+    return target_colors, tt_public, tt_private
 
-def getPathGeometry(path): 
-    global graph, dataManager, region
-    
-    path_geometry = [] 
-    for i in range(len(path) -1):
-        node_from_id = path[i]
-        node_to_id = path[i+1]
-       
-        node_from = graph.getNode(node_from_id)
-        node_to = graph.getNode(node_to_id)
-       
-        if node_from["type"] == graph.ROAD and node_to["type"] == graph.ROAD:
-            #retrieve geometry from database
-            edge = graph.getEdge(node_from_id, node_to_id)
-            original_edge = edge["original_edge_id"]
-            if edge["type"] == graph.ROAD:
-                #print("ROAD")
-                geometry = dataManager.getRoadGeometry(original_edge, region)
-                line = loads(geometry)
-                coord = line.coordinates
-                if i < len(path) - 2:
-                    coord = coord[:-1]
-                path_geometry.extend(coord)
-            elif edge["type"] == graph.TRANSFER:
-                #print("TRANSFER")
-                geometry = dataManager.getLinkGeometry(original_edge, edge["edge_position"], region)
-                print(original_edge)
-                line = loads(geometry)
-                coord = line.coordinates
-                if i < len(path) - 2:
-                    coord = coord[:-1]
-                path_geometry.extend(coord)
-        else:
-            #print("DIRECT")
-            path_geometry.append([node_from['lon'], node_from['lat']])
-            if i == len(path) - 2:
-                path_geometry.append([node_to['lon'], node_to['lat']]) 
-     
-    #print(path_geometry)
-    return LineString(path_geometry)        
-           
 
 def createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, osm_source, osm_target, source_ratio):
     osm_mapping = graph.getOsmMapping()
@@ -300,50 +355,7 @@ def createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, osm_source, osm_ta
                 graph.addEdge(target, node_id, graph.ROAD, modes_rev, right_functions_rev, edge_id, 2)
         return node_id
     
-
-ROUTE_URL = "https://api.mapbox.com/directions/v5/mapbox/driving/{0}.json?access_token={1}&overview=full&geometries=geojson"
-
-def create_route_url():
-    # Create a string with all the geo coordinates
-    lat_longs = ";".join(["{0},{1}".format(point["long"], point["lat"]) for point in ROUTE])
-    # Create a url with the geo coordinates and access token
-    url = ROUTE_URL.format(lat_longs, MAPBOX_ACCESS_KEY)
-    return url
-
-def get_route_data():
-    # Get the route url
-    route_url = create_route_url()
-    # Perform a GET request to the route API
-    result = requests.get(route_url)
-    # Convert the return value to JSON
-    data = result.json()
-
-    # Create a geo json object from the routing data
-    geometry = data["routes"][0]["geometry"]
-    route_data = Feature(geometry = geometry, properties = {})
-
-    return route_data
-
-
-def create_stop_locations_details():
-    stop_locations = []
-    for location in ROUTE:
-        # Skip anything that is not a stop location
-        if not location["is_stop_location"]:
-            continue
-        # Create a geojson object for stop location
-        point = Point([location['long'], location['lat']])
-        properties = {
-            'title': location['name'],
-            'icon': 'campsite',
-            'marker-color': '#3bb2d0',
-            'marker-symbol': len(stop_locations) + 1
-        }
-        feature = Feature(geometry = point, properties = properties)
-        stop_locations.append(feature)
-    return stop_locations
-
-    
+ 
 
 if __name__ == '__main__':
     # run!
