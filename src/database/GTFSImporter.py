@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 '''
 Created on Oct 16, 2019
 
@@ -8,6 +9,7 @@ import sys
 import csv
 import psycopg2
 from psycopg2.extensions import AsIs
+from network.MultimodalNetwork import MultimodalNetwork
 
 class GTFSImporter:
     '''
@@ -466,11 +468,11 @@ class GTFSImporter:
             point_location geometry NOT NULL,
             source_point_geom geometry NULL,   
             point_target_geom geometry NULL,   
-            CONSTRAINT links_pkey PRIMARY KEY (link_id), 
-            CONSTRAINT links_stop_id_fkey FOREIGN KEY (stop_id)
+            CONSTRAINT links_{0}_pkey PRIMARY KEY (link_id), 
+            CONSTRAINT links_{0}_stop_id_fkey FOREIGN KEY (stop_id)
                 REFERENCES stops_{0} (stop_id) MATCH SIMPLE
                 ON UPDATE NO ACTION ON DELETE NO ACTION,
-            CONSTRAINT link_edge_id_fkey FOREIGN KEY (edge_id)
+            CONSTRAINT link_{0}_edge_id_fkey FOREIGN KEY (edge_id)
                 REFERENCES roadnet_{0} (id) MATCH SIMPLE
                 ON UPDATE NO ACTION ON DELETE NO ACTION
         );
@@ -523,11 +525,11 @@ class GTFSImporter:
                     stops_{0}.stop_location as stop_location, roadnet_{0}.geom_way as geom_way, roadnet_{0}.km as km,
                     ST_LineLocatePoint(geom_way, stop_location) as source_ratio
                     FROM roadnet_{0}, stops_{0} 
-                    WHERE stops_berlin.stop_id = {1}
+                    WHERE stops_{0}.stop_id = {1} and roadnet_{0}.clazz= ANY('{2}'::int[])
                     ORDER BY ST_Distance(stops_{0}.stop_location::geography, roadnet_{0}.geom_way::geography) LIMIT 1) as r;
                     """
             for stop in stop_ids:
-                sql_select_stop = sql_select.format(self.region, stop)
+                sql_select_stop = sql_select.format(self.region, stop, MultimodalNetwork.PEDESTRIAN_WAYS)
                 cursor.execute(sql_select_stop)
                 (stop_id, edge_id, osm_source, osm_target, edge_dist, source_ratio, edge_length, point_location, 
                  source_point_geom, point_target_geom) = cursor.fetchone()

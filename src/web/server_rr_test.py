@@ -34,7 +34,8 @@ MAPBOX_ACCESS_KEY = 'pk.eyJ1IjoiY2FtaWxhZmVyYyIsImEiOiJjazB3aGJ5emkwMzNqM29tbWxk
 graph = None
 dataManager = PostgisDataManager()
 region = "berlin"
-id_map = {}
+id_map_public = {}
+id_map_private = {}
 parent_tree_public = {}
 parent_tree_private = {}
 tt_public = {}
@@ -44,9 +45,9 @@ tt_private = {}
 def mapbox_gl():
     global graph
     
-    if not graph:
-        load = LoadMultimodalNetwork("berlin")
-        graph = load.load()
+    #if not graph:
+    #    load = LoadMultimodalNetwork("berlin")
+    #    graph = load.load()
     
     return render_template('rr_test.html', 
         ACCESS_KEY=MAPBOX_ACCESS_KEY
@@ -101,7 +102,7 @@ def rr_rectangle():
 @app.route('/receiver', methods = ['POST', 'GET'])
 def worker():
     # read json + reply
-    global graph, dataManager, region, id_map, tt_public, tt_private
+    global graph, dataManager, region, id_map_private, id_map_public, tt_public, tt_private
     data = request.get_json(force=True)
     
     
@@ -109,25 +110,38 @@ def worker():
     
     startLat = data['startLat']
     startLon = data['startLon']
+    
     (edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat) = dataManager.getClosestEdge(startLat, startLon, region)
-    source = createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, osm_source, osm_target, source_ratio)
-    print(graph.getNode(source))
+    source_private = createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, osm_source, osm_target, source_ratio)
+    print("source:")
+    print(edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat)
+    (edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat) = dataManager.getClosestEdgeByClass(startLat, startLon, region, graph.PEDESTRIAN_WAYS)
+    source_public = createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, osm_source, osm_target, source_ratio)
+    print(graph.getNode(source_public))
+    print(graph.getNode(source_private))
     
     
     targets_coord = data['targets']
-    targets = set()
-    id_map = {}
+    targets_private = set()
+    targets_public = set()
+    id_map_private = {}
+    id_map_public = {}
     for i in range(len(targets_coord)):
         t = targets_coord[i]
-        (edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat) = dataManager.getClosestEdge(t['lat'], t['lon'], region)
         
-        node_id = createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, osm_source, osm_target, source_ratio)
-        targets.add(node_id)
-        map_coord[node_id] = (t['lat'], t['lon'])
-        id_map[i] = node_id
-    
-    print(source) 
-    print(targets) 
+        (edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat) = dataManager.getClosestEdge(t['lat'], t['lon'], region)
+        print(edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat)
+        node_id_private = createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, osm_source, osm_target, source_ratio)
+        targets_private.add(node_id_private)
+        id_map_private[i] = node_id_private
+        
+        (edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat) = dataManager.getClosestEdgeByClass(t['lat'], t['lon'], region, graph.PEDESTRIAN_WAYS)
+        node_id_public = createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, osm_source, osm_target, source_ratio)
+        targets_public.add(node_id_public)
+        id_map_public[i] = node_id_public
+        
+        map_coord[i] = (t['lat'], t['lon'])
+        
     
     #timestamp = datetime.today()
     time = data['timestamp']
@@ -135,14 +149,14 @@ def worker():
     print(timestamp)
     
     
-    target_colors, tt_public, tt_private = computeRelativeReachability(source, targets, timestamp)
+    target_colors, tt_public, tt_private = computeRelativeReachability(source_public, targets_public, source_private, targets_private, timestamp)
     print(target_colors)
     
     target_markers = []
-    for t in target_colors:
-        t_coord = map_coord[t]
+    for i in range(len(target_colors)):
+        t_coord = map_coord[i]
         point = Point([t_coord[1], t_coord[0]])
-        properties = {'marker-color': target_colors[t]}
+        properties = {'marker-color': target_colors[i]}
         feature = Feature(geometry = point, properties = properties)
         target_markers.append(feature)
     
@@ -209,42 +223,43 @@ def worker_region():
     
 @app.route('/path', methods = ['POST', 'GET'])
 def getPathGeometry():
-    global id_map, tt_public, tt_private
+    global id_map_private, id_map_public, tt_public, tt_private
     marker_id = int(request.get_json(force=True))
     print(marker_id)
-    node_id = id_map[marker_id]
+    node_id_public = id_map_public[marker_id]
+    node_id_private = id_map_private[marker_id]
     paths = []
     
     pathPublic = Path(parent_tree_public)
-    pathPublicGeom = pathPublic.getPathGeometry(graph, node_id, region)
+    pathPublicGeom = pathPublic.getPathGeometry(graph, node_id_public, region)
     
     properties = {'line-color': 'b'}
     feature = Feature(geometry = pathPublicGeom, properties = properties)
     paths.append(feature)
     
     pathPrivate = Path(parent_tree_private)
-    pathPrivateGeom = pathPrivate.getPathGeometry(graph, node_id, region)
+    pathPrivateGeom = pathPrivate.getPathGeometry(graph, node_id_private, region)
     properties = {'line-color': 'r'}
     feature = Feature(geometry = pathPrivateGeom, properties = properties)
     paths.append(feature)
     
-    tt_node_public = round(tt_public[node_id]/60)
-    tt_node_private = round(tt_private[node_id]/60)
+    tt_node_public = round(tt_public[node_id_public]/60)
+    tt_node_private = round(tt_private[node_id_private]/60)
     
     fc = FeatureCollection(paths)
     res = {"path_geom": fc, "tt_public": tt_node_public, "tt_private": tt_node_private}
-    print(res)
+    #print(res)
     return res
     
 
-def computeRelativeReachability(source, targets, timestamp): 
-    global parent_tree_public, parent_tree_private
+def computeRelativeReachability(source_public, targets_public, source_private, targets_private, timestamp): 
+    global parent_tree_public, parent_tree_private, id_map_private, id_map_public
     dij = Dijsktra(graph)
     parent_tree_public = {}
     parent_tree_private = {}
     
     start = time.time()
-    tt_public = dij.shortestPathToSetPublic(source, timestamp, targets, {graph.PEDESTRIAN, graph.PUBLIC})
+    tt_public = dij.shortestPathToSetPublic(source_public, timestamp, targets_public, {graph.PEDESTRIAN, graph.PUBLIC})
     parent_tree_public = dij.getParentTree()
     total = time.time() - start
     print ("Process time: " + str(total))
@@ -272,25 +287,27 @@ def computeRelativeReachability(source, targets, timestamp):
     '''
         
     start = time.time()
-    tt_private = dij.shortestPathToSetPrivate(source, timestamp, targets, {graph.PRIVATE})
+    tt_private = dij.shortestPathToSetPrivate(source_private, timestamp, targets_private)
     parent_tree_private = dij.getParentTree()
     total = time.time() - start
     print ("Process time: " + str(total))
     
     target_colors = {}
-    for t in targets:
-        if t not in tt_public:
-            print(t)
+    for i in range (len(targets_private)):
+        t_public = id_map_public[i]
+        t_private = id_map_private[i]
+        if t_public not in tt_public:
+            print(t_public)
             print("not found by public transit")
-            target_colors[t] = 'n'
-        elif t not in tt_private:
-            print(t)
+            target_colors[i] = 'n'
+        elif t_private not in tt_private:
+            print(t_private)
             print("not found by car")
-            target_colors[t] = 'n'
-        elif tt_public[t] <=  tt_private[t]:
-            target_colors[t] = 'b'
+            target_colors[i] = 'n'
+        elif tt_public[t_public] <=  tt_private[t_private]:
+            target_colors[i] = 'b'
         else: 
-            target_colors[t] = 'r'
+            target_colors[i] = 'r'
             
     return target_colors, tt_public, tt_private
 

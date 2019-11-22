@@ -257,6 +257,8 @@ class LoadTransportationNetwork:
             
             for route in self.routes_id:
                 #print(route)
+                #if route == "19046_100":
+                #    print("ROUTE FOUND!")
                 self.edges_timetable = {}
                 node_mapping = {}
                 
@@ -283,6 +285,9 @@ class LoadTransportationNetwork:
                             row = cursor.fetchone()
                             continue
                         
+                        #if route == "19046_100":
+                        #    print(str(stop_id) + " is in the mbr")
+                        
                         node_id = self.current_node_id
                         node_mapping[stop_id] = node_id
                             
@@ -302,6 +307,8 @@ class LoadTransportationNetwork:
                     
                     if previous_node != -1:
                         #create edge from previous_node to node_id
+                        #if route == "19046_100":
+                        #   print(previous_node, node_id, previous_departure_time, arrival_time, service_id)
                         self.createTransportationEdge(previous_node, node_id, previous_departure_time, arrival_time, service_id)
                     
                     previous_node = node_id

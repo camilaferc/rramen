@@ -17,9 +17,13 @@ class MultimodalNetwork:
     TRANSFER = 3
     SUPER_NODE = 4
     
-    PEDESTRIAN_SPEED = 4 #km/h
+    PEDESTRIAN_SPEED = 4.5 #km/h
     
     MIN_TRANSFER_TIME = 15
+    
+    PEDESTRIAN_WAYS = {41, 42, 51, 63, 62, 71, 72, 91, 92, 21, 22, 31, 32}
+    #PEDESTRIAN_MAPPING_WAYS = {41, 42, 63, 62, 71, 72}
+    CAR_WAYS = {11, 12, 13, 14, 15, 16, 21, 22, 31, 32, 41, 42, 43, 51, 63, 71}
     
     def __init__(self):
         self.graph = nx.DiGraph()
@@ -55,12 +59,12 @@ class MultimodalNetwork:
                 #print(edge)
                 if mode in modes:
                     if node_to in neig_travel_times:
-                        cur_travel_time = neig_travel_times[node_to]
+                        cur_travel_time = neig_travel_times[node_to][0]
                         new_travel_time = edge['travel_time_functions'][mode].getTravelTime(arrival_time)
                         if new_travel_time < cur_travel_time:
-                            neig_travel_times[node_to] = new_travel_time
+                            neig_travel_times[node_to] = [new_travel_time, mode]
                     else:
-                        neig_travel_times[node_to] = edge['travel_time_functions'][mode].getTravelTime(arrival_time)
+                        neig_travel_times[node_to] = [edge['travel_time_functions'][mode].getTravelTime(arrival_time), mode]
         #self.time_neighbors += (time.time()- start)    
         return neig_travel_times
     

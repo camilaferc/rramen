@@ -13,19 +13,24 @@ import queue as Q
 class Dijsktra:
     def __init__(self, graph):
         self.graph = graph
-        self.parents = {}
         
-    def getParentTree(self):
-        return self.parents
+    def manyToManyPrivate(self, sources, targets, departure_time):
+        travel_times = {}
+        parents = {}
+        for s in sources:
+            travel_times_s, parents_s = self.shortestPathToSetPrivate(s, departure_time, targets)
+            travel_times[s] = travel_times_s
+            parents[s] = parents_s
+        return travel_times, parents
     
-    def shortestPathToSetPrivate(self, s, departure_time, targets, allowed_modes):
+    def shortestPathToSetPrivate(self, s, departure_time, targets):
         q = Q.PriorityQueue()
         travel_times = {}
         closed_set = set()
         targets = set(targets)
-        self.parents = {}
+        parents = {}
         
-        q.put((0, s, departure_time, -1))
+        q.put((0, s, departure_time, -1, []))
         
         time_neig = 0
         
@@ -42,7 +47,7 @@ class Dijsktra:
             #print(vid, travel_time)
             if vid not in closed_set:
                 closed_set.add(vid)
-                self.parents[vid] = v_min[3]
+                parents[vid] = v_min[3]
             
                 if vid in targets:
                     print(str(vid) + ":" + str(travel_time) + " " + str(self.graph.getNode(vid)))
@@ -52,24 +57,44 @@ class Dijsktra:
                     if not targets:
                         #print(heapNodes)
                         print(time_neig)
-                        return travel_times
+                        return travel_times, parents
                 
                 #for mode in allowed_modes:
                 start = time.time()
+                modes = v_min[4]
+                allowed_modes = self.getAllowedModesPrivate(modes)
+                #print(allowed_modes)
                 travel_times_neighbors = self.graph.getTravelTimeToNeighbors(vid, arrival_time, allowed_modes)
                 time_neig += (time.time()-start)
                 #if mode == self.graph.PUBLIC:
                 #    print(travel_times_neighbors)
                 for to in travel_times_neighbors:
                     if to not in closed_set:
-                        tt = travel_times_neighbors[to]
+                        tt, mode = travel_times_neighbors[to]
                         total_tt = travel_time + tt
                         arrival_time_to = arrival_time + timedelta(seconds=tt)
-                        
-                        q.put((total_tt, to, arrival_time_to, vid))
+                        modes_to = modes.copy()
+                        if len(modes_to) == 0 or  modes_to[-1] != mode:
+                            modes_to.append(mode)
+                            
+                        q.put((total_tt, to, arrival_time_to, vid, modes_to))
         print(time_neig)                        
-        return travel_times
+        return travel_times, parents
     
+    def getAllowedModesPrivate(self, modes):
+        if len(modes) < 2:
+            allowed_modes = {self.graph.PEDESTRIAN, self.graph.PRIVATE}
+        elif len(modes) == 2:
+            last_mode = modes[-1]
+            if last_mode == self.graph.PEDESTRIAN:
+                allowed_modes = {self.graph.PEDESTRIAN}
+            else:
+                allowed_modes = {self.graph.PEDESTRIAN, self.graph.PRIVATE}
+        else:
+            allowed_modes = {self.graph.PEDESTRIAN}
+        
+        return allowed_modes
+                
     def shortestPathToSetPublic(self, s, departure_time, targets, allowed_modes):
         q = Q.PriorityQueue()
         travel_times = {}
@@ -115,30 +140,25 @@ class Dijsktra:
                 #    print(v_min, self.graph.getNode(vid))
                     
                 if vid_type == self.graph.SUPER_NODE:
+                    #print("SUPER NODE:" + str(self.graph.getNode(vid)))
+                    #print(v_min)
                     if parent != -1:
                         parent_type = self.graph.getNode(parent)['type']
                         if parent_type == self.graph.TRANSPORTATION:
                             out_of_station = True
-                #for mode in allowed_modes:
                 start = time.time()
                 travel_times_neighbors = self.graph.getTravelTimeToNeighbors(vid, arrival_time, allowed_modes)
                 time_neig += (time.time()-start)
                 
-                #if mode == self.graph.PUBLIC:
-                #    print(travel_times_neighbors)
                 for to in travel_times_neighbors:
                     if to not in closed_set:
                         if out_of_station and self.graph.getNode(to)['type'] == self.graph.TRANSPORTATION:
                             continue
                         
-                        tt = travel_times_neighbors[to]
+                        tt, _ = travel_times_neighbors[to]
                         total_tt = travel_time + tt
                         arrival_time_to = arrival_time + timedelta(seconds=tt)
                         
-                        #edge = self.graph.getEdge(vid, to)
-                        #if 'route_id' in edge and edge['route_id'] == "17449_700":
-                        #    print(total_tt, to, arrival_time_to, vid)
-                            
                         q.put((total_tt, to, arrival_time_to, vid))
                         
         print(time_neig)                        

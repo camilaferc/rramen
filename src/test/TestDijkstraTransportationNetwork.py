@@ -3,13 +3,17 @@ Created on Oct 21, 2019
 
 @author: camila
 '''
-from load.LoadMultimodalNetwork import LoadMultimodalNetwork
-from shortest_path.Dijkstra import Dijsktra
-import random
 from _datetime import datetime
 from datetime import timedelta
-import time
+import random
 import sys
+import time
+
+from database.PostgisDataManager import PostgisDataManager
+from load.LoadMultimodalNetwork import LoadMultimodalNetwork
+from shortest_path.Dijkstra import Dijsktra
+from web.server_rr_test import createVirtualNodeEdge
+
 
 def test():
     load = LoadMultimodalNetwork("berlin")
@@ -17,7 +21,8 @@ def test():
     
     #nodes in the road network = 38728
     max_id = 38728
-    targets = set()
+    targets_public = set()
+    targets_private = set()
     
     '''
     s = random.randint(0, max_id)
@@ -25,13 +30,15 @@ def test():
     for i in range(5):
         targets.add(random.randint(0, max_id))
     '''
-        
+    
+    '''   
     s = 35558
     targets.add(25355)
     targets.add(25084)
     targets.add(30140)
     targets.add(11809)
     targets.add(19091)
+    '''
     
     '''
     s = 34443
@@ -56,19 +63,43 @@ def test():
     s = 20653
     targets.add(1678)
     '''
+    dataManager = PostgisDataManager()
+    startLat = 52.52188
+    startLon = 13.411008
     
-    print(str(s) + ":" + str(graph.getNode(s)))
+    targetLat = 52.509553
+    targetLon = 13.375474
+    
+    timestamp = datetime(2019, 11, 20, 20, 24, 0)
+    
     dij = Dijsktra(graph)
     
-    timestamp = datetime(2019, 10, 28, 18, 0, 0)
+    
+    (edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat) = dataManager.getClosestEdgeByClass(startLat, startLon, "berlin", graph.PEDESTRIAN_WAYS)
+    s_public = createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, osm_source, osm_target, source_ratio)
+    
+    
+    
+    (edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat) = dataManager.getClosestEdgeByClass(targetLat, targetLon, "berlin", graph.PEDESTRIAN_WAYS)
+    print(edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat)
+    t_public = createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, osm_source, osm_target, source_ratio)
+    print(t_public, graph.graph[t_public])
+    targets_public.add(t_public)
+    
+    #targets_public.add(graph.osmMapping[3697399470])
+    
+    print(str(s_public) + ":" + str(graph.getNode(s_public)))
+    print(targets_public)
+    
     
     start = time.time()
-    dij.shortestPathToSetPublic(s, timestamp, targets, {graph.PEDESTRIAN, graph.PUBLIC})
+    dij.shortestPathToSetPublic(s_public, timestamp, targets_public, {graph.PEDESTRIAN, graph.PUBLIC})
     total = time.time() - start
     print ("Process time: " + str(total))
     
+    '''
     start = time.time()
-    path = dij.reconstructPathToNode(30140)
+    path = dij.reconstructPathToNode(t_public)
     total = time.time() - start
     print ("Process time: " + str(total))
     
@@ -78,6 +109,8 @@ def test():
     for node in path:
         if previous != -1:
             edge = graph.getEdge(previous, node)
+            #if "original_edge_id" in edge:
+            #    print(edge["original_edge_id"])
             ##print(previous, node, edge)
             tt1 = sys.maxsize
             tt2 = sys.maxsize
@@ -91,15 +124,24 @@ def test():
         previous = node
     
     '''
-    neig = graph.getTravelTimeToNeighbors(51629, timestamp, {graph.PEDESTRIAN, graph.PUBLIC})
-    for n in neig:
-        print(graph.getNode(n), neig[n])
+        
     '''
+    (edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat) = dataManager.getClosestEdge(startLat, startLon, "berlin")
+    s_private = createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, osm_source, osm_target, source_ratio)
+    
+    (edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat) = dataManager.getClosestEdge(targetLat, targetLon, "berlin")
+    
+    print(edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat)
+    t_private = createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, osm_source, osm_target, source_ratio)
+    print(t_private, graph.graph[t_private])
+    targets_private.add(t_private)
     
     start = time.time()
-    dij.shortestPathToSetPrivate(s, timestamp, targets, {graph.PRIVATE})
+    dij.shortestPathToSetPrivate(s_private, timestamp, targets_private)
     total = time.time() - start
     print ("Process time: " + str(total))
+    '''
+    
     
     '''
     start = time.time()
@@ -108,8 +150,8 @@ def test():
     print ("Process time: " + str(total))
     #for node in path:
     #    print(node, graph.getNode(node))
-    
     '''
+    
     
      
 test()
