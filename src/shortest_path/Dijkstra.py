@@ -23,6 +23,18 @@ class Dijsktra:
             parents[s] = parents_s
         return travel_times, parents
     
+    def manyToManyPublic(self, sources, targets, departure_time, removed_routes = None):
+        travel_times = {}
+        parents = {}
+        for s in sources:
+            if not removed_routes:
+                travel_times_s, parents_s = self.shortestPathToSetPublic(s, departure_time, targets, {self.graph.PEDESTRIAN, self.graph.PUBLIC})
+            else:
+                travel_times_s, parents_s = self.shortestPathToSetPublicRoutesRemoved(s, departure_time, targets, {self.graph.PEDESTRIAN, self.graph.PUBLIC}, removed_routes)
+            travel_times[s] = travel_times_s
+            parents[s] = parents_s
+        return travel_times, parents
+    
     def shortestPathToSetPrivate(self, s, departure_time, targets):
         q = Q.PriorityQueue()
         travel_times = {}
@@ -100,7 +112,7 @@ class Dijsktra:
         travel_times = {}
         closed_set = set()
         targets = set(targets)
-        self.parents = {}
+        parents = {}
         
         q.put((0, s, departure_time, -1))
         
@@ -120,7 +132,7 @@ class Dijsktra:
             if vid not in closed_set:
                 closed_set.add(vid)
                 parent = v_min[3]
-                self.parents[vid] = parent
+                parents[vid] = parent
             
                 if vid in targets:
                     print(str(vid) + ":" + str(travel_time) + " " + str(self.graph.getNode(vid)))
@@ -130,7 +142,7 @@ class Dijsktra:
                     if not targets:
                         #print(heapNodes)
                         print(time_neig)
-                        return travel_times
+                        return travel_times, parents
                 
                 #checking if v_min is a super node to avoid re-expanding the transportation nodes
                 out_of_station = False
@@ -162,14 +174,15 @@ class Dijsktra:
                         q.put((total_tt, to, arrival_time_to, vid))
                         
         print(time_neig)                        
-        return travel_times
+        return travel_times, parents
     
-    def shortestPathToSet(self, s, departure_time, targets, allowed_modes):
+    
+    def shortestPathToSetPublicRoutesRemoved(self, s, departure_time, targets, allowed_modes, removed_routes):
         q = Q.PriorityQueue()
         travel_times = {}
         closed_set = set()
         targets = set(targets)
-        self.parents = {}
+        parents = {}
         
         q.put((0, s, departure_time, -1))
         
@@ -188,7 +201,84 @@ class Dijsktra:
             #print(vid, travel_time)
             if vid not in closed_set:
                 closed_set.add(vid)
-                self.parents[vid] = v_min[3]
+                parent = v_min[3]
+                parents[vid] = parent
+            
+                if vid in targets:
+                    print(str(vid) + ":" + str(travel_time) + " " + str(self.graph.getNode(vid)))
+                    travel_times[vid] = travel_time
+                    targets.remove(vid)
+                
+                    if not targets:
+                        #print(heapNodes)
+                        print(time_neig)
+                        return travel_times, parents
+                
+                #checking if v_min is a super node to avoid re-expanding the transportation nodes
+                out_of_station = False
+                vid_type = self.graph.getNode(vid)['type']
+                
+                #if vid_type == self.graph.SUPER_NODE:
+                #    print(v_min, self.graph.getNode(vid))
+                    
+                if vid_type == self.graph.SUPER_NODE:
+                    #print("SUPER NODE:" + str(self.graph.getNode(vid)))
+                    #print(v_min)
+                    if parent != -1:
+                        parent_type = self.graph.getNode(parent)['type']
+                        if parent_type == self.graph.TRANSPORTATION:
+                            out_of_station = True
+                start = time.time()
+                travel_times_neighbors = self.graph.getTravelTimeToNeighbors(vid, arrival_time, allowed_modes)
+                time_neig += (time.time()-start)
+                
+                for to in travel_times_neighbors:
+                    if to not in closed_set:
+                        
+                        nodeTo = self.graph.getNode(to)
+                        if "route_id" in nodeTo:
+                            if nodeTo["route_id"] in removed_routes:
+                                #print("Removed route:" + str(nodeTo))
+                                continue;
+                        
+                        
+                        if out_of_station and nodeTo['type'] == self.graph.TRANSPORTATION:
+                            continue
+                        
+                        tt, _ = travel_times_neighbors[to]
+                        total_tt = travel_time + tt
+                        arrival_time_to = arrival_time + timedelta(seconds=tt)
+                        
+                        q.put((total_tt, to, arrival_time_to, vid))
+                        
+        print(time_neig)                        
+        return travel_times, parents
+    
+    def shortestPathToSet(self, s, departure_time, targets, allowed_modes):
+        q = Q.PriorityQueue()
+        travel_times = {}
+        closed_set = set()
+        targets = set(targets)
+        parents = {}
+        
+        q.put((0, s, departure_time, -1))
+        
+        time_neig = 0
+        
+        while not q.empty():
+            v_min = q.get()
+            
+            #if not v_min:
+            #    print(heap)
+                
+            travel_time = v_min[0]
+            vid = v_min[1]
+            arrival_time = v_min[2]
+            
+            #print(vid, travel_time)
+            if vid not in closed_set:
+                closed_set.add(vid)
+                parents[vid] = v_min[3]
             
                 if vid in targets:
                     print(str(vid) + ":" + str(travel_time) + " " + str(self.graph.getNode(vid)))

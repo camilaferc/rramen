@@ -77,6 +77,8 @@ class PiecewiseLinearFunction(TravelTimeFunction):
     def getTravelTime(self, arrival_time):
         total_sec = TimeUtil.getTotalSeconds(arrival_time)
         pos = int(total_sec/self.interval_length)
+        if pos > len(self.list_functions):
+            pos = (pos % len(self.list_functions)) - 1
         linear_function = self.list_functions[pos]
         return linear_function.getValue(total_sec)
         

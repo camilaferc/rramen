@@ -97,6 +97,7 @@ class GTFSImporter:
         self.createTableStopTimes()
         self.createTableLinks()
         self.createTableTransfers()
+        self.createTableRoutesGeometry()
         
     def populateTables(self):
         #self.populateTableAgency()
@@ -107,6 +108,7 @@ class GTFSImporter:
         #self.populateTableStopTimes()
         self.populateTableLinks()
         #self.populateTableTransfers()
+        #self.populateTableRoutesGeometry()
     
     
     def createTableAgency(self):
@@ -258,6 +260,19 @@ class GTFSImporter:
         """
         sql = sql.format(self.region)
         self.conn.executeCommand(sql)
+    
+    def createTableRoutesGeometry(self):
+        sql = """
+        CREATE TABLE IF NOT EXISTS routes_geometry_{0} (
+            route_id varchar NOT NULL,
+            route_short_name varchar NOT NULL,
+            stops bigint[] NOT NULL,
+            route_geom geometry NOT NULL,
+            CONSTRAINT routes_geometry_{0}_pkey PRIMARY KEY (route_id)
+        );
+        """
+        sql = sql.format(self.region)
+        self.conn.executeCommand(sql)
         
     def populateTableRoutes(self):
         fName = self.gtfs_dir + self.ROUTES_FILE
@@ -284,6 +299,62 @@ class GTFSImporter:
         finally:
             if f is not None:
                 f.close()   
+    
+    def populateTableRoutesGeometry(self):
+        sql_insert = """INSERT INTO routes_geometry_{0}(route_id, route_short_name, stops, route_geom) 
+                 VALUES ('{1}', '{2}', '{3}', {4});
+            """
+        try:
+            sql_routes = """SELECT route_id, route_short_name FROM routes_{0};
+            """
+            sql_routes = sql_routes.format(self.region)
+            cursor = self.conn.getCursor()
+            cursor.execute(sql_routes)
+            routes = {}
+            
+            row = cursor.fetchone()
+            
+            while row is not None:
+                (route_id, route_short_name) = row
+                routes[route_id] = route_short_name
+                row = cursor.fetchone()
+            
+            sql_stops = """select st.stop_id, s.stop_lat, s.stop_lon from stop_times_{0} st, stops_{0} s
+                            where trip_id = (SELECT trip_id from trips_{0} where route_id ='{1}'  LIMIT 1) and
+                            st.stop_id = s.stop_id
+                            ORDER BY stop_sequence;
+                        """
+            for route in routes:
+                print(route)
+                stops = []
+                sql_stops_route = sql_stops.format(self.region, route)
+                cursor.execute(sql_stops_route)
+                row = cursor.fetchone()
+                
+                geometry = "ST_GeomFromText('LINESTRING("
+                while row is not None:
+                    (stop_id, lat, lon) = row
+                    stops.append(stop_id)
+                    geometry += str(lon) + " " + str(lat) + ","
+                    row = cursor.fetchone()
+                geometry = geometry[:-1]
+                geometry += ")')"
+                
+                str_stops = str(stops)
+                str_stops = str_stops[1:-1]
+                str_stops = "{" + str_stops + "}"
+                
+                sql_insert_route = sql_insert.format(self.region, route, routes[route], str_stops, geometry)
+                self.conn.executeCommand(sql_insert_route)
+                print("INSERTED!")
+                
+   
+        except IOError as e:
+            print("I/O error({0}): {1}".format(e.errno, e.strerror))
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
+        except: 
+            print("Unexpected error:", sys.exc_info()[0])
         
     def createTableTrips(self):
         sql = """
@@ -486,7 +557,9 @@ class GTFSImporter:
         ids = []
         cur = self.conn.conn.cursor()
         
-        sql = """SELECT stop_id, stop_type from stops_{};"""
+        sql = """SELECT stop_id from stops_berlin
+                WHERE stop_type = 1
+                ORDER BY stop_id;"""
         sql = sql.format(self.region)
         
         # execute a statement
@@ -496,20 +569,25 @@ class GTFSImporter:
         row = cur.fetchone()
         
         while row is not None:
-            (id, stop_type) = row
-            if stop_type == 1:
-                ids.append(id)
+            (id,) = row
+            ids.append(id)
             row = cur.fetchone()
         return ids
     
     def populateTableLinks(self):
-        stop_ids = self.getParentsIds()
+        #stop_ids = self.getParentsIds()
+        stop_ids = [900000310579,
+                    900000310553,
+                    900000310558,
+                    900000310559,
+                    900000310571]
         sql = """INSERT INTO links_%s(link_id, stop_id, edge_id, osm_source, osm_target, edge_dist, source_ratio, edge_length, point_location, 
                 source_point_geom, point_target_geom) 
                  VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
             """
         records = []
-        link_id = 0
+        #link_id = 0
+        link_id= 13068
         try:
             cursor = self.conn.conn.cursor()
             sql_select = """SELECT stop_id, edge_id, osm_source, osm_target,
@@ -538,8 +616,15 @@ class GTFSImporter:
                                          point_location, source_point_geom, point_target_geom))
                 link_id += 1
                 
+                if link_id%100 == 0:
+                    print("Committing...")
+                    cursor.executemany(sql, records)
+                    self.conn.conn.commit()
+                    records = []
+                    
             cursor.executemany(sql, records)
-            self.conn.conn.commit()
+            self.conn.conn.commit()   
+                
    
         except IOError as e:
             print("I/O error({0}): {1}".format(e.errno, e.strerror))

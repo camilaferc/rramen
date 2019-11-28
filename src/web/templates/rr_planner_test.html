@@ -160,6 +160,56 @@
 				position: relative;
   				top:3px; 
 			}
+			
+			/* Remove default bullets */
+			ul, #list_routes {
+  				list-style-type: none;
+			}
+
+			/* Remove margins and padding from the parent ul */
+			#list_routes {
+  				margin: 5px;
+  				padding: 0;
+			}
+
+			/* Style the caret/arrow */
+			.caret {
+  				cursor: pointer;
+  				user-select: none; /* Prevent text selection */
+			}
+
+			/* Create the caret/arrow with a unicode, and style it */
+			.caret::before {
+  				content: "\25B6";
+  				color: #007CE2;
+  				display: inline-block;
+  				margin-right: 6px;
+			}
+
+			/* Rotate the caret/arrow icon when clicked on (using JavaScript) */
+			.caret-down::before {
+  				transform: rotate(90deg);
+			}
+
+			/* Hide the nested list */
+			.nested {
+  				display: none;
+			}
+
+			/* Show the nested list when the user clicks on the caret/arrow (with JavaScript) */
+			.active {
+  				display: block;
+			}
+			
+			.checkbox_list_parent {
+  				vertical-align: middle;
+  				float: right;
+			}
+			
+			.checkbox_list {
+  				vertical-align: middle;
+  				display:inline;
+  				float: right;
 
         </style>
     </head>
@@ -194,7 +244,12 @@
 				<button  id="new_target" class="button-add" value="Add" onClick="addTarget()" style="display:none;">+</button>
 				</div>
 				<div class="input" id="input_target"></div>
-				<br>
+				<br><br>
+				<div id="routes_list_div" style="width: 200px;">
+					<ul id="list_routes">
+					</ul>
+				</div>
+				<br><br>
                 <select id="select_departure" onchange="departure(this.value)" class="dropdown">
   					<option value="now">Leave now</option>
   					<option value="later">Depart at</option>
@@ -238,6 +293,95 @@
                 if (e && e.error !== 'Error: Not Found')
                     console.error(e);
             });
+
+            routes = {{routes|safe}}
+
+            for (var trans_type in routes) {
+            	//console.log(child);
+            	buildRouteList(trans_type, routes[trans_type]);
+        	}
+
+        	function buildRouteList(trans_type, routes){
+
+            	var list = document.getElementById('list_routes');
+            	
+            	var entry = document.createElement('li');
+        	    var span = document.createElement('span');
+        	    span.classList.add('caret');
+        	    entry.appendChild(span);
+        	    entry.appendChild(document.createTextNode(trans_type));
+        	    var checkbox = document.createElement("INPUT");
+        	    checkbox.setAttribute("type", "checkbox");
+        	    checkbox.setAttribute("id", "c" + trans_type);
+        	    checkbox.classList.add('checkbox_list_parent');
+        	    checkbox.checked = true;
+        	    entry.appendChild(checkbox);
+        	    entry.setAttribute("id", "n"+ trans_type);
+        	    list.appendChild(entry);
+
+        	    var entry_ul = document.createElement('ul');
+        	    entry_ul.classList.add('nested');
+        	    entry_ul.setAttribute("id", "ul_"+trans_type);
+        	    entry_ul.style.width = "80px";
+        	    //entry_ul.style.float = "right";
+        	    entry.appendChild(entry_ul);
+
+        	    for (var route in routes) {
+        	    	var entry_child = document.createElement('li');
+        	    	entry_child.appendChild(document.createTextNode(route));
+            	    var checkbox = document.createElement("INPUT");
+            	    checkbox.setAttribute("type", "checkbox");
+            	    checkbox.setAttribute("id", routes[route]);
+            	    checkbox.classList.add('checkbox_list');
+            	    checkbox.checked = true;
+            	    entry_child.appendChild(checkbox);
+            	    entry_child.setAttribute("id", "l" + routes[route]);
+            	    entry_child.style.overflow = "hidden";
+            	    entry_ul.appendChild(entry_child);
+        	    }
+
+            }
+
+            var toggler = document.getElementsByClassName("caret");
+            var i;
+
+            for (i = 0; i < toggler.length; i++) {
+              //console.log(toggler[i])
+              toggler[i].addEventListener("click", function() {
+                this.parentElement.querySelector(".nested").classList.toggle("active");
+                this.classList.toggle("caret-down");
+              });
+            }
+
+            const checkboxes = document.getElementsByClassName("checkbox_list");
+            //console.log(checkboxes);
+            for (i = 0; i < checkboxes.length; i++) {
+            	checkboxes[i].addEventListener("change", function() {
+                	var route_id = this.id; 
+                	if(this.checked) {
+                        console.log(this.id + " checked")
+                        var route_data = {"route_id": route_id}
+            			$.post("route", JSON.stringify(route_data) , function(res){
+							console.log(res)
+							route_geom = res["route_geom"]
+							console.log(route_geom)
+            				addRouteLayer(route_id, route_geom);
+                		});
+                           
+                    } else {
+                        // Checkbox is not checked..
+                    	console.log(this.id + " unchecked")
+
+                    	if (map.getLayer("route_"+ this.id)) {
+							map.removeLayer("route_"+ this.id);
+						}
+
+						if (map.getSource("route_"+ this.id)) {
+							map.removeSource("route_"+ this.id);
+						}
+                    }
+                });
+            }
 
             
             var targets = [];
@@ -884,13 +1028,20 @@
             		alert("Some coordinates are missing."); 
                	}
                	else {
+               		var not_checked = document.querySelectorAll('input[class="checkbox_list"]:not(:checked)');
+					var removed_routes = []               		
+               		for(var i = 0; i < not_checked.length; i+=1){
+                   		n = not_checked[i]
+                   		removed_routes.push(n.id)
+                   	}
+                   	console.log(removed_routes)
             		// ajax the JSON to the server
             		if(timestamp==-1){
             			timestamp = new Date().getTime();
                 	}
             		console.log(timestamp)
             		var data_input = {"sources": sources, "targets":targets, "timestamp":timestamp, "polygon_source_coords":polygon_source_coords,
-                		"polygon_target_coords": polygon_target_coords}
+                		"polygon_target_coords": polygon_target_coords, "removed_routes": removed_routes}
 
             		timestamp = -1
 					
@@ -908,7 +1059,7 @@
 			                    "data": res
 			                },
 		                    'paint': {
-		                    	'circle-radius': 6,
+		                    	'circle-radius': 8,
 		                    	// color circles by rr
 		                    	// https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions-match
 		                    	//'circle-color': [
@@ -928,40 +1079,7 @@
 			                   	//getColorGradient("#FF0000", "#0000FF", ['get', 'marker-color'])
 		                    }
 		                });
-		                /*
-		                map.addLayer({
-		                    "id": "paths_public_layer",
-		                    "type": "line",
-		                    "source": {
-			                    "type": "geojson",
-			                    "data": res["paths_public"]
-			                },
-			                "layout": {
-		                        "line-join": "round",
-		                        "line-cap": "round"
-		                    },
-		                    "paint": {
-		                        "line-color": "#223b53",
-		                        "line-width": 4
-		                    }
-		                });
-
-		                map.addLayer({
-		                    "id": "paths_private_layer",
-		                    "type": "line",
-		                    "source": {
-			                    "type": "geojson",
-			                    "data": res["paths_private"]
-			                },
-			                "layout": {
-		                        "line-join": "round",
-		                        "line-cap": "round"
-		                    },
-		                    "paint": {
-		                        "line-color": "#ff0000",
-		                        "line-width": 4
-		                    }
-		                });*/
+	
             		}); 
                	}        
             }
@@ -993,7 +1111,36 @@
                 });
             }
 
+            function addRouteLayer(route_id, geom){
+                console.log("Adding layer:" + route_id)
+            	map.addLayer({
+                    "id": "route_"+route_id,
+                    "type": "line",
+                    "source": {
+	                    "type": "geojson",
+	                    "data": geom
+	                },
+	                "layout": {
+                        "line-join": "round",
+                        "line-cap": "round"
+                    },
+                    'paint': {
+                    	"line-width": 6,
+                    	// color routes by type
+                    	// https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions-match
+                    	'line-color': getRandomColor()
+                    }
+                });
+            }
 
+            function getRandomColor() {
+            	  var letters = '0123456789ABCDEF';
+            	  var color = '#';
+            	  for (var i = 0; i < 6; i++) {
+            	    color += letters[Math.floor(Math.random() * 16)];
+            	  }
+            	  return color;
+            }
 
         </script>
 		

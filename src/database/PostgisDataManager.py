@@ -3,13 +3,16 @@ Created on Oct 31, 2019
 
 @author: camila
 '''
+import json
 import time
 
 from geojson import Feature, FeatureCollection
+from geojson.geometry import LineString
+from geojson import loads
 import psycopg2
-import json
 
 from database.PostGISConnection import PostGISConnection
+from gtfs import GTFS
 from network.MultimodalNetwork import MultimodalNetwork
 
 
@@ -51,6 +54,44 @@ class PostgisDataManager:
             return FeatureCollection(features)
         
         except (Exception, psycopg2.DatabaseError) as error:
+            print(error) 
+            
+    def getRoutes(self, region):
+        sql = """SELECT route_id, route_short_name, route_type
+                FROM routes_{};
+            ;   
+            """
+        sql = sql.format(region);
+        
+        try:
+            print("Loading routes...")
+            routes = {}
+            self.connection.connect();
+ 
+            cursor = self.connection.getCursor()
+            
+            cursor.execute(sql)
+            row = cursor.fetchone()
+            
+            while row is not None:
+                (route_id, name, route_type) = row
+                
+                #print(route_id, name, route_type)
+                
+                if route_type in GTFS.ROUTE_TYPE:
+                    trans_type = GTFS.ROUTE_TYPE[route_type]
+                    if trans_type in routes:
+                        list_routes = routes[trans_type]
+                        list_routes[name] = route_id
+                    else:
+                        routes[trans_type] = {name: route_id}
+                
+                row = cursor.fetchone()
+                    
+            self.connection.close()
+            return routes
+        
+        except (Exception, psycopg2.DatabaseError) as error:
             print(error)  
             
         
@@ -64,14 +105,14 @@ class PostgisDataManager:
                 WHERE ST_Within(target_location, polygon)
             ;   
             """
-        sql_polygon = "ST_MakePolygon( ST_GeomFromText('LINESTRING("
+        sql_polygon = "ST_Polygon('LINESTRING("
         
-        for c in coordinates:
+        for c in coordinates[0]:
             sql_polygon += str(c[0]) + " " + str(c[1]) + ","
         
         sql_polygon = sql_polygon[:-1]
         
-        sql_polygon += ")'))"
+        sql_polygon += ")'::geometry, 4326)"
         sql = sql.format(region, sql_polygon)
         
         try:
@@ -172,6 +213,29 @@ class PostgisDataManager:
             total = time.time() - start
             self.timeGeom += total
             return geometry
+        
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
+    
+    def getRouteGeometry(self, route_id, region):
+        sql = """SELECT ST_AsGeoJSON(route_geom) from routes_geometry_{}
+            WHERE route_id = '{}' ;    
+            """
+        sql = sql.format(region, route_id)
+        
+        try:
+            self.connection.connect();
+ 
+            cursor = self.connection.getCursor()
+            
+            cursor.execute(sql)
+            (geometry, ) = cursor.fetchone()
+            
+            #print(geometry)
+            
+            self.connection.close()
+            line = loads(geometry)
+            return LineString(line.coordinates)
         
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)
