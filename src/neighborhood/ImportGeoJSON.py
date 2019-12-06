@@ -17,8 +17,8 @@ class ImportGeoJSON:
     
     def parse(self):
         self.connection.connect()
-        #self.createTableNeighborhoods()
-        #self.parseFilesDirectory()
+        self.createTableNeighborhoods()
+        self.parseFilesDirectory()
         self.createTableNeighborhoodNodes()
         self.addPointsPolygon()
         self.connection.close()
@@ -65,7 +65,7 @@ class ImportGeoJSON:
         
     def addGeometryToDatabase(self, data):
         sql = """INSERT INTO neighborhoods_{0}(id, name, level, parent, polygon) 
-                 VALUES ({1}, '{2}', {3}, {4}, ST_GeomFromGeoJSON('{5}'));
+                 VALUES ({1}, '{2}', {3}, {4}, ST_SetSRID(ST_GeomFromGeoJSON('{5}'), 4326));
             """
         for feature in data['features']:
             nid = feature['properties']['id']
@@ -169,7 +169,8 @@ class ImportGeoJSON:
                  VALUES ({1}, '{2}', {3}, {4}, '{5}');
             """
         str_ids = str(ids)
-        sql_insert = sql_insert.format(self.region, nid, name, level, parent, ids)
+        #print(str_ids)
+        sql_insert = sql_insert.format(self.region, nid, name, level, parent, str_ids)
         self.connection.executeCommand(sql_insert)
             
         

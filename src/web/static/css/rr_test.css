@@ -1,0 +1,160 @@
+body {
+	margin: 0;
+	padding: 0;
+}
+
+#map {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: 80%;
+}
+
+.marker {
+	border: none;
+	cursor: pointer;
+	height: 32px;
+	width: 32px;
+	background-image: url(../images/marker.png);
+	background-color: rgba(0, 0, 0, 0);
+	transform: translate(28px, 56px, 0);
+}
+
+.marker_source {
+	border: none;
+	cursor: pointer;
+	height: 40px;
+	width: 40px;
+	background-image: url(../images/marker-40-orange.png);
+	background-color: rgba(0, 0, 0, 0);
+	transform: translate(28px, 56px, 0);
+}
+
+.marker_target {
+	border: none;
+	cursor: pointer;
+	height: 40px;
+	width: 40px;
+	background-image: url(../images/marker-40-green.png);
+	background-color: rgba(0, 0, 0, 0);
+	transform: translate(28px, 56px, 0);
+}
+
+.container {
+	height: 100%;
+	display: -webkit-flex;
+	display: flex;
+	-webkit-flex-direction: row;
+	flex-direction: row;
+}
+
+.fixed {
+	width: 20%;
+	min-width: 360px;
+}
+
+.flex-item {
+	flex-grow: 1;
+}
+
+.flatpickr-calendar {
+	font-size: 12px;
+}
+
+.button-image img {
+	display: block;
+	height: 16px;
+	width: 16px;
+}
+
+.button-marker {
+	background-color: white;
+	color: white;
+	padding: 4px;
+	text-align: center;
+	text-decoration: none;
+	display: inline-block;
+	cursor: pointer;
+	border-radius: 6px;
+	border: 1px solid #A0A0A0;
+	position: relative;
+	margin-right: 1px;
+	vertical-align: middle;
+}
+
+.button-add {
+	background-color: #007CE2;
+	color: white;
+	font-weight: bold;
+	font-size: 18px;
+	padding: 4px;
+	text-align: center;
+	line-height: 3px;
+	text-decoration: none;
+	display: inline;
+	cursor: pointer;
+	border-radius: 6px;
+	border: 1px solid #A0A0A0;
+	margin-left: 3px;
+	height: 26px;
+	width: 26px;
+	position: relative;
+	vertical-align: middle;
+}
+
+.button-clear {
+	background-color: #e7e7e7;
+	padding: 4px;
+	text-align: center;
+	text-decoration: none;
+	display: inline-block;
+	cursor: pointer;
+	border: 1px solid #A0A0A0;
+	position: relative;
+	top: 3px;
+	margin-right: 5px;
+	margin-left: 5px;
+}
+
+.dropdown {
+	background-color: #e7e7e7;
+	text-align: center;
+	text-decoration: none;
+	display: inline-block;
+	cursor: pointer;
+	border: 1px solid #A0A0A0;
+	position: relative;
+	top: 3px;
+	margin-right: 5px;
+	padding: 1px;
+	margin-left: 5px;
+}
+
+.button-results {
+	background-color: #007CE2;
+	color: white;
+	padding: 4px;
+	text-align: center;
+	text-decoration: none;
+	display: inline-block;
+	cursor: pointer;
+	border: 1px solid #A0A0A0;
+	position: relative;
+	top: 3px;
+}
+
+.input-text {
+	text-align: left;
+	height: 24px;
+	margin-right: 4px;
+	position: relative;
+}
+
+.calendar-text {
+	text-align: left;
+	height: 24px;
+	margin-right: 4px;
+	position: relative;
+	top: 3px;
+}
+

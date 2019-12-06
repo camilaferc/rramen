@@ -53,21 +53,27 @@ MANY_TO_MANY = 2
 def mapbox_gl():
     global graph
     
-    if not graph:
-        load = LoadMultimodalNetwork("berlin")
-        graph = load.load()
+    #if not graph:
+    #    load = LoadMultimodalNetwork("berlin")
+    #    graph = load.load()
     
+    polygons = dataManager.getNeighborhoodsPolygons(region)
     return render_template('rr_test.html', 
-        ACCESS_KEY=MAPBOX_ACCESS_KEY
+        ACCESS_KEY=MAPBOX_ACCESS_KEY,
+        polygons = polygons
     )
+    
+    #return render_template('rr_test.html', 
+    #    ACCESS_KEY=MAPBOX_ACCESS_KEY
+    #)
 
 @app.route('/rr_planner_test')
 def rr_planner():
     global graph, dataManager, region
     
-    if not graph:
-        load = LoadMultimodalNetwork("berlin")
-        graph = load.load()
+    #if not graph:
+    #    load = LoadMultimodalNetwork("berlin")
+    #    graph = load.load()
     
     routes = dataManager.getRoutes(region)
     return render_template('rr_planner_test.html', 
@@ -129,6 +135,7 @@ def worker():
     targets_coordinates = data['targets']
     polygon_source_coords = data['polygon_source_coords']
     polygon_target_coords = data['polygon_target_coords']
+    selected_neighborhoods = data['selected_neighborhoods']
     
     removed_routes = None
     if "removed_routes" in data and data["removed_routes"]:
@@ -148,24 +155,29 @@ def worker():
         print("Target is a polygon")
         targets_private, targets_public = getNodesWithinPolygon(polygon_target_coords, "target")
     
+    elif selected_neighborhoods:
+        print("Target is a neighborhood")
+        targets_private, targets_public = getNodesWithinNeighborhoods(selected_neighborhoods, "target")
+    
+    '''
     print(sources_private)
     print(sources_public)
     print(targets_private)
     print(targets_public)
+    '''
     
-    print("maps:")
-    print(map_source_coord)
-    print(map_target_coord)
+    #print("maps:")
+    #print(map_source_coord)
+    #print(map_target_coord)
     
     #timestamp = datetime.today()
     time = data['timestamp']
     timestamp = datetime.fromtimestamp(time/1000)
     print(timestamp)
     
-    
     tt_public, tt_private, node_colors, colored_type = computeRelativeReachability(sources_public, targets_public, sources_private, targets_private, 
                                                                                    timestamp, removed_routes)
-    print(node_colors)
+    #print(node_colors)
     
     if colored_type == "source":
         map_coord = map_source_coord
@@ -173,7 +185,7 @@ def worker():
         map_coord = map_target_coord
     
     markers = []
-    print(map_coord)
+    #print(map_coord)
     for n in node_colors:
         n_coord = map_coord[n]
         point = Point([n_coord[1], n_coord[0]])
@@ -182,10 +194,7 @@ def worker():
         markers.append(feature)
     
     gc = FeatureCollection(markers)
-    #print(gc)
     return gc
-    #return dumps(res)
-    #return gc, ml_public
     
 
 def getNodesFromMarkersCoordinates(coordinates, location_type): 
@@ -248,7 +257,40 @@ def getNodesWithinPolygon(polygon_coordinates, location_type):
         id_map_private[i] = node_id
         i+=1
     
-    return nodes, nodes      
+    return nodes, nodes  
+
+
+def getNodesWithinNeighborhoods(selected_neighborhoods, location_type):
+    global map_source_coord, map_target_coord
+    global id_map_source_public, id_map_source_private, id_map_target_private, id_map_target_public
+    #print(selected_neighborhoods)
+    neig_points = dataManager.getPointsWithinNeighborhoods(region, selected_neighborhoods)
+    #print(neig_points)
+    print(len(neig_points))
+    if location_type == "source":
+        map_coord = map_source_coord
+        id_map_public = id_map_source_public
+        id_map_private = id_map_source_private
+    else:
+        map_coord = map_target_coord
+        id_map_public = id_map_target_public
+        id_map_private = id_map_target_private
+    
+    nodes = set()
+    osm_mapping = graph.getOsmMapping()
+    i = 0
+    for p in neig_points:
+        node_id = osm_mapping[p]
+        nodes.add(node_id)
+        node = graph.getNode(node_id)
+        
+        map_coord[i] = (node['lat'], node['lon']) 
+        
+        id_map_public[i] = node_id
+        id_map_private[i] = node_id
+        i+=1
+    
+    return nodes, nodes     
         
     
 @app.route('/receiver_region', methods = ['POST', 'GET'])
@@ -461,7 +503,7 @@ def colorSources(tt_public, tt_private):
                         num_public += 1
                     num_total += 1
                 else:
-                    print("Node node found by both:" +  str(t_public) + "," + str(t_private))
+                    print("Node found by both:" +  str(t_public) + "," + str(t_private))
             if num_total > 0:
                 node_colors[i] = float(num_public/num_total)
             else:
@@ -486,11 +528,11 @@ def colorTargets(tt_public, tt_private):
                 t_private = id_map_target_private[j]
                 #print(t_public, t_private)
                 num_public = 0
-                if t_public not in tt_public_s:
-                    print(str(t_public) + " not found by public transit")
-                    #node_colors[j] = 0.5
-                elif t_private not in tt_private_s:
-                    print(str(t_private) + " not found by public transit")
+                if t_public not in tt_public_s or t_private not in tt_private_s:
+                    if t_public not in tt_public_s:
+                        print(str(t_public) + " not found by public transit")
+                    else:
+                        print(str(t_private) + " not found by car")
                     #node_colors[j] = 0.5
                 else: 
                     if tt_public_s[t_public] <=  tt_private_s[t_private]:

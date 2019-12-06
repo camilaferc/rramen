@@ -57,9 +57,25 @@ class PostgisDataManager:
             print(error) 
             
     def getRoutes(self, region):
-        sql = """SELECT route_id, route_short_name, route_type
-                FROM routes_{};
-            ;   
+        #sql = """SELECT route_id, route_short_name, route_type
+        #        FROM routes_{}
+        #        WHERE ;
+        #    ;   
+        #    """
+        '''
+        sql = """
+                SELECT r.route_id, r.route_short_name, r.route_type
+                FROM routes_{0} r, routes_geometry_{0} rg
+                WHERE r.route_id = rg.route_id and
+                ST_Intersects(rg.route_geom, 
+                (SELECT polygon from neighborhoods_{0} where level = (SELECT min(level) FROM neighborhoods_{0}))
+            );
+            """
+        '''
+            
+        sql = """ SELECT r.route_id, r.route_short_name, r.route_type
+            FROM routes_{0} r
+            WHERE r.route_id in (SELECT route_id from routes_geometry_{0});
             """
         sql = sql.format(region);
         
@@ -93,8 +109,7 @@ class PostgisDataManager:
         
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)  
-            
-        
+    
     def getPointsWithinPolygon(self, region, coordinates):
         sql = """SELECT osm_source_id as id FROM roadnet_{0} as p,
                 (SELECT {1}  as polygon) as pol
@@ -134,7 +149,34 @@ class PostgisDataManager:
         
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)
-
+    
+    
+    def getPointsWithinNeighborhoods(self, region, selected_neig):
+        sql = """SELECT nodes from neighborhood_nodes_{0} where id = {1};   
+            """
+        points = []
+        try:
+            self.connection.connect();
+ 
+            cursor = self.connection.getCursor()
+            
+            for n in selected_neig:
+                #print(n)
+                sql_neig = sql.format(region, n)
+                cursor.execute(sql_neig)
+                (nodes, ) = cursor.fetchone()
+                #print(nodes)
+                points.extend(nodes)
+                #print(len(points))
+            
+            
+            self.connection.close()
+            return points
+        
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
+            
+    
     def getClosestEdge(self, lat, lon, region):
         sql = """SELECT id, osm_source_id, osm_target_id, 
                 ST_LineLocatePoint(geom_way, point) as source_ratio,

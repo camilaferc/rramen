@@ -106,9 +106,9 @@ class GTFSImporter:
         #self.populateTableRoutes()
         #self.populateTableTrips()
         #self.populateTableStopTimes()
-        self.populateTableLinks()
+        #self.populateTableLinks()
         #self.populateTableTransfers()
-        #self.populateTableRoutesGeometry()
+        self.populateTableRoutesGeometry()
     
     
     def createTableAgency(self):
@@ -305,7 +305,13 @@ class GTFSImporter:
                  VALUES ('{1}', '{2}', '{3}', {4});
             """
         try:
-            sql_routes = """SELECT route_id, route_short_name FROM routes_{0};
+            sql_routes = """
+                    SELECT route_id, route_short_name FROM routes_{0};
+            """
+            
+            sql_geometry = """
+                    SELECT ST_Intersects({1}, 
+                    (SELECT polygon from neighborhoods_{0} where level = (SELECT min(level) FROM neighborhoods_{0})));
             """
             sql_routes = sql_routes.format(self.region)
             cursor = self.conn.getCursor()
@@ -338,15 +344,21 @@ class GTFSImporter:
                     geometry += str(lon) + " " + str(lat) + ","
                     row = cursor.fetchone()
                 geometry = geometry[:-1]
-                geometry += ")')"
+                geometry += ")', 4326)"
                 
-                str_stops = str(stops)
-                str_stops = str_stops[1:-1]
-                str_stops = "{" + str_stops + "}"
-                
-                sql_insert_route = sql_insert.format(self.region, route, routes[route], str_stops, geometry)
-                self.conn.executeCommand(sql_insert_route)
-                print("INSERTED!")
+                sql_geometry_id = sql_geometry.format(self.region, geometry)
+                cursor.execute(sql_geometry_id)
+                (intersects, ) = cursor.fetchone()
+                if intersects:
+                    str_stops = str(stops)
+                    str_stops = str_stops[1:-1]
+                    str_stops = "{" + str_stops + "}"
+                    
+                    sql_insert_route = sql_insert.format(self.region, route, routes[route], str_stops, geometry)
+                    self.conn.executeCommand(sql_insert_route)
+                    print("INSERTED!")
+                else:
+                    print(str(route) + "does not intersect the region")
                 
    
         except IOError as e:
@@ -575,19 +587,13 @@ class GTFSImporter:
         return ids
     
     def populateTableLinks(self):
-        #stop_ids = self.getParentsIds()
-        stop_ids = [900000310579,
-                    900000310553,
-                    900000310558,
-                    900000310559,
-                    900000310571]
+        stop_ids = self.getParentsIds()
         sql = """INSERT INTO links_%s(link_id, stop_id, edge_id, osm_source, osm_target, edge_dist, source_ratio, edge_length, point_location, 
                 source_point_geom, point_target_geom) 
                  VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
             """
         records = []
-        #link_id = 0
-        link_id= 13068
+        link_id = 0
         try:
             cursor = self.conn.conn.cursor()
             sql_select = """SELECT stop_id, edge_id, osm_source, osm_target,

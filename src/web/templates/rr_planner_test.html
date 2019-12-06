@@ -13,205 +13,12 @@
 		<link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.0.9/mapbox-gl-draw.css' type='text/css' />
 		
 		<script type="text/javascript" src="static/js/color_gradient.js?1"></script>
+		
+		<script type="text/javascript" src="static/js/polygon.js?12"></script>
+		
+		<link rel="stylesheet" type="text/css" href="static/css/rr_planner.css?9">
+		<script type="text/javascript" src="static/js/routes.js?162"></script>
         
-        
-        <style>
-            body { margin:0; padding:0; }
-            #map { position:absolute; top:0; bottom:0; width: 80%; }
-            .marker {
-    			border: none;
-    			cursor: pointer;
-    			height: 32px;
-    			width: 32px;
-    			background-image: url(static/marker.png);
-    			background-color: rgba(0, 0, 0, 0);
-    			transform: translate(28px, 56px, 0);
-			}
-			.marker_source {
-    			border: none;
-    			cursor: pointer;
-    			height: 40px;
-    			width: 40px;
-    			background-image: url(static/marker-40-orange.png);
-    			background-color: rgba(0, 0, 0, 0);
-    			transform: translate(28px, 56px, 0);
-			}
-			.marker_target {
-    			border: none;
-    			cursor: pointer;
-    			height: 40px;
-    			width: 40px;
-    			background-image: url(static/marker-40-green.png);
-    			background-color: rgba(0, 0, 0, 0);
-    			transform: translate(28px, 56px, 0);
-			}
-			.container{
-    			height: 100%;
-    			display: -webkit-flex;
-    			display: flex;
-    			-webkit-flex-direction: row;
-    			flex-direction: row;
-			}
-			.fixed{
-    			width: 20%;
-    			min-width: 360px;
-			}
-			.flex-item{
-    			flex-grow: 1;
-			}
-			.flatpickr-calendar{
-				font-size: 12px;
-			}
-			
-			.button-image img {
-    			display: block;
-    			height: 16px;  
-    			width: 16px;
-			}
-			
-			.button-marker {
-				background-color: white;
-  				color: white;
-  				padding: 4px;
-  				text-align: center;
-  				text-decoration: none;
-  				display: inline-block;
-  				cursor: pointer;
-  				border-radius: 6px;
-  				border: 1px solid #A0A0A0;
-  				position: relative;
-  				margin-right: 1px;
-  				vertical-align:middle;
-			}
-			
-			.button-add {
-				background-color: #007CE2;
-				color: white;
-				font-weight: bold;
-				font-size: 18px;
-  				padding: 4px;
-  				text-align: center;
-    			line-height: 3px;
-  				text-decoration: none;
-  				display: inline;
-  				cursor: pointer;
-  				border-radius: 6px;
-  				border: 1px solid #A0A0A0;
-  				margin-left: 3px;
-  				height: 26px;  
-    			width: 26px;
-    			position: relative;
-    			vertical-align:middle;
-    			
-			}
-			
-			.button-clear {
-				background-color: #e7e7e7;
-  				padding: 4px;
-  				text-align: center;
-  				text-decoration: none;
-  				display: inline-block;
-  				cursor: pointer;
-  				border: 1px solid #A0A0A0;
-  				position: relative;
-  				top:3px; 
-  				margin-right: 5px;
-  				margin-left: 5px;
-			}
-			
-			.dropdown {
-				background-color: #e7e7e7;
-  				text-align: center;
-  				text-decoration: none;
-  				display: inline-block;
-  				cursor: pointer;
-  				border: 1px solid #A0A0A0;
-  				position: relative;
-  				top:3px; 
-  				margin-right: 5px;
-  				padding: 1px;
-  				margin-left: 5px;
-			}
-			
-			.button-results {
-				background-color: #007CE2;
-				color: white;
-  				padding: 4px;
-  				text-align: center;
-  				text-decoration: none;
-  				display: inline-block;
-  				cursor: pointer;
-  				border: 1px solid #A0A0A0;
-  				position: relative;
-  				top:3px; 
-			}
-			
-			.input-text{
-				text-align: left;
-				height:24px;
-				margin-right:4px;
-				position: relative;
-			}
-			
-			.calendar-text{
-				text-align: left;
-				height:24px;
-				margin-right:4px;
-				position: relative;
-  				top:3px; 
-			}
-			
-			/* Remove default bullets */
-			ul, #list_routes {
-  				list-style-type: none;
-			}
-
-			/* Remove margins and padding from the parent ul */
-			#list_routes {
-  				margin: 5px;
-  				padding: 0;
-			}
-
-			/* Style the caret/arrow */
-			.caret {
-  				cursor: pointer;
-  				user-select: none; /* Prevent text selection */
-			}
-
-			/* Create the caret/arrow with a unicode, and style it */
-			.caret::before {
-  				content: "\25B6";
-  				color: #007CE2;
-  				display: inline-block;
-  				margin-right: 6px;
-			}
-
-			/* Rotate the caret/arrow icon when clicked on (using JavaScript) */
-			.caret-down::before {
-  				transform: rotate(90deg);
-			}
-
-			/* Hide the nested list */
-			.nested {
-  				display: none;
-			}
-
-			/* Show the nested list when the user clicks on the caret/arrow (with JavaScript) */
-			.active {
-  				display: block;
-			}
-			
-			.checkbox_list_parent {
-  				vertical-align: middle;
-  				float: right;
-			}
-			
-			.checkbox_list {
-  				vertical-align: middle;
-  				display:inline;
-  				float: right;
-
-        </style>
     </head>
     <body>
     <div class="container">
@@ -221,12 +28,12 @@
 				
 				<div class="input" id="source_add">
 				<div style="display: inline-block;" >
-					<img src="static/letter_s.png?2"  style="position:relative; top:10px"> 
+					<img src="static/images/letter_s.png?2"  style="position:relative; top:10px"> 
 				</div>
 				<input type="text" id="inputSource" value="" class="input-text" readonly>
-				<button id="marker-button-source" class="button-image button-marker" onClick="addMarker('source')"><img src="static/marker-orange.png"></button>
-				<button id="polygon-button-source" class="button-image button-marker" onClick="addPolygon('source')"><img src="static/polygon.png"></button>
-				<button id="neig-button-source" class=" button-image button-marker" onClick="addNeighborhood('source')"><img src="static/images.png"></button>
+				<button id="marker-button-source" class="button-image button-marker" onClick="addMarker('source')"><img src="static/images/marker-orange.png"></button>
+				<button id="polygon-button-source" class="button-image button-marker" onClick="addPolygon('source')"><img src="static/images/polygon.png"></button>
+				<button id="neig-button-source" class=" button-image button-marker" onClick="addNeighborhood('source')"><img src="static/images/images.png"></button>
 				<button id="new_source" class="button-add" value="Add" onClick="addSource()" style="display:none;">+</button>
 				</div>
 				<div class="input" id="input_source"></div>
@@ -235,17 +42,17 @@
 				
 				<div class="input" id="target_add">
 				<div style="display: inline-block;" >
-					<img src="static/letter_d.png"  style="position:relative; top:10px"> 
+					<img src="static/images/letter_d.png"  style="position:relative; top:10px"> 
 				</div> 
 				<input type="text" id="inputTarget" value="" class="input-text" readonly> 
-				<button id="marker-button-target" class="button-image button-marker" onClick="addMarker('target')"><img src="static/marker-orange.png"></button>
-				<button id="polygon-button-target" class="button-image button-marker" onClick="addPolygon('target')"><img src="static/polygon.png"></button>
-				<button id="neig-button-target" class=" button-image button-marker" onClick="addNeighborhood('target')"><img src="static/images.png"></button>
+				<button id="marker-button-target" class="button-image button-marker" onClick="addMarker('target')"><img src="static/images/marker-orange.png"></button>
+				<button id="polygon-button-target" class="button-image button-marker" onClick="addPolygon('target')"><img src="static/images/polygon.png"></button>
+				<button id="neig-button-target" class=" button-image button-marker" onClick="addNeighborhood('target')"><img src="static/images/images.png"></button>
 				<button  id="new_target" class="button-add" value="Add" onClick="addTarget()" style="display:none;">+</button>
 				</div>
 				<div class="input" id="input_target"></div>
 				<br><br>
-				<div id="routes_list_div" style="width: 200px;">
+				<div id="routes_list_div" style="width: 200px;max-height:50%; overflow:auto">
 					<ul id="list_routes">
 					</ul>
 				</div>
@@ -295,52 +102,7 @@
             });
 
             routes = {{routes|safe}}
-
-            for (var trans_type in routes) {
-            	//console.log(child);
-            	buildRouteList(trans_type, routes[trans_type]);
-        	}
-
-        	function buildRouteList(trans_type, routes){
-
-            	var list = document.getElementById('list_routes');
-            	
-            	var entry = document.createElement('li');
-        	    var span = document.createElement('span');
-        	    span.classList.add('caret');
-        	    entry.appendChild(span);
-        	    entry.appendChild(document.createTextNode(trans_type));
-        	    var checkbox = document.createElement("INPUT");
-        	    checkbox.setAttribute("type", "checkbox");
-        	    checkbox.setAttribute("id", "c" + trans_type);
-        	    checkbox.classList.add('checkbox_list_parent');
-        	    checkbox.checked = true;
-        	    entry.appendChild(checkbox);
-        	    entry.setAttribute("id", "n"+ trans_type);
-        	    list.appendChild(entry);
-
-        	    var entry_ul = document.createElement('ul');
-        	    entry_ul.classList.add('nested');
-        	    entry_ul.setAttribute("id", "ul_"+trans_type);
-        	    entry_ul.style.width = "80px";
-        	    //entry_ul.style.float = "right";
-        	    entry.appendChild(entry_ul);
-
-        	    for (var route in routes) {
-        	    	var entry_child = document.createElement('li');
-        	    	entry_child.appendChild(document.createTextNode(route));
-            	    var checkbox = document.createElement("INPUT");
-            	    checkbox.setAttribute("type", "checkbox");
-            	    checkbox.setAttribute("id", routes[route]);
-            	    checkbox.classList.add('checkbox_list');
-            	    checkbox.checked = true;
-            	    entry_child.appendChild(checkbox);
-            	    entry_child.setAttribute("id", "l" + routes[route]);
-            	    entry_child.style.overflow = "hidden";
-            	    entry_ul.appendChild(entry_child);
-        	    }
-
-            }
+            buildRouteList(routes)
 
             var toggler = document.getElementsByClassName("caret");
             var i;
@@ -403,9 +165,9 @@
 
             var markerActivated = false;
 
-            var polygon_source_coords = null;
+            /*var polygon_source_coords = null;
             var polygon_target_coords = null;
-            var draw = null;
+            var draw = null;*/
             
             map.on('click', function(e) {
                 if (markerActivated){
@@ -685,7 +447,10 @@
             	markerActivated = true;
             }
 
-            var currentPolygon = null;
+            function addPolygon(location){
+                addPolygonLocation(location, map)
+            }
+            /*var currentPolygon = null;
 
             const STYLES_DRAW = [
                 {
@@ -770,7 +535,7 @@
             		polygon_target_coords = null;
             	}
 				
-			}
+			}*/
 
             function addSource() {
 
@@ -1036,14 +801,18 @@
                    	}
                    	console.log(removed_routes)
             		// ajax the JSON to the server
+            		now = false;
             		if(timestamp==-1){
             			timestamp = new Date().getTime();
+            			now = true;
                 	}
             		console.log(timestamp)
             		var data_input = {"sources": sources, "targets":targets, "timestamp":timestamp, "polygon_source_coords":polygon_source_coords,
                 		"polygon_target_coords": polygon_target_coords, "removed_routes": removed_routes}
 
-            		timestamp = -1
+            		if(now){
+            			timestamp = -1
+                	}
 					
             		$.post("receiver", JSON.stringify(data_input) , function(res){
 						//console.log(res)
@@ -1109,37 +878,6 @@
 						]
                     }
                 });
-            }
-
-            function addRouteLayer(route_id, geom){
-                console.log("Adding layer:" + route_id)
-            	map.addLayer({
-                    "id": "route_"+route_id,
-                    "type": "line",
-                    "source": {
-	                    "type": "geojson",
-	                    "data": geom
-	                },
-	                "layout": {
-                        "line-join": "round",
-                        "line-cap": "round"
-                    },
-                    'paint': {
-                    	"line-width": 6,
-                    	// color routes by type
-                    	// https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions-match
-                    	'line-color': getRandomColor()
-                    }
-                });
-            }
-
-            function getRandomColor() {
-            	  var letters = '0123456789ABCDEF';
-            	  var color = '#';
-            	  for (var i = 0; i < 6; i++) {
-            	    color += letters[Math.floor(Math.random() * 16)];
-            	  }
-            	  return color;
             }
 
         </script>

@@ -13,155 +13,13 @@
 		<link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.0.9/mapbox-gl-draw.css' type='text/css' />
 		
 		<script type="text/javascript" src="static/js/color_gradient.js?1"></script>
+		
+		<script type="text/javascript" src="static/js/polygon.js?12"></script>
+		<script type="text/javascript" src="static/js/neighborhood.js?101"></script>
+		
+		<link rel="stylesheet" type="text/css" href="static/css/rr_test.css?17">
+		<link rel="stylesheet" type="text/css" href="static/css/list_neighborhoods.css?15">
         
-        
-        <style>
-            body { margin:0; padding:0; }
-            #map { position:absolute; top:0; bottom:0; width: 80%; }
-            .marker {
-    			border: none;
-    			cursor: pointer;
-    			height: 32px;
-    			width: 32px;
-    			background-image: url(static/marker.png);
-    			background-color: rgba(0, 0, 0, 0);
-    			transform: translate(28px, 56px, 0);
-			}
-			.marker_source {
-    			border: none;
-    			cursor: pointer;
-    			height: 40px;
-    			width: 40px;
-    			background-image: url(static/marker-40-orange.png);
-    			background-color: rgba(0, 0, 0, 0);
-    			transform: translate(28px, 56px, 0);
-			}
-			.marker_target {
-    			border: none;
-    			cursor: pointer;
-    			height: 40px;
-    			width: 40px;
-    			background-image: url(static/marker-40-green.png);
-    			background-color: rgba(0, 0, 0, 0);
-    			transform: translate(28px, 56px, 0);
-			}
-			.container{
-    			height: 100%;
-    			display: -webkit-flex;
-    			display: flex;
-    			-webkit-flex-direction: row;
-    			flex-direction: row;
-			}
-			.fixed{
-    			width: 20%;
-    			min-width: 360px;
-			}
-			.flex-item{
-    			flex-grow: 1;
-			}
-			.flatpickr-calendar{
-				font-size: 12px;
-			}
-			
-			.button-image img {
-    			display: block;
-    			height: 16px;  
-    			width: 16px;
-			}
-			
-			.button-marker {
-				background-color: white;
-  				color: white;
-  				padding: 4px;
-  				text-align: center;
-  				text-decoration: none;
-  				display: inline-block;
-  				cursor: pointer;
-  				border-radius: 6px;
-  				border: 1px solid #A0A0A0;
-  				position: relative;
-  				margin-right: 1px;
-  				vertical-align:middle;
-			}
-			
-			.button-add {
-				background-color: #007CE2;
-				color: white;
-				font-weight: bold;
-				font-size: 18px;
-  				padding: 4px;
-  				text-align: center;
-    			line-height: 3px;
-  				text-decoration: none;
-  				display: inline;
-  				cursor: pointer;
-  				border-radius: 6px;
-  				border: 1px solid #A0A0A0;
-  				margin-left: 3px;
-  				height: 26px;  
-    			width: 26px;
-    			position: relative;
-    			vertical-align:middle;
-    			
-			}
-			
-			.button-clear {
-				background-color: #e7e7e7;
-  				padding: 4px;
-  				text-align: center;
-  				text-decoration: none;
-  				display: inline-block;
-  				cursor: pointer;
-  				border: 1px solid #A0A0A0;
-  				position: relative;
-  				top:3px; 
-  				margin-right: 5px;
-  				margin-left: 5px;
-			}
-			
-			.dropdown {
-				background-color: #e7e7e7;
-  				text-align: center;
-  				text-decoration: none;
-  				display: inline-block;
-  				cursor: pointer;
-  				border: 1px solid #A0A0A0;
-  				position: relative;
-  				top:3px; 
-  				margin-right: 5px;
-  				padding: 1px;
-  				margin-left: 5px;
-			}
-			
-			.button-results {
-				background-color: #007CE2;
-				color: white;
-  				padding: 4px;
-  				text-align: center;
-  				text-decoration: none;
-  				display: inline-block;
-  				cursor: pointer;
-  				border: 1px solid #A0A0A0;
-  				position: relative;
-  				top:3px; 
-			}
-			
-			.input-text{
-				text-align: left;
-				height:24px;
-				margin-right:4px;
-				position: relative;
-			}
-			
-			.calendar-text{
-				text-align: left;
-				height:24px;
-				margin-right:4px;
-				position: relative;
-  				top:3px; 
-			}
-
-        </style>
     </head>
     <body>
     <div class="container">
@@ -171,30 +29,35 @@
 				
 				<div class="input" id="source_add">
 				<div style="display: inline-block;" >
-					<img src="static/letter_s.png?2"  style="position:relative; top:10px"> 
+					<img src="static/images/letter_s.png?2"  style="position:relative; top:10px"> 
 				</div>
 				<input type="text" id="inputSource" value="" class="input-text" readonly>
-				<button id="marker-button-source" class="button-image button-marker" onClick="addMarker('source')"><img src="static/marker-orange.png"></button>
-				<button id="polygon-button-source" class="button-image button-marker" onClick="addPolygon('source')"><img src="static/polygon.png"></button>
-				<button id="neig-button-source" class=" button-image button-marker" onClick="addNeighborhood('source')"><img src="static/images.png"></button>
+				<button id="marker-button-source" class="button-image button-marker" onClick="addMarker('source')"><img src="static/images/marker-orange.png"></button>
+				<button id="polygon-button-source" class="button-image button-marker" onClick="addPolygon('source')"><img src="static/images/polygon.png"></button>
+				<button id="neig-button-source" class=" button-image button-marker" onClick="addNeighborhood('source')"><img src="static/images/images.png"></button>
 				<button id="new_source" class="button-add" value="Add" onClick="addSource()" style="display:none;">+</button>
 				</div>
 				<div class="input" id="input_source"></div>
 				<br>
 				
-				
 				<div class="input" id="target_add">
 				<div style="display: inline-block;" >
-					<img src="static/letter_d.png"  style="position:relative; top:10px"> 
+					<img src="static/images/letter_d.png"  style="position:relative; top:10px"> 
 				</div> 
 				<input type="text" id="inputTarget" value="" class="input-text" readonly> 
-				<button id="marker-button-target" class="button-image button-marker" onClick="addMarker('target')"><img src="static/marker-orange.png"></button>
-				<button id="polygon-button-target" class="button-image button-marker" onClick="addPolygon('target')"><img src="static/polygon.png"></button>
-				<button id="neig-button-target" class=" button-image button-marker" onClick="addNeighborhood('target')"><img src="static/images.png"></button>
+				<button id="marker-button-target" class="button-image button-marker" onClick="addMarker('target')"><img src="static/images/marker-orange.png"></button>
+				<button id="polygon-button-target" class="button-image button-marker" onClick="addPolygon('target')"><img src="static/images/polygon.png"></button>
+				<button id="neig-button-target" class=" button-image button-marker" onClick="addNeighborhood('target')"><img src="static/images/images.png"></button>
 				<button  id="new_target" class="button-add" value="Add" onClick="addTarget()" style="display:none;">+</button>
 				</div>
 				<div class="input" id="input_target"></div>
-				<br>
+				
+				<div id="neig_list_div" class="list">
+					<br>
+					<ul id="list_neighborhoods">
+					</ul>
+				</div>
+				<br><br>
                 <select id="select_departure" onchange="departure(this.value)" class="dropdown">
   					<option value="now">Leave now</option>
   					<option value="later">Depart at</option>
@@ -217,7 +80,7 @@
         <script>
 
       		//console.log(getColorGradient("#FF0000", "#0000FF", 0))
-        	
+      		
             mapboxgl.accessToken = '{{ ACCESS_KEY }}';
             var map = new mapboxgl.Map({
                 container: 'map',
@@ -229,8 +92,32 @@
             // Add zoom and rotation controls to the map.
 			map.addControl(new mapboxgl.NavigationControl());
 
+			polygons = {{polygons|safe}}
+      		createNeighborhoodList(polygons);
+			
+
             map.on('load', function () {
-                
+            	map.addSource("polygons", {
+                	"type": "geojson",
+                	"data": polygons
+                	});
+
+                	// The feature-state dependent fill-opacity expression will render the hover effect
+                	// when a feature's hover state is set to true.
+                	map.addLayer({
+                		"id": "polygon-fills",
+                		"type": "fill",
+                		"source": "polygons",
+                		"layout": {},
+                		"paint": {
+                		"fill-color": "#627BC1",
+                		"fill-opacity": ["case",
+                		["boolean", ["feature-state", "hover"], false],
+                			0.4,
+                			0
+                		]
+                		}
+                	});                
             });
 
             map.on('error', e => {
@@ -259,10 +146,6 @@
 
             var markerActivated = false;
 
-            var polygon_source_coords = null;
-            var polygon_target_coords = null;
-            var draw = null;
-            
             map.on('click', function(e) {
                 if (markerActivated){
                 	timer = setTimeout(function() {
@@ -541,92 +424,20 @@
             	markerActivated = true;
             }
 
-            var currentPolygon = null;
-
-            const STYLES_DRAW = [
-                {
-                    "id": "gl-draw-polygon-fill",
-                    "type": "fill",
-                    "filter": ["all", ["==", "$type", "Polygon"], ["!=", "mode", "static"]],
-                    "paint": {
-                        "fill-color": "#FFD300",
-                        "fill-outline-color": "#FDA50F",
-                        "fill-opacity": 0.2
-                    }
-                }
-            ]
             function addPolygon(location){
-            	currentPolygon = location
-            	if (location == "source" && polygon_source_coords!= null){
-                	alert("Source polygon has already been drawn!")
-                	return
-                }
-            	if (location == "target" && polygon_target_coords!= null){
-                	alert("Target polygon has already been drawn!")
-                	return
-                }
-                if(!draw){
-                	draw = new MapboxDraw({
-    					displayControlsDefault: false,
-    					controls: {
-    					}
-    				});
-    				map.addControl(draw);
-
-    				draw.changeMode('draw_polygon');
-
-    				map.on('draw.create', updateArea);
-    				map.on('draw.delete', updateArea);
-    				map.on('draw.update', updateArea);
-                }else{
-                	draw.changeMode('draw_polygon');
-                }
-               
+                addPolygonLocation(location, map)
             }
 
-            function updateArea(e) {
-				if (e.type == 'draw.create' || e.type == 'draw.update'){
-					console.log("Updating source")
-					var data = draw.getAll();
-					console.log(data);
-					console.log(data.features);
-					//console.log(data.features[0].geometry.coordinates);
-					var len = data.features.length;
-					if(currentPolygon == "source"){
-						polygon_source_coords = data.features[len-1].geometry.coordinates;
-						console.log(polygon_source_coords);
-						if(document.getElementById('inputSource').value == "") {
-							document.getElementById('inputSource').value = "Polygon drawn"
-						}
-					}else{
-						polygon_target_coords = data.features[len-1].geometry.coordinates;
-						console.log(polygon_target_coords);
-						if(document.getElementById('inputTarget').value == "") {
-							document.getElementById('inputTarget').value = "Polygon drawn"
-						}
-					}
-					
-            	}else if (e.type == 'draw.delete'){
-            		polygon_source_coords = null;
-            		polygon_target_coords = null;
-            	}
-				
-			}
+            function addNeighborhood(location){
+                if(location == "source"){
+                    alert("Source neighborhood not supported!")
+                }else{
+                	var divList = document.getElementById("neig_list_div");
+                	divList.style.display = "block";
+                	document.getElementById('inputTarget').value = "Select neighborhoods"
+                }
+            }
 
-            function updateAreaTarget(e) {
-				if (e.type == 'draw.create' || e.type == 'draw.update'){
-					console.log("Updating target")
-					var data = draw_target.getAll();
-					console.log(data);
-					console.log(data.features);
-					//console.log(data.features[0].geometry.coordinates);
-					polygon_target_coords = data.features[0].geometry.coordinates;
-					console.log(polygon_target_coords);
-            	}else if (e.type == 'draw.delete'){
-            		polygon_target_coords = null;
-            	}
-				
-			}
 
             function addSource() {
 
@@ -761,7 +572,6 @@
                 		}
                 	}
             	}
-            	
 
             	for (j = 1; j <= it ; j++) {
             		var element = document.getElementById("targetNode" + j);
@@ -832,6 +642,10 @@
             		draw = null;
                 }
 
+            	var divList = document.getElementById("neig_list_div");
+            	divList.style.display = "none";
+            	clearSelectedNeighborhoods();
+
 				timestamp = -1;
 				is = 0;
 				it = 0;
@@ -880,19 +694,24 @@
             function getResults() {
             	//console.log(sources.length, targets.length) 
             	clearResults();
-            	if((sources.length == 0 && !polygon_source_coords ) || (targets.length == 0 && !polygon_target_coords )) {
+            	checked_neig = getSelectedNeighborhoods()
+            	if((sources.length == 0 && !polygon_source_coords ) || (targets.length == 0 && !polygon_target_coords && checked_neig.length == 0 )) {
             		alert("Some coordinates are missing."); 
                	}
                	else {
             		// ajax the JSON to the server
+            		now = false;
             		if(timestamp==-1){
             			timestamp = new Date().getTime();
+            			now = true;
                 	}
             		console.log(timestamp)
             		var data_input = {"sources": sources, "targets":targets, "timestamp":timestamp, "polygon_source_coords":polygon_source_coords,
-                		"polygon_target_coords": polygon_target_coords}
-
-            		timestamp = -1
+                		"polygon_target_coords": polygon_target_coords, "selected_neighborhoods":checked_neig}
+            		
+					if(now){
+						timestamp = -1
+					}
 					
             		$.post("receiver", JSON.stringify(data_input) , function(res){
 						//console.log(res)

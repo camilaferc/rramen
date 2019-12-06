@@ -15,6 +15,7 @@ class Dijsktra:
         self.graph = graph
         
     def manyToManyPrivate(self, sources, targets, departure_time):
+        print("Computing travel times by car...")
         travel_times = {}
         parents = {}
         for s in sources:
@@ -24,6 +25,7 @@ class Dijsktra:
         return travel_times, parents
     
     def manyToManyPublic(self, sources, targets, departure_time, removed_routes = None):
+        print("Computing travel times by public transit...")
         travel_times = {}
         parents = {}
         for s in sources:
@@ -62,13 +64,13 @@ class Dijsktra:
                 parents[vid] = v_min[3]
             
                 if vid in targets:
-                    print(str(vid) + ":" + str(travel_time) + " " + str(self.graph.getNode(vid)))
+                    #print(str(vid) + ":" + str(travel_time) + " " + str(self.graph.getNode(vid)))
                     travel_times[vid] = travel_time
                     targets.remove(vid)
                 
                     if not targets:
-                        #print(heapNodes)
-                        print(time_neig)
+                        #print(time_neig)
+                        print("All targets found!")
                         return travel_times, parents
                 
                 #for mode in allowed_modes:
@@ -121,9 +123,6 @@ class Dijsktra:
         while not q.empty():
             v_min = q.get()
             
-            #if not v_min:
-            #    print(heap)
-                
             travel_time = v_min[0]
             vid = v_min[1]
             arrival_time = v_min[2]
@@ -135,22 +134,19 @@ class Dijsktra:
                 parents[vid] = parent
             
                 if vid in targets:
-                    print(str(vid) + ":" + str(travel_time) + " " + str(self.graph.getNode(vid)))
+                    #print(str(vid) + ":" + str(travel_time) + " " + str(self.graph.getNode(vid)))
                     travel_times[vid] = travel_time
                     targets.remove(vid)
                 
                     if not targets:
-                        #print(heapNodes)
-                        print(time_neig)
+                        #print(time_neig)
+                        print("All targets found!")
                         return travel_times, parents
                 
                 #checking if v_min is a super node to avoid re-expanding the transportation nodes
                 out_of_station = False
                 vid_type = self.graph.getNode(vid)['type']
                 
-                #if vid_type == self.graph.SUPER_NODE:
-                #    print(v_min, self.graph.getNode(vid))
-                    
                 if vid_type == self.graph.SUPER_NODE:
                     #print("SUPER NODE:" + str(self.graph.getNode(vid)))
                     #print(v_min)

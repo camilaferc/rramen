@@ -21,7 +21,7 @@ class MultimodalNetwork:
     
     MIN_TRANSFER_TIME = 15
     
-    PEDESTRIAN_WAYS = {41, 42, 51, 63, 62, 71, 72, 91, 92, 21, 22, 31, 32}
+    PEDESTRIAN_WAYS = {41, 42, 51, 63, 62, 71, 72, 91, 92, 21, 22, 31, 32, 43, 15, 16}
     #PEDESTRIAN_MAPPING_WAYS = {41, 42, 63, 62, 71, 72}
     CAR_WAYS = {11, 12, 13, 14, 15, 16, 21, 22, 31, 32, 41, 42, 43, 51, 63, 71}
     
