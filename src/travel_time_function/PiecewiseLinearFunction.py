@@ -136,7 +136,7 @@ class LinearFunction:
     
     def getValue(self, x):
         #y = mx + b
-        return self.getSlope()*x + self.b
+        return self.slope*x + self.b
     
     def __str__(self):
         return "f:" + str(self.x1) + "," +  str(self.y1) + "," + str(self.x2) + "," + str(self.y2)

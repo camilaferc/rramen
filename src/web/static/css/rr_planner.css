@@ -9,6 +9,15 @@ ul, #list_routes {
 #list_routes {
 	margin: 5px;
 	padding: 0;
+	max-height: 30%;
+	overflow-y: auto;
+}
+
+#list_segments {
+	margin: 5px;
+	padding: 0;
+	max-height: 30%;
+	overflow-y: auto;
 }
 
 /* Style the caret/arrow */
@@ -40,7 +49,7 @@ ul, #list_routes {
 	display: block;
 }
 
-.checkbox_list_parent {
+.checkbox_list_parent, .checkbox_list_segment {
 	vertical-align: middle;
 	float: right;
 }
@@ -58,4 +67,45 @@ ul, #list_routes {
 
 .list_child:last-child {
     margin-bottom: 0px;
+}
+
+.button-close { 
+	background:none;
+	border:none; 
+	cursor: pointer;
+	text-align: center;
+	vertical-align: middle;
+}
+
+.route-text{
+	border : none;
+	whiteSpace: normal;
+	outline: none;
+	width: 50px;
+	padding: 0;
+	height:auto;
+}
+
+.route-text:focus {
+    outline:none;
+}
+
+.checkbox_stop {
+	vertical-align: middle;
+	display: inline;
+	float: right;
+}
+
+.button-edit {
+  background-color: #F5F5F5; 
+  color: black; 
+  width: 100%;
+  padding: 16px;
+  text-align: left;
+   border: none;
+}
+
+.button-edit:hover, .active_edit {
+  background-color: #007CE2;
+  color: white;
 }

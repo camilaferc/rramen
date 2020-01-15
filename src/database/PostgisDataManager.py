@@ -22,6 +22,36 @@ class PostgisDataManager:
         self.connection = PostGISConnection()
         self.timeGeom = 0
         
+    def getChildrenStops(self, region, parent_id):
+        sql = """SELECT stop_id
+                FROM stops_{0}
+                WHERE stop_parent = {1};
+            ;   
+            """
+        sql = sql.format(region, parent_id);
+        
+        try:
+            stops = []
+            self.connection.connect();
+ 
+            cursor = self.connection.getCursor()
+            
+            cursor.execute(sql)
+            row = cursor.fetchone()
+            
+            while row is not None:
+                (stop_id,) = row
+                stops.append(stop_id)
+                row = cursor.fetchone()
+            
+            self.connection.close()
+            if not stops:
+                stops.append(parent_id)
+            return stops
+        
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error) 
+        
     def getNeighborhoodsPolygons(self, region):
         sql = """SELECT id, name, level, parent, ST_AsGeoJSON(polygon) as polygon
                 FROM neighborhoods_{};
@@ -55,6 +85,43 @@ class PostgisDataManager:
         
         except (Exception, psycopg2.DatabaseError) as error:
             print(error) 
+    
+    def getStopsLocation(self, region):
+        sql = """select stop_id, stop_name, ST_AsGeoJSON(stop_location) 
+                from stops_{0}
+                where stop_type=1 and 
+                ST_Within(stop_location, (select polygon from neighborhoods_{0} where level = (
+                select min(level) from neighborhoods_{0}) ))
+            ;   
+            """
+        sql = sql.format(region);
+        
+        try:
+            features = []
+            self.connection.connect();
+ 
+            cursor = self.connection.getCursor()
+            
+            cursor.execute(sql)
+            row = cursor.fetchone()
+            
+            while row is not None:
+                (stop_id, name, location) = row
+                properties = {'name': name}
+                #print(nid, name, level, parent)
+                #print(polygon)
+                geometry = json.loads(location)
+                feature = Feature(geometry = geometry, properties = properties, id = stop_id)
+                #print(feature)
+                features.append(feature)
+    
+                row = cursor.fetchone()
+            
+            self.connection.close()
+            return FeatureCollection(features)
+        
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error) 
             
     def getRoutes(self, region):
         #sql = """SELECT route_id, route_short_name, route_type
@@ -71,41 +138,79 @@ class PostgisDataManager:
                 (SELECT polygon from neighborhoods_{0} where level = (SELECT min(level) FROM neighborhoods_{0}))
             );
             """
-        '''
+        
             
         sql = """ SELECT r.route_id, r.route_short_name, r.route_type
             FROM routes_{0} r
             WHERE r.route_id in (SELECT route_id from routes_geometry_{0});
             """
         sql = sql.format(region);
+        '''
         
         try:
+            '''
+            sql_stops = """ select stop_id, stop_name from stops_{0}, 
+                        (select unnest(stops) as stop, generate_subscripts(stops, 1) as idx
+                        from routes_geometry_{0} 
+                        where route_id='{1}' 
+                        ORDER BY idx) as stop_sequence
+                        where stop_id = stop_sequence.stop;
+                    """
+            '''
+            sql_stops = """ select r.route_id, r.route_short_name, stops, stop_names, r.route_type 
+                            from routes_geometry_{0} rg, routes_{0} r
+                            where rg.route_id = r.route_id;
+                    """
+            sql_stops = sql_stops.format(region)
+                    
             print("Loading routes...")
             routes = {}
+            route_stops = {}
+            stop_routes = {}
             self.connection.connect();
  
             cursor = self.connection.getCursor()
             
-            cursor.execute(sql)
+            cursor.execute(sql_stops)
             row = cursor.fetchone()
             
             while row is not None:
-                (route_id, name, route_type) = row
-                
-                #print(route_id, name, route_type)
+                (route_id, route_name, stop_ids, stop_names, route_type ) = row
+                #print(route_id)
+                list_stop_names = []
+                for i in range(0,len(stop_ids)):
+                    stop_id = stop_ids[i]
+                    list_stop_names.append([stop_id,stop_names[i]])
+                    stop_route_id = route_name + "_" + str(route_type)
+                    if stop_id in stop_routes:
+                        if stop_route_id not in stop_routes[stop_id]:  
+                            stop_routes[stop_id].append(stop_route_id)
+                    else:
+                        stop_routes[stop_id] = [stop_route_id]
+                #print(list_stop_names)
                 
                 if route_type in GTFS.ROUTE_TYPE:
-                    trans_type = GTFS.ROUTE_TYPE[route_type]
-                    if trans_type in routes:
-                        list_routes = routes[trans_type]
-                        list_routes[name] = route_id
+                    route_stop_name = route_name + "_" + str(route_type)
+                    if route_type in routes:
+                        list_routes = routes[route_type]
+                        if route_name in list_routes:
+                            #print("duplicated route:" + str(name))
+                            list_routes[route_name].append(route_id)
+                            list_stops = route_stops[route_stop_name]
+                            for stop in list_stop_names:
+                                if stop not in list_stops:
+                                    list_stops.append(stop)
+                        else:
+                            list_routes[route_name] = [route_id]
+                            route_stops[route_stop_name] = list_stop_names
                     else:
-                        routes[trans_type] = {name: route_id}
+                        routes[route_type] = {route_name: [route_id]}
+                        route_stops[route_stop_name] = list_stop_names
                 
                 row = cursor.fetchone()
                     
             self.connection.close()
-            return routes
+            return routes, route_stops, stop_routes
         
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)  
@@ -177,7 +282,7 @@ class PostgisDataManager:
             print(error)
             
     
-    def getClosestEdge(self, lat, lon, region):
+    def getClosestEdgeRatio(self, lat, lon, region):
         sql = """SELECT id, osm_source_id, osm_target_id, 
                 ST_LineLocatePoint(geom_way, point) as source_ratio,
                 ST_X(ST_LineInterpolatePoint(geom_way, ST_LineLocatePoint(geom_way, point))) as lon,
@@ -201,6 +306,31 @@ class PostgisDataManager:
             
             self.connection.close()
             return (edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat)
+        
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
+            
+    def getClosestEdgeGeometry(self, lat, lon, region):
+        sql = """SELECT id, osm_id, osm_source_id, osm_target_id, ST_AsGeoJSON(geom_way)
+                from roadnet_{},
+                (SELECT ST_SetSRID(ST_MakePoint({}, {}),4326) as point) as p
+                ORDER BY point <-> geom_way
+                LIMIT 1;    
+            """
+        sql = sql.format(region, lon, lat)
+        
+        try:
+            self.connection.connect();
+ 
+            cursor = self.connection.getCursor()
+            
+            cursor.execute(sql)
+            (edge_id, osm_id, osm_source, osm_target, geometry) = cursor.fetchone()
+            
+            #print(edge_id, source_ratio)
+            
+            self.connection.close()
+            return edge_id, osm_id, osm_source, osm_target, json.loads(geometry)
         
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)
@@ -259,25 +389,35 @@ class PostgisDataManager:
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)
     
-    def getRouteGeometry(self, route_id, region):
-        sql = """SELECT ST_AsGeoJSON(route_geom) from routes_geometry_{}
-            WHERE route_id = '{}' ;    
+    def getRouteGeometry(self, route_name, transp_id, region):
+        sql = """SELECT ST_AsGeoJSON(route_geom) from routes_geometry_{0}
+            WHERE route_id in 
+            (SELECT route_id from routes_{0} where route_short_name = '{1}' and route_type = {2});    
             """
-        sql = sql.format(region, route_id)
+        sql = sql.format(region, route_name, transp_id)
         
         try:
             self.connection.connect();
+            geometries = []
  
             cursor = self.connection.getCursor()
             
             cursor.execute(sql)
-            (geometry, ) = cursor.fetchone()
+            row = cursor.fetchone()
+            while row is not None:
+                (geometry, ) = row
+                line = loads(geometry)
+                lineString = LineString(line.coordinates)
+                feature = Feature(geometry = lineString)
+                geometries.append(feature)
+                row = cursor.fetchone()
             
             #print(geometry)
             
             self.connection.close()
-            line = loads(geometry)
-            return LineString(line.coordinates)
+            #line = loads(geometry)
+            #return LineString(line.coordinates)
+            return geometries
         
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)

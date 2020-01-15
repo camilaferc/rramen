@@ -12,6 +12,8 @@ from travel_time_function.ConstantFunction import ConstantFunction
 from network.MultimodalNetwork import MultimodalNetwork
 from _datetime import datetime
 
+import time
+
 class LoadRoadNetwork:
     def __init__(self, region, graph):
         self.region = region
@@ -33,14 +35,21 @@ class LoadRoadNetwork:
         max_lat = sys.float_info.min
         max_long = sys.float_info.min
         try:
+            start_time = time.time()
             conn = PostGISConnection()
             conn.connect()
             cursor = conn.conn.cursor()
             cursor.execute(sql)
+            total_time = time.time() - start_time
+            print(total_time)
             
             row = cursor.fetchone()
             
             duplicated_edges = 0
+            
+            time_nodes = 0
+            time_edges = 0
+            time_functions = 0
             
             while row is not None:
                 (edge_id, osm_source_id, osm_target_id, clazz, length, speed, x_source, y_source, 
@@ -52,6 +61,7 @@ class LoadRoadNetwork:
                 min_long = min(min_long, x_source)
                 max_long = max(max_long, x_source)
                     
+                start_time_node = time.time()
                 if osm_source_id not in self.osm_mapping:
                     self.graph.addNode(self.node_id, y_source, x_source, self.graph.ROAD)
                     self.osm_mapping[osm_source_id] = self.node_id
@@ -66,6 +76,10 @@ class LoadRoadNetwork:
                 node_from = self.osm_mapping[osm_source_id]
                 node_to = self.osm_mapping[osm_target_id]
                 
+                total_time_node = time.time() - start_time_node
+                time_nodes += total_time_node
+                
+                start_time_edge = time.time()
                 modes = set()
                 travel_time_functions = {}
                 if clazz in self.graph.PEDESTRIAN_WAYS:
@@ -73,7 +87,10 @@ class LoadRoadNetwork:
                     travel_time_functions[self.graph.PEDESTRIAN] = self.generatePedestrianTravelTimeFunction(length, self.graph.PEDESTRIAN_SPEED)
                 if clazz in self.graph.CAR_WAYS:
                     modes.add(self.graph.PRIVATE)
+                    #start_time_function = time.time()
                     travel_time_functions[self.graph.PRIVATE] = self.generateTravelTimeFunction(length, speed)
+                    #total_time_function = time.time() - start_time_function
+                    #time_functions += total_time_function
                 
                 if self.graph.getEdge(node_from, node_to):
                     #print("Edge already exists:" + str(node_from) + "," + str(node_to))
@@ -99,9 +116,17 @@ class LoadRoadNetwork:
                         modes.add(self.graph.PEDESTRIAN)
                         travel_time_functions[self.graph.PEDESTRIAN] = self.generatePedestrianTravelTimeFunction(length, self.graph.PEDESTRIAN_SPEED)
                         self.graph.addEdge(node_to, node_from, self.graph.ROAD, modes, travel_time_functions, edge_id)
+                        
+                total_time_edge = time.time() - start_time_edge
+                time_edges += total_time_edge
                     
                 row = cursor.fetchone()
             self.mbr = (min_lat, min_long, max_lat, max_long)   
+            total_time = time.time() - start_time
+            print(total_time)
+            print(time_nodes)
+            print(time_edges)
+            print(time_functions)
         except IOError as e:
             print("I/O error({0}): {1}".format(e.errno, e.strerror))
         except (Exception, psycopg2.DatabaseError) as error:

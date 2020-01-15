@@ -24,15 +24,16 @@ class Dijsktra:
             parents[s] = parents_s
         return travel_times, parents
     
-    def manyToManyPublic(self, sources, targets, departure_time, removed_routes = None):
+    def manyToManyPublic(self, sources, targets, departure_time, removed_routes = None, removed_stops = None):
         print("Computing travel times by public transit...")
         travel_times = {}
         parents = {}
         for s in sources:
-            if not removed_routes:
+            if not (removed_routes or removed_stops):
                 travel_times_s, parents_s = self.shortestPathToSetPublic(s, departure_time, targets, {self.graph.PEDESTRIAN, self.graph.PUBLIC})
             else:
-                travel_times_s, parents_s = self.shortestPathToSetPublicRoutesRemoved(s, departure_time, targets, {self.graph.PEDESTRIAN, self.graph.PUBLIC}, removed_routes)
+                travel_times_s, parents_s = self.shortestPathToSetPublicRoutesRemoved(s, departure_time, targets, {self.graph.PEDESTRIAN, self.graph.PUBLIC}, 
+                                                                                      removed_routes, removed_stops)
             travel_times[s] = travel_times_s
             parents[s] = parents_s
         return travel_times, parents
@@ -173,7 +174,7 @@ class Dijsktra:
         return travel_times, parents
     
     
-    def shortestPathToSetPublicRoutesRemoved(self, s, departure_time, targets, allowed_modes, removed_routes):
+    def shortestPathToSetPublicRoutesRemoved(self, s, departure_time, targets, allowed_modes, removed_routes, removed_stops):
         q = Q.PriorityQueue()
         travel_times = {}
         closed_set = set()
@@ -212,7 +213,8 @@ class Dijsktra:
                 
                 #checking if v_min is a super node to avoid re-expanding the transportation nodes
                 out_of_station = False
-                vid_type = self.graph.getNode(vid)['type']
+                v_node = self.graph.getNode(vid)
+                vid_type = v_node['type']
                 
                 #if vid_type == self.graph.SUPER_NODE:
                 #    print(v_min, self.graph.getNode(vid))
@@ -228,14 +230,26 @@ class Dijsktra:
                 travel_times_neighbors = self.graph.getTravelTimeToNeighbors(vid, arrival_time, allowed_modes)
                 time_neig += (time.time()-start)
                 
+                only_routes = False
+                if vid_type == self.graph.PUBLIC:
+                    stop_id = v_node["stop_id"]
+                    route_id = v_node["route_id"]
+                    if stop_id in removed_stops and route_id in removed_stops[stop_id]:
+                        only_routes = True
+                
                 for to in travel_times_neighbors:
                     if to not in closed_set:
                         
                         nodeTo = self.graph.getNode(to)
+                        if only_routes and nodeTo["type"] == self.graph.SUPER_NODE:
+                            print("Path from " + str(vid) + " to super node pruned!")
+                            continue;
                         if "route_id" in nodeTo:
                             if nodeTo["route_id"] in removed_routes:
                                 #print("Removed route:" + str(nodeTo))
                                 continue;
+                            
+                            stop_id, route_id
                         
                         
                         if out_of_station and nodeTo['type'] == self.graph.TRANSPORTATION:

@@ -261,6 +261,7 @@ class GTFSImporter:
         sql = sql.format(self.region)
         self.conn.executeCommand(sql)
     
+    '''
     def createTableRoutesGeometry(self):
         sql = """
         CREATE TABLE IF NOT EXISTS routes_geometry_{0} (
@@ -273,7 +274,23 @@ class GTFSImporter:
         """
         sql = sql.format(self.region)
         self.conn.executeCommand(sql)
+    '''  
         
+    def createTableRoutesGeometry(self):
+        sql = """
+        CREATE TABLE IF NOT EXISTS routes_geometry_{0} (
+            route_id varchar NOT NULL,
+            trip_id bigint NOT NULL,
+            route_short_name varchar NOT NULL,
+            stops bigint[] NOT NULL,
+            stop_names varchar[] NOT NULL,
+            route_geom geometry NOT NULL,
+            CONSTRAINT routes_geometry_{0}_pkey PRIMARY KEY (route_id, trip_id)
+        );
+        """
+        sql = sql.format(self.region)
+        self.conn.executeCommand(sql)
+         
     def populateTableRoutes(self):
         fName = self.gtfs_dir + self.ROUTES_FILE
         sql = """INSERT INTO routes_{0}(route_id, route_short_name, route_long_name, route_type, agency_id) 
@@ -301,6 +318,163 @@ class GTFSImporter:
                 f.close()   
     
     def populateTableRoutesGeometry(self):
+        sql_insert = """INSERT INTO routes_geometry_{0}(route_id, trip_id, route_short_name, stops, stop_names, route_geom) 
+                 VALUES ('{1}', {2}, '{3}', '{4}', '{5}', {6});
+            """
+        try:
+            sql_routes = """
+                    SELECT route_id, route_short_name FROM routes_{0};
+            """
+            
+            sql_geometry = """
+                    SELECT ST_Intersects({1}, 
+                    (SELECT polygon from neighborhoods_{0} where level = (SELECT min(level) FROM neighborhoods_{0})));
+            """
+            sql_routes = sql_routes.format(self.region)
+            cursor = self.conn.getCursor()
+            cursor.execute(sql_routes)
+            routes = {}
+            
+            row = cursor.fetchone()
+            
+            while row is not None:
+                (route_id, route_short_name) = row
+                routes[route_id] = route_short_name
+                row = cursor.fetchone()
+            
+            sql_stops = """select st.stop_id, trip_id, s.stop_lat, s.stop_lon, s.stop_parent, s.stop_name 
+                        from stop_times_{0} st, stops_{0} s
+                        where trip_id in
+                        (select trip_id from trips_berlin where route_id = '{1}')
+                        and st.stop_id = s.stop_id
+                        ORDER BY trip_id, stop_sequence;
+                        """
+            for route in routes:
+                print(route)
+                sql_stops_route = sql_stops.format(self.region, route)
+                cursor.execute(sql_stops_route)
+                row = cursor.fetchone()
+                trips_set = []
+                trips_id = []
+                route_stops = []
+                stop_names = []
+                
+                trip_stops = {}
+                trip_names = {}
+                trip_geometry = {}
+                
+                previous_trip = -1
+                
+                geometry = "ST_GeomFromText('LINESTRING("
+                while row is not None:
+                    (stop_id, trip_id, lat, lon, parent, name) = row
+                    if not parent:
+                        print("Parent does not exist:" + str(stop_id))
+                        parent = stop_id
+                    if trip_id != previous_trip:
+                        #print("different trip!")
+                        print(trip_id)
+                        if previous_trip != -1:
+                            route_set = set(route_stops)
+                            res = self.checkNewTrip(trips_set, route_set)
+                            if res >= -1:
+                                trips_set.append(set(route_set))
+                                trips_id.append(previous_trip)
+                                trip_stops[previous_trip] = route_stops
+                                trip_names[previous_trip] = stop_names
+                            if res >= 0:
+                                print("removing:" + str(res))
+                                del trips_set[res]
+                                del trips_id[res]
+                            
+                            geometry = geometry[:-1]
+                            geometry += ")', 4326)"
+                            trip_geometry[previous_trip] = geometry
+                            
+                        geometry = "ST_GeomFromText('LINESTRING("
+                        geometry += str(lon) + " " + str(lat) + ","
+                        route_stops = [parent]
+                        stop_names = ['"' + str(name) + '"']
+                    else:
+                        route_stops.append(parent)
+                        stop_names.append('"' + str(name) + '"')
+                        geometry += str(lon) + " " + str(lat) + ","
+                    previous_trip = trip_id
+                    row = cursor.fetchone()
+                    
+                route_set = set(route_stops)
+                res = self.checkNewTrip(trips_set, route_set)
+                if res >= -1:
+                    trips_set.append(set(route_set))
+                    trips_id.append(previous_trip)
+                    trip_stops[previous_trip] = route_stops
+                    trip_names[previous_trip] = stop_names
+                if res >= 0:
+                    print("removing:" + str(res))
+                    del trips_set[res]
+                    del trips_id[res]
+                
+                geometry = geometry[:-1]
+                geometry += ")', 4326)"
+                trip_geometry[previous_trip] = geometry
+                
+                for trip_id in trips_id:
+                    print(trip_id)
+                    geometry_trip = trip_geometry[trip_id]
+                    stops = trip_stops[trip_id]
+                    if(len(stops) <=1):
+                        print("trip is too short! " + str(stops))
+                    sql_geometry_id = sql_geometry.format(self.region, geometry_trip)
+                    cursor.execute(sql_geometry_id)
+                    (intersects, ) = cursor.fetchone()
+                    if intersects:
+                        str_stops = str(stops)
+                        str_stops = str_stops[1:-1]
+                        str_stops = "{" + str_stops + "}"
+                        
+                        seperator = ', '
+                        str_names = trip_names[trip_id]
+                        #str_names = str_names[1:-1]
+                        str_names = seperator.join(str_names)
+                        str_names = "{" + str_names + "}"
+                        #print(str_names)
+                        
+                        sql_insert_route = sql_insert.format(self.region, route, trip_id, routes[route], str_stops, str_names, geometry_trip)
+                        self.conn.executeCommand(sql_insert_route)
+                        print(str(trip_id) + " INSERTED!")
+                    else:
+                        print(str(trip_id) + " does not intersect the region")
+   
+        except IOError as e:
+            print("I/O error({0}): {1}".format(e.errno, e.strerror))
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
+        except: 
+            print("Unexpected error:", sys.exc_info()[0]) 
+    
+    def checkNewTrip(self, trips_set, new_trip):
+        if not trips_set:
+            print("adding new trip")
+            return -1
+        else:
+            for i in range(len(trips_set)):
+                trip = trips_set[i]
+                if new_trip == trip:
+                    print("trip already exists!")
+                    return -2
+                elif new_trip.issubset(trip):
+                    print("trip is subset of existing trip!")
+                    return -2 
+                elif trip.issubset(new_trip): 
+                    print("adding new trip")
+                    print("existing trip should be removed!")
+                    return i 
+            print("adding new trip")
+            return -1   
+                    
+        
+    '''
+    def populateTableRoutesGeometry(self):
         sql_insert = """INSERT INTO routes_geometry_{0}(route_id, route_short_name, stops, route_geom) 
                  VALUES ('{1}', '{2}', '{3}', {4});
             """
@@ -325,8 +499,13 @@ class GTFSImporter:
                 routes[route_id] = route_short_name
                 row = cursor.fetchone()
             
+                        
             sql_stops = """select st.stop_id, s.stop_lat, s.stop_lon from stop_times_{0} st, stops_{0} s
-                            where trip_id = (SELECT trip_id from trips_{0} where route_id ='{1}'  LIMIT 1) and
+                            where trip_id = (select trip_id
+                            from stop_times_{0} where trip_id in 
+                            (select trip_id from trips_{0} where route_id = '{1}')
+                            group by trip_id
+                            order by count(*) DESC LIMIT 1) and
                             st.stop_id = s.stop_id
                             ORDER BY stop_sequence;
                         """
@@ -367,6 +546,7 @@ class GTFSImporter:
             print(error)
         except: 
             print("Unexpected error:", sys.exc_info()[0])
+    '''
         
     def createTableTrips(self):
         sql = """

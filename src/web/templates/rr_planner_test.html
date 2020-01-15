@@ -14,10 +14,11 @@
 		
 		<script type="text/javascript" src="static/js/color_gradient.js?1"></script>
 		
-		<script type="text/javascript" src="static/js/polygon.js?12"></script>
+		<script type="text/javascript" src="static/js/polygon.js?13"></script>
 		
-		<link rel="stylesheet" type="text/css" href="static/css/rr_planner.css?9">
-		<script type="text/javascript" src="static/js/routes.js?162"></script>
+		<link rel="stylesheet" type="text/css" href="static/css/rr_planner.css?38">
+		<script type="text/javascript" src="static/js/routes.js?338"></script>
+		<script type="text/javascript" src="static/js/stops.js?5"></script>
         
     </head>
     <body>
@@ -52,9 +53,20 @@
 				</div>
 				<div class="input" id="input_target"></div>
 				<br><br>
-				<div id="routes_list_div" style="width: 200px;max-height:50%; overflow:auto">
-					<ul id="list_routes">
-					</ul>
+				<div id="edit_buttons" style="width: 100%;">
+					<button class="button-edit" onclick="showRoutes(this)">Edit Lines/Stops</button>
+					<div id="routes_list_div" style="width: 300px;max-height:30%; overflow:auto; display:none; padding:10px">
+						<ul id="list_routes" style="overflow:auto;">
+						</ul>
+					</div>
+					<hr style="padding:0px; margin: 0px; border: 0.8px solid #C8C8C8;">
+					<button class="button-edit" id="button-edit-segments" onclick="selectSegments(this)">Edit Road Segments</button>
+					<div id="segments_div" style="width: 300px;max-height:30%; overflow:auto; display:none">
+						<p style="color:#696969;font-size:14px">Please select road segments from the map.</p>
+						<ul id="list_segments" style="width: 200px">
+						</ul>
+					</div>
+					
 				</div>
 				<br><br>
                 <select id="select_departure" onchange="departure(this.value)" class="dropdown">
@@ -83,7 +95,8 @@
             mapboxgl.accessToken = '{{ ACCESS_KEY }}';
             var map = new mapboxgl.Map({
                 container: 'map',
-                style: 'mapbox://styles/mapbox/streets-v9',
+                //style: 'mapbox://styles/mapbox/streets-v9',
+                style: 'mapbox://styles/camilaferc/ck52r0hzk05zf1csdqwfxsozd',
                 center: [13.4050, 52.5200],
                 zoom: 12
             });
@@ -91,9 +104,6 @@
             // Add zoom and rotation controls to the map.
 			map.addControl(new mapboxgl.NavigationControl());
 
-            map.on('load', function () {
-                
-            });
 
             map.on('error', e => {
                 // Hide those annoying non-error errors
@@ -101,51 +111,187 @@
                     console.error(e);
             });
 
-            routes = {{routes|safe}}
-            buildRouteList(routes)
-
-            var toggler = document.getElementsByClassName("caret");
-            var i;
-
-            for (i = 0; i < toggler.length; i++) {
-              //console.log(toggler[i])
-              toggler[i].addEventListener("click", function() {
-                this.parentElement.querySelector(".nested").classList.toggle("active");
-                this.classList.toggle("caret-down");
-              });
-            }
-
-            const checkboxes = document.getElementsByClassName("checkbox_list");
-            //console.log(checkboxes);
-            for (i = 0; i < checkboxes.length; i++) {
-            	checkboxes[i].addEventListener("change", function() {
-                	var route_id = this.id; 
-                	if(this.checked) {
-                        console.log(this.id + " checked")
-                        var route_data = {"route_id": route_id}
-            			$.post("route", JSON.stringify(route_data) , function(res){
-							console.log(res)
-							route_geom = res["route_geom"]
-							console.log(route_geom)
-            				addRouteLayer(route_id, route_geom);
-                		});
-                           
-                    } else {
-                        // Checkbox is not checked..
-                    	console.log(this.id + " unchecked")
-
-                    	if (map.getLayer("route_"+ this.id)) {
-							map.removeLayer("route_"+ this.id);
-						}
-
-						if (map.getSource("route_"+ this.id)) {
-							map.removeSource("route_"+ this.id);
-						}
-                    }
-                });
-            }
-
+            var routes = {{routes|safe}}
+            var stops = {{stops|safe}}
+            var stop_routes = {{stop_routes|safe}}
+            var transp_mapping = {{transp_mapping|safe}}
+            var stop_locations = {{stop_locations|safe}}
+            buildRouteList(routes, stops, transp_mapping)
             
+            map.on('load', function () {
+            	map.loadImage('static/images/bus-icon.png', function(error, image) {
+            		if (error) throw error;
+            	    map.addImage('bus-icon', image);
+            	})
+            	
+            	addStopsLayer(stop_locations)
+            });
+
+            let popup_seg = new Map()
+
+            map.on('contextmenu', function(e) {
+                //new mapboxgl.Marker().setLngLat(e.lngLat).addTo(map);
+                console.log("right click")
+                var latitude = e.lngLat.lat;
+                var longitude = e.lngLat.lng;
+                console.log(latitude, longitude)
+                
+                var segment_data = {"latitude": latitude, "longitude": longitude}
+        			$.post("segment", JSON.stringify(segment_data) , function(res){
+    					//console.log(marker_id)
+						var geom = res["segment"];
+						var seg_id = res["segment_id"];
+						console.log(geom, seg_id)
+
+						
+						if (!map.getLayer("seg_"+ seg_id)) {
+							console.log("Adding layer:" + seg_id)
+							map.addLayer({
+						        "id": "seg_"+ seg_id,
+						        "type": "line",
+						        "source": {
+						            "type": "geojson",
+						            "data": geom
+						        },
+						        "layout": {
+						            "line-join": "round",
+						            "line-cap": "round"
+						        },
+						        'paint': {
+						        	"line-width": 6,
+						        	// color routes by type
+						        	// https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions-match
+						        	'line-color': '#ffdf00'
+						        }
+						    }, 'stops');
+
+
+							var html = '<p style="width: 110px; padding:-10px"> Remove highlighted road segment? </p>' + 
+			                '<button style="margin-right: 10px;" onclick="removeSegment(true, '+ seg_id + ')">Yes</button>' +
+			                '<button onclick="removeSegment(false, '+ seg_id + ')">No</button>';
+			                
+			                var popup = new mapboxgl.Popup({closeOnClick: false, anchor: 'top', offset:10, closeButton: false})
+			                .setLngLat({lat:latitude, lng: longitude})
+			                .setHTML(html)
+			                .addTo(map);
+
+			                popup_seg.set(seg_id, popup)
+
+						}
+						
+            	});
+
+            });
+
+			function removeSegment(remove, segment_id){
+				console.log(remove, segment_id)
+				popup = popup_seg.get(segment_id)
+				popup.remove()
+				if (!remove){
+					map.removeLayer("seg_"+ segment_id);
+					map.removeSource("seg_"+ segment_id);
+				}else{
+					var div = document.getElementById ( "segments_div" );
+					var button = document.getElementById ( "button-edit-segments" );
+					button.className += " active_edit";
+            		div.style.display = "inline" ;
+
+            		var list = document.getElementById ( "list_segments" );
+            		var entry = document.createElement('li');
+            		entry.style.overflow = "auto";
+            		entry.appendChild(document.createTextNode(segment_id));
+            		var checkbox = document.createElement("INPUT");
+            		checkbox.setAttribute("type", "checkbox");
+            		checkbox.setAttribute("id", "cseg_" + segment_id);
+            		checkbox.classList.add('checkbox_list_segment');
+            		checkbox.checked = false;
+            		entry.appendChild(checkbox);
+            		//entry.setAttribute("id", "n" + transp_type);
+            		list.appendChild(entry);
+				}
+			}
+			
+            map.on('click', 'stops', function(e) {
+            	// Here you can access e.features[0] which is the feature cliked
+                // With that you can do whatever you want with your feature
+                lonLat = e.lngLat
+                latitude = lonLat.lat
+                longitude = lonLat.lng
+                console.log(latitude, longitude)
+                console.log(e.features[0])
+                console.log(e.features[0].id)
+                var stop_id = e.features[0].id
+                list_routes = stop_routes[stop_id]
+                console.log(list_routes)
+
+                var html = ''
+                for (i = 0; i < list_routes.length; i++) {
+                    route_name = list_routes[i].split("_")[0]
+                    var checkbox = document.getElementById(list_routes[i] + "_" + stop_id);
+                    if(checkbox.checked){
+                    	html +=  route_name + "<input type='checkbox' class='checkbox_stop' onclick='stopRouteSelection(this)' id='sr_" + list_routes[i] + "_" + stop_id + "' checked ><br>";
+                    }else{
+                    	html +=  route_name + "<input type='checkbox' class='checkbox_stop' onclick='stopRouteSelection(this)' id='sr_" + list_routes[i] + "_" + stop_id +"'><br>";
+                    }
+                }
+                	                
+                var popup = new mapboxgl.Popup({closeOnClick: true, anchor: 'bottom'})
+                .setLngLat({lat:latitude, lng: longitude})
+                .setHTML(html)
+                .addTo(map);
+            });
+
+            function stopRouteSelection(checkbox){
+                console.log(checkbox.checked)
+                console.log(checkbox)
+                console.log(checkbox.id)
+                route_name_split = checkbox.id.split("_")
+                route_name = route_name_split[1] + "_" + route_name_split[2] + "_" + route_name_split[3]
+                console.log(route_name)
+                var list_checkbox = document.getElementById(route_name);
+                console.log(list_checkbox)
+                list_checkbox.checked = checkbox.checked;
+            }
+
+            map.on('mouseenter', 'stops', () => {
+            	  map.getCanvas().style.cursor = 'pointer'
+            	})
+           	map.on('mouseleave', 'stops', () => {
+            	  map.getCanvas().style.cursor = ''
+           	})
+           	
+           	function showRoutes(button){
+            	var list = document.getElementById ( "routes_list_div" ) ;
+            	if (list.style.display == "none"){
+            		button.className += " active_edit";
+            		list.style.display = "inline" ;
+                }else{
+                	list.style.display = "none"
+                	button.className = button.className.replace(" active_edit", "");
+                }
+            }
+
+            function selectSegments(button){
+            	var list = document.getElementById ( "segments_div" ) ;
+            	if (list.style.display == "none"){
+            		button.className += " active_edit";
+            		list.style.display = "inline" ;
+                }else{
+                	list.style.display = "none"
+                	button.className = button.className.replace(" active_edit", "");
+                }
+            }
+
+            /*var header = document.getElementById("edit_buttons");
+            var btns = header.getElementsByClassName("button-edit");
+            for (var i = 0; i < btns.length; i++) {
+              btns[i].addEventListener("click", function() {
+              var current = document.getElementsByClassName("active");
+              current[0].className = current[0].className.replace(" active", "");
+              this.className += " active";
+              });
+            }*/
+
             var targets = [];
             var sources = [];
             
@@ -793,13 +939,8 @@
             		alert("Some coordinates are missing."); 
                	}
                	else {
-               		var not_checked = document.querySelectorAll('input[class="checkbox_list"]:not(:checked)');
-					var removed_routes = []               		
-               		for(var i = 0; i < not_checked.length; i+=1){
-                   		n = not_checked[i]
-                   		removed_routes.push(n.id)
-                   	}
-                   	console.log(removed_routes)
+               		removed_routes = getRemovedRoutes(routes);
+               		removed_stops = getRemovedStops(routes, stops);
             		// ajax the JSON to the server
             		now = false;
             		if(timestamp==-1){
@@ -808,7 +949,8 @@
                 	}
             		console.log(timestamp)
             		var data_input = {"sources": sources, "targets":targets, "timestamp":timestamp, "polygon_source_coords":polygon_source_coords,
-                		"polygon_target_coords": polygon_target_coords, "removed_routes": removed_routes}
+                		"polygon_target_coords": polygon_target_coords, "removed_routes": removed_routes, "removed_stops": removed_stops, 
+                		"selected_neighborhoods": null}
 
             		if(now){
             			timestamp = -1
