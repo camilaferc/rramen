@@ -48,10 +48,10 @@ MAPBOX_ACCESS_KEY = 'pk.eyJ1IjoiY2FtaWxhZmVyYyIsImEiOiJjazB3aGJ5emkwMzNqM29tbWxk
 #app.config.from_envvar('APP_CONFIG_FILE', silent=True)
 #MAPBOX_ACCESS_KEY = app.config['MAPBOX_ACCESS_KEY']
 
+region = "berlin"
 
 graph = None
 dataManager = PostgisDataManager()
-region = "berlin"
 id_map_target_public = {}
 id_map_source_private = {}
 id_map_target_private = {}
@@ -62,6 +62,31 @@ tt_private = {}
 map_source_coord = {}
 map_target_coord = {}
 
+@app.route('/rramen')
+def rramen():
+    #if not graph:
+    #    load = LoadMultimodalNetwork("berlin")
+    #    graph = load.load()
+    
+    polygons = dataManager.getNeighborhoodsPolygons(region)
+    routes, stops, stop_routes, stop_level = dataManager.getRoutes(region)
+    #print(stop_level)
+    stop_locations = dataManager.getStopsLocation(region)
+    
+    return render_template('rramen.html', 
+        ACCESS_KEY=MAPBOX_ACCESS_KEY,
+        polygons = polygons,
+        routes = routes, 
+        stops = stops,
+        stop_routes = stop_routes,
+        transp_mapping = GTFS.ROUTE_TYPE,
+        stop_locations = stop_locations
+    )
+    
+    #return render_template('rr_test.html', 
+    #    ACCESS_KEY=MAPBOX_ACCESS_KEY
+    #)
+
 @app.route('/rr_test')
 def mapbox_gl():
     #if not graph:
@@ -69,9 +94,10 @@ def mapbox_gl():
     #    graph = load.load()
     
     polygons = dataManager.getNeighborhoodsPolygons(region)
+    
     return render_template('rr_test.html', 
         ACCESS_KEY=MAPBOX_ACCESS_KEY,
-        polygons = polygons
+        polygons = polygons,
     )
     
     #return render_template('rr_test.html', 
@@ -82,8 +108,8 @@ def mapbox_gl():
 def rr_planner():
     global graph, dataManager, region
     
-    print(graph.getNumNodes())
-    print(graph.getNumEdges())
+    #print(graph.getNumNodes())
+    #print(graph.getNumEdges())
     
     if "id_map_source_public" in session:
         print("session already contains id_map_source_public!")
@@ -680,5 +706,5 @@ def createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, osm_source, osm_ta
 if __name__ == '__main__':
     print("main!")
     # run!
-    loadData()
+    #loadData()
     app.run()

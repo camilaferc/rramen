@@ -14,6 +14,7 @@ import psycopg2
 from database.PostGISConnection import PostGISConnection
 from gtfs import GTFS
 from network.MultimodalNetwork import MultimodalNetwork
+from gtfs.GTFS import ROUTE_LEVEL
 
 
 class PostgisDataManager:
@@ -167,6 +168,7 @@ class PostgisDataManager:
             routes = {}
             route_stops = {}
             stop_routes = {}
+            stop_level = {}
             self.connection.connect();
  
             cursor = self.connection.getCursor()
@@ -187,6 +189,15 @@ class PostgisDataManager:
                             stop_routes[stop_id].append(stop_route_id)
                     else:
                         stop_routes[stop_id] = [stop_route_id]
+                    
+                    if route_type in GTFS.ROUTE_LEVEL:
+                        route_level = GTFS.ROUTE_LEVEL[route_type]
+                        if stop_id in stop_level:
+                            if stop_level[stop_id] > route_level:
+                                stop_level[stop_id] = route_level
+                        else:
+                            stop_level[stop_id] = route_level
+                        
                 #print(list_stop_names)
                 
                 if route_type in GTFS.ROUTE_TYPE:
@@ -210,7 +221,8 @@ class PostgisDataManager:
                 row = cursor.fetchone()
                     
             self.connection.close()
-            return routes, route_stops, stop_routes
+            print("DONE!!!")
+            return routes, route_stops, stop_routes, stop_level
         
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)  

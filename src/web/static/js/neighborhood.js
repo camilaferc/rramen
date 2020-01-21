@@ -50,11 +50,11 @@ function createNeighborhoodList(polygon){
 						child["parent"], list);
 	});
 	
-	addEvents();
+	addEventsNeighborhood();
 }
 
-function addEvents(){
-	var toggler = document.getElementsByClassName("caret");
+function addEventsNeighborhood(){
+	var toggler = document.getElementsByClassName("caret_neig");
 	var i;
 
 	for (i = 0; i < toggler.length; i++) {
@@ -63,7 +63,7 @@ function addEvents(){
 			//console.log("clicking!")
 			//console.log(this)
 			this.parentElement.querySelector(".nested").classList.toggle("active");
-			this.classList.toggle("caret-down");
+			this.classList.toggle("caret_neig-down");
 		});
 	}
 	
@@ -75,9 +75,9 @@ function addEvents(){
 	for (let parent of parentSet) {
 		  //console.log(parent);
 		  if(childrenSet.has(parent)){
-			  addEventsParentChild(parent)
+			  addEventsParentChildNeig(parent)
 		  }else{
-			  addEventsParent(parent)
+			  addEventsParentNeig(parent)
 		  }
 	}
 	
@@ -85,12 +85,12 @@ function addEvents(){
 	for (let child of childrenSet) {
 		  //console.log(child);
 		  if(!parentSet.has(child)){
-			  addEventsChild(child)
+			  addEventsChildNeig(child)
 		  }
 	}
 }
 
-function addEventsChild(id){
+function addEventsChildNeig(id){
 	checkbox = document.getElementById(id)
 	checkbox.addEventListener("change", function() {
 		//console.log(this.id)
@@ -108,7 +108,7 @@ function addEventsChild(id){
 				}, {
 					hover : true
 				});
-				markParent(parent, parent_checkbox);
+				markNeigParent(parent, parent_checkbox);
 			}
 		} else {
 			// Checkbox is not checked..
@@ -151,7 +151,7 @@ function updateParentColor(child_id, parent_id, parent_checkbox){
 
 /*
  * function addEventsChildren(){ const checkboxes =
- * document.getElementsByClassName("checkbox_list"); //console.log(checkboxes);
+ * document.getElementsByClassName("checkbox_list_neig"); //console.log(checkboxes);
  * //console.log(childrenMap) for (i = 0; i < checkboxes.length; i++) {
  * //console.log(checkboxes[i]) //console.log(checkboxes[i].id)
  * checkboxes[i].addEventListener("change", function() { console.log(this.id)
@@ -189,7 +189,7 @@ function colorSiblings(id, parent){
 	});
 }
 
-function addEventsParent(id){
+function addEventsParentNeig(id){
 	const checkbox = document.getElementById(id);
 	checkbox.addEventListener("change", function() {
 		if (this.checked) {
@@ -201,7 +201,7 @@ function addEventsParent(id){
 			}, {
 				hover : true
 			});
-			markChildren(this.id, true)
+			markNeigChildren(this.id, true)
 		} else {
 			// Checkbox is not checked..
 			map.setFeatureState({
@@ -210,12 +210,12 @@ function addEventsParent(id){
 			}, {
 				hover : false
 			});
-			markChildren(this.id, false)
+			markNeigChildren(this.id, false)
 		}
 	});
 }
 
-function addEventsParentChild(id) {
+function addEventsParentChildNeig(id) {
 	checkbox = document.getElementById(id)
 	checkbox.addEventListener("change", function() {
 		//console.log(this.id)
@@ -232,9 +232,9 @@ function addEventsParentChild(id) {
 				}, {
 					hover : true
 				});
-				markParent(parent, parent_checkbox);
+				markNeigParent(parent, parent_checkbox);
 			}
-			markChildren(this.id, true)
+			markNeigChildren(this.id, true)
 		} else {
 			// Checkbox is not checked..
 			map.setFeatureState({
@@ -244,7 +244,7 @@ function addEventsParentChild(id) {
 				hover : false
 			});
 			updateParentColor(this.id, parent, parent_checkbox)
-			markChildren(this.id, false)
+			markNeigChildren(this.id, false)
 
 		}
 	});
@@ -252,17 +252,17 @@ function addEventsParentChild(id) {
 
 /*
  * function addEventsParents(){ const checkboxes =
- * document.getElementsByClassName("checkbox_list_parent");
+ * document.getElementsByClassName("checkbox_list_neig_parent");
  * //console.log(checkboxes); for (i = 0; i < checkboxes.length; i++) {
  * //console.log(checkboxes[i].id) checkboxes[i].addEventListener("change",
  * function() { if (this.checked) { console.log(this.id + " checked")
  * map.setFeatureState({ source : 'polygons', id : this.id }, { hover : true });
- * markChildren(this.id, true) } else { // Checkbox is not checked..
+ * markNeigChildren(this.id, true) } else { // Checkbox is not checked..
  * map.setFeatureState({ source : 'polygons', id : this.id }, { hover : false
- * }); markChildren(this.id, false) } }); } }
+ * }); markNeigChildren(this.id, false) } }); } }
  */
 
-function markChildren(parent_id, marked){
+function markNeigChildren(parent_id, marked){
 	parent_id = parseInt(parent_id, 10)
 	if(parentMap.has(parent_id)){
 		parentMap.get(parent_id).forEach(function (child) {
@@ -278,18 +278,18 @@ function markChildren(parent_id, marked){
 			});
 			if(parentMap.has(child_id)){
 				//console.log(child_id + " has children");
-				markChildren(child_id, marked);
+				markNeigChildren(child_id, marked);
 			}
     	});
 	}
 }
 
 
-function markParent(parent_id, parent_checkbox){
+function markNeigParent(parent_id, parent_checkbox){
 	parent_id = parseInt(parent_id, 10)
 	//console.log(parent_id)
 	if(parent_checkbox && parentMap.has(parent_id)){
-		allMarked = checkChildrenMarked(parent_id);
+		allMarked = checkChildrenMarkedNeig(parent_id);
 		if(allMarked){
 			//console.log("all children are marked:" + parent_id)
 			map.setFeatureState({
@@ -316,13 +316,13 @@ function markParent(parent_id, parent_checkbox){
 				parent_parent = childrenMap.get(parent_id);
 				//console.log("parent_parent:" + parent_parent)
 				const parent_parent_checkbox = document.getElementById(parent_parent);
-				markParent(parent_parent, parent_parent_checkbox);
+				markNeigParent(parent_parent, parent_parent_checkbox);
 			}
 		}
 	}
 }
 
-function checkChildrenMarked(parent_id){
+function checkChildrenMarkedNeig(parent_id){
 	for (const child of parentMap.get(parent_id)) {
 		const child_id = child['id']
 		//console.log(child_id)
@@ -353,7 +353,7 @@ function buildNeighborhoodList(nid, name, level, parent, list){
 	    var checkbox = document.createElement("INPUT");
 	    checkbox.setAttribute("type", "checkbox");
 	    checkbox.setAttribute("id", nid);
-	    checkbox.classList.add('checkbox_list');
+	    checkbox.classList.add('checkbox_list_neig');
 	    entry.appendChild(checkbox);
 	    entry.style.overflow = "hidden";
 	    entry.setAttribute("id", "n"+nid);
@@ -362,13 +362,13 @@ function buildNeighborhoodList(nid, name, level, parent, list){
     	//console.log("node has children:" + nid);
     	var entry = document.createElement('li');
 	    var span = document.createElement('span');
-	    span.classList.add('caret');
+	    span.classList.add('caret_neig');
 	    entry.appendChild(span);
 	    entry.appendChild(document.createTextNode(name));
 	    var checkbox = document.createElement("INPUT");
 	    checkbox.setAttribute("type", "checkbox");
 	    checkbox.setAttribute("id", nid);
-	    checkbox.classList.add('checkbox_list_parent');
+	    checkbox.classList.add('checkbox_list_neig_parent');
 	    entry.appendChild(checkbox);
 	    entry.setAttribute("id", "n"+nid);
 	    list.appendChild(entry);
@@ -391,7 +391,7 @@ function buildNeighborhoodList(nid, name, level, parent, list){
 }
 
 function getSelectedNeighborhoods(){
-	var checked = document.querySelectorAll('input[class="checkbox_list"]:checked');
+	var checked = document.querySelectorAll('input[class="checkbox_list_neig"]:checked');
 	var checked_neig = []               		
 	for(var i = 0; i < checked.length; i+=1){
    		n = checked[i]
@@ -402,7 +402,7 @@ function getSelectedNeighborhoods(){
 }
 
 function clearSelectedNeighborhoods(){
-	var checked = document.querySelectorAll('input[class="checkbox_list"]:checked');
+	var checked = document.querySelectorAll('input[class="checkbox_list_neig"]:checked');
 	for(var i = 0; i < checked.length; i+=1){
    		n = checked[i]
    		n.checked = false;
@@ -415,7 +415,7 @@ function clearSelectedNeighborhoods(){
    		
    	}
 	
-	checked = document.querySelectorAll('input[class="checkbox_list_parent"]:checked');
+	checked = document.querySelectorAll('input[class="checkbox_list_neig_parent"]:checked');
 	for(var i = 0; i < checked.length; i+=1){
    		n = checked[i]
    		n.checked = false;
@@ -427,11 +427,11 @@ function clearSelectedNeighborhoods(){
 		});
    	}
 	
-	var toggler = document.getElementsByClassName("caret-down");
+	var toggler = document.getElementsByClassName("caret_neig-down");
 	for (var i = 0; i < toggler.length; i++) {
 		console.log(toggler[i])
 		toggler[i].parentElement.querySelector(".nested").classList.toggle("active");
-		toggler[i].classList.toggle("caret-down");
+		toggler[i].classList.toggle("caret_neig-down");
 		//toggler[i].parentElement.querySelector("active").classList.toggle(".nested");
 		//toggler[i].classList.remove('caret-down');
 	}

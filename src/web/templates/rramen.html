@@ -1,7 +1,7 @@
 <html>
     <head>
         <meta charset='utf-8' />
-        <title>Relative Reachability - TEST</title>
+        <title>RRAMEN</title>
         <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
         <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v1.5.0/mapbox-gl.js'></script>
 		<link href='https://api.tiles.mapbox.com/mapbox-gl-js/v1.5.0/mapbox-gl.css' rel='stylesheet' />
@@ -13,15 +13,23 @@
 		<link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.0.9/mapbox-gl-draw.css' type='text/css' />
 		
 		<script type="text/javascript" src="static/js/color_gradient.js?1"></script>
-		
 		<script type="text/javascript" src="static/js/polygon.js?12"></script>
-		<script type="text/javascript" src="static/js/neighborhood.js?101"></script>
+		<script type="text/javascript" src="static/js/neighborhood.js?104"></script>
+		<script type="text/javascript" src="static/js/planner_menu.js"></script>
+		<script type="text/javascript" src="static/js/routes.js?338"></script>
+		<script type="text/javascript" src="static/js/stops.js?14"></script>
+		<script type="text/javascript" src="static/js/road_segment.js"></script>
 		
-		<link rel="stylesheet" type="text/css" href="static/css/rr_test.css?25">
+		<link rel="stylesheet" type="text/css" href="static/css/rr_test.css?49">
 		<link rel="stylesheet" type="text/css" href="static/css/list_neighborhoods.css?15">
+		<link rel="stylesheet" type="text/css" href="static/css/planner.css?5">
         
     </head>
     <body>
+    <div class="top-item" >
+			<img src="static/images/ramen-logo-black.png" style="display: block;height: 80%; vertical-align: middle; padding-top: 3px; padding-left: 5px;"> 
+	</div>
+	<hr style="padding:0px; margin: 0px; height: 8px; border: 0; box-shadow: inset 0 8px 8px -8px rgba(0, 0, 0, 0.5);">
     <div class="container">
     	<div id="slidemenu" class = "fixed">
 				<div class="input" id="input_frame" style="margin: 5px;"><div class="tab">
@@ -62,6 +70,21 @@
 					</ul>
 				</div>
 				<br><br>
+				<div id="edit_buttons" style="width: 100%;display:none">
+					<button class="button-edit" onclick="showRoutes(this)">Edit Lines/Stops</button>
+					<div id="routes_list_div" style="width: 300px;max-height:30%; overflow:auto; display:none; padding:10px">
+						<ul id="list_routes" style="overflow:auto;">
+						</ul>
+					</div>
+					<hr style="padding:0px; margin: 0px; border: 0.8px solid #C8C8C8;">
+					<button class="button-edit" id="button-edit-segments" onclick="selectSegments(this)">Edit Road Segments</button>
+					<div id="segments_div" style="width: 300px;max-height:30%; overflow:auto; display:none">
+						<p style="color:#696969;font-size:14px">Please select road segments from the map.</p>
+						<ul id="list_segments" style="width: 200px">
+						</ul>
+					</div>
+					<br><br>
+				</div>
                 <select id="select_departure" onchange="departure(this.value)" class="dropdown">
   					<option value="now">Leave now</option>
   					<option value="later">Depart at</option>
@@ -82,23 +105,19 @@
 	</div>
 	
         <script>
-			var view = 0;
-			function openTabIndividual(button){
-				console.log("Individual User Selected");
-				view = 0;
-				button_planner = document.getElementById("button_planner");
-				button_planner.className = button_planner.className.replace(" active", "");
-				button.className += " active";
-			}  
-
-			function openTabPlanner(button){
-				console.log("Planner Selected");
-				view = 1;
-				button_individual = document.getElementById("button_individual");
-				button_individual.className = button_individual.className.replace(" active", "");
-				button.className += " active";
-			}   
-			   		
+        	var polygons = {{polygons|safe}}
+        	var routes = {{routes|safe}}
+	        var stops = {{stops|safe}}
+	        var stop_routes = {{stop_routes|safe}}
+	        var transp_mapping = {{transp_mapping|safe}}
+	        var stop_locations = {{stop_locations|safe}}
+	        
+        	$( document ).ready(function() {
+            	console.log( "document loaded" );
+          		createNeighborhoodList(polygons);
+    	        buildRouteList(routes, stops, transp_mapping)
+        	});
+        	
             mapboxgl.accessToken = '{{ ACCESS_KEY }}';
             var map = new mapboxgl.Map({
                 container: 'map',
@@ -109,10 +128,6 @@
             //map.scrollZoom.disable();
             // Add zoom and rotation controls to the map.
 			map.addControl(new mapboxgl.NavigationControl());
-
-			polygons = {{polygons|safe}}
-      		createNeighborhoodList(polygons);
-			
 
             map.on('load', function () {
             	map.addSource("polygons", {
@@ -135,7 +150,14 @@
                 			0
                 		]
                 		}
-                	});                
+                	});
+                	
+                	map.loadImage('static/images/bus-icon.png', function(error, image) {
+                		if (error) throw error;
+                	    map.addImage('bus-icon', image);
+                	})
+                	
+                	addStopsLayer(stop_locations)                
             });
 
             map.on('error', e => {
@@ -144,7 +166,28 @@
                     console.error(e);
             });
 
-            
+            var view = 0;
+
+			function openTabIndividual(button){
+				console.log("Individual User Selected");
+				view = 0;
+				button_planner = document.getElementById("button_planner");
+				button_planner.className = button_planner.className.replace(" active", "");
+				button.className += " active";
+				edit_buttons = document.getElementById("edit_buttons");
+				edit_buttons.style.display = "none";
+			}  
+
+			function openTabPlanner(button){
+				console.log("Planner Selected");
+				view = 1;
+				button_individual = document.getElementById("button_individual");
+				button_individual.className = button_individual.className.replace(" active", "");
+				button.className += " active";
+				edit_buttons = document.getElementById("edit_buttons");
+				edit_buttons.style.display = "inline";
+			}
+
             var targets = [];
             var sources = [];
             
@@ -431,11 +474,163 @@
 
             });
 
+            var popup_seg = new Map()
+            map.on('contextmenu', function(e) {
+            	console.log("right click")
+            	console.log(view)
+                if(view == 1){
+                    var latitude = e.lngLat.lat;
+                    var longitude = e.lngLat.lng;
+                    console.log(latitude, longitude)
+                    
+                    var segment_data = {"latitude": latitude, "longitude": longitude}
+            			$.post("segment", JSON.stringify(segment_data) , function(res){
+        					//console.log(marker_id)
+    						var geom = res["segment"];
+    						var seg_id = res["segment_id"];
+    						console.log(geom, seg_id)
+
+    						
+    						if (!map.getLayer("seg_"+ seg_id)) {
+    							console.log("Adding layer:" + seg_id)
+    							map.addLayer({
+    						        "id": "seg_"+ seg_id,
+    						        "type": "line",
+    						        "source": {
+    						            "type": "geojson",
+    						            "data": geom
+    						        },
+    						        "layout": {
+    						            "line-join": "round",
+    						            "line-cap": "round"
+    						        },
+    						        'paint': {
+    						        	"line-width": 6,
+    						        	// color routes by type
+    						        	// https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions-match
+    						        	'line-color': '#ffdf00'
+    						        }
+    						    }, 'stops');
+
+
+    							var html = '<p style="width: 110px; padding:-10px"> Remove highlighted road segment? </p>' + 
+    			                '<button style="margin-right: 10px;" onclick="removeSegment(true, '+ seg_id + ')">Yes</button>' +
+    			                '<button onclick="removeSegment(false, '+ seg_id + ')">No</button>';
+    			                
+    			                var popup = new mapboxgl.Popup({closeOnClick: false, anchor: 'top', offset:10, closeButton: false})
+    			                .setLngLat({lat:latitude, lng: longitude})
+    			                .setHTML(html)
+    			                .addTo(map);
+
+    			                popup_seg.set(seg_id, popup)
+
+    						}
+    						
+                	});
+                }
+            });
+
             map.on("dblclick", function() {
                 clearTimeout(timer);
                 prevent = true;
                 map.zoomIn();
             });
+
+            map.on('click', 'stops', function(e) {
+            	// Here you can access e.features[0] which is the feature cliked
+                // With that you can do whatever you want with your feature
+                lonLat = e.lngLat
+                latitude = lonLat.lat
+                longitude = lonLat.lng
+                console.log(latitude, longitude)
+                console.log(e.features[0])
+                console.log(e.features[0].id)
+                var stop_id = e.features[0].id
+                list_routes = stop_routes[stop_id]
+                console.log(list_routes)
+
+                var html = ''
+                for (i = 0; i < list_routes.length; i++) {
+                    route_name = list_routes[i].split("_")[0]
+                    if(view == 0){
+                    	html += route_name + "<br>"
+                    }else{
+                    	var checkbox = document.getElementById(list_routes[i] + "_" + stop_id);
+                        if(checkbox.checked){
+                        	html +=  route_name + "<input type='checkbox' class='checkbox_stop' onclick='stopRouteSelection(this)' id='sr_" + list_routes[i] + "_" + stop_id + "' checked ><br>";
+                        }else{
+                        	html +=  route_name + "<input type='checkbox' class='checkbox_stop' onclick='stopRouteSelection(this)' id='sr_" + list_routes[i] + "_" + stop_id +"'><br>";
+                        }
+                    }
+                }
+                	                
+                var popup = new mapboxgl.Popup({closeOnClick: true, offset:'3px'})
+                .setLngLat({lat:latitude, lng: longitude})
+                .setHTML(html)
+                .addTo(map);
+            });
+
+            var popup_stop = null;
+            map.on('mouseenter', 'stops', function(e) {
+          	  	map.getCanvas().style.cursor = 'pointer'
+          		lonLat = e.lngLat
+                latitude = lonLat.lat
+                longitude = lonLat.lng
+                console.log(latitude, longitude)
+
+                var stop_id = e.features[0].id
+                list_routes = stop_routes[stop_id]
+                console.log(list_routes)
+
+                var html = ''
+                for (i = 0; i < list_routes.length; i++) {
+                    route_name = list_routes[i].split("_")[0]
+                    if(view == 0){
+                    	html += route_name + "<br>"
+                    }else{
+                    	var checkbox = document.getElementById(list_routes[i] + "_" + stop_id);
+                        if(checkbox.checked){
+                        	html +=  route_name + "<input type='checkbox' class='checkbox_stop' onclick='stopRouteSelection(this)' id='sr_" + list_routes[i] + "_" + stop_id + "' checked ><br>";
+                        }else{
+                        	html +=  route_name + "<input type='checkbox' class='checkbox_stop' onclick='stopRouteSelection(this)' id='sr_" + list_routes[i] + "_" + stop_id +"'><br>";
+                        }
+                    }
+                }
+               	if(!popup_stop || (popup_stop && !popup_stop.isOpen())){
+               		popup_stop = new mapboxgl.Popup({closeOnClick: true, offset:'3px'})
+                    .setLngLat({lat:latitude, lng: longitude})
+                    .setHTML(html)
+                    .addTo(map);
+                }              
+
+          	});
+         	map.on('mouseleave', 'stops', function(e){
+         		popup_stop_div = popup_stop._container
+         		popup_stop_div.onmouseleave = function(event) {popup_stop.remove()};
+
+                var bounds = popup_stop_div.getBoundingClientRect()
+                console.log(bounds)
+                var top = bounds.top
+                var bottom = bounds.bottom
+                var left = bounds.left
+                var right = bounds.right
+
+             	var x = e.originalEvent.x
+             	var y = e.originalEvent.y
+
+             	console.log(x,y)
+             	console.log(left,right, bottom, top)
+
+             	if(x >= Math.min(left, right) && x <= Math.max(left, right) && y >= Math.min(bottom, top) && y <= Math.max(bottom, top)){
+                 	console.log("Mouse is INSIDE area!")
+                }else{
+                	 console.log("Mouse is OUTSIDE area!")
+                	 map.getCanvas().style.cursor = ''
+                	 popup_stop.remove()
+                }
+              	 
+         	});
+
 
             function addMarker(location){
                 console.log("activating marker")
@@ -717,7 +912,6 @@
             		alert("Some coordinates are missing."); 
                	}
                	else {
-            		// ajax the JSON to the server
             		now = false;
             		if(timestamp==-1){
             			timestamp = new Date().getTime();
@@ -730,7 +924,8 @@
 					if(now){
 						timestamp = -1
 					}
-					
+
+            		// ajax the JSON to the server
             		$.post("receiver", JSON.stringify(data_input) , function(res){
 						//console.log(res)
 						//console.log(res[1])
@@ -747,14 +942,6 @@
 		                    'paint': {
 		                    	'circle-radius': 6,
 		                    	// color circles by rr
-		                    	// https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions-match
-		                    	//'circle-color': [
-								//	'match',
-								//	['get', 'marker-color'],
-								//	"r", '#ff0000',
-								//	"b", '#0000FF',
-								//	/* other */ '#ccc'
-								//]
 		                    	'circle-color': [
 		                    		'interpolate',
 		                    		['linear'],
@@ -762,43 +949,8 @@
 		                    		0, '#ff0000',
 		                    		1, '#0000FF'
 		                    	]
-			                   	//getColorGradient("#FF0000", "#0000FF", ['get', 'marker-color'])
 		                    }
 		                });
-		                /*
-		                map.addLayer({
-		                    "id": "paths_public_layer",
-		                    "type": "line",
-		                    "source": {
-			                    "type": "geojson",
-			                    "data": res["paths_public"]
-			                },
-			                "layout": {
-		                        "line-join": "round",
-		                        "line-cap": "round"
-		                    },
-		                    "paint": {
-		                        "line-color": "#223b53",
-		                        "line-width": 4
-		                    }
-		                });
-
-		                map.addLayer({
-		                    "id": "paths_private_layer",
-		                    "type": "line",
-		                    "source": {
-			                    "type": "geojson",
-			                    "data": res["paths_private"]
-			                },
-			                "layout": {
-		                        "line-join": "round",
-		                        "line-cap": "round"
-		                    },
-		                    "paint": {
-		                        "line-color": "#ff0000",
-		                        "line-width": 4
-		                    }
-		                });*/
             		}); 
                	}        
             }
@@ -829,7 +981,6 @@
                     }
                 });
             }
-
 
 
         </script>

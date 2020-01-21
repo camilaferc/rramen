@@ -1,0 +1,101 @@
+.button-edit {
+  background-color: #F5F5F5; 
+  color: black; 
+  width: 100%;
+  padding: 16px;
+  text-align: left;
+   border: none;
+}
+
+.button-edit:hover, .active_edit {
+  background-color: #007CE2;
+  color: white;
+}
+
+/* Remove default bullets */
+ul, #list_routes {
+	list-style-type: none;
+}
+
+/* Remove margins and padding from the parent ul */
+#list_routes {
+	margin: 5px;
+	padding: 0;
+	max-height: 30%;
+	overflow-y: auto;
+}
+
+#list_segments {
+	margin: 5px;
+	padding: 0;
+	max-height: 30%;
+	overflow-y: auto;
+}
+
+/* Style the caret/arrow */
+.caret, .caret_neig {
+	cursor: pointer;
+	user-select: none; /* Prevent text selection */
+}
+
+/* Create the caret/arrow with a unicode, and style it */
+.caret::before, .caret_neig::before {
+	content: "\25B6";
+	color: #007CE2;
+	display: inline-block;
+	margin-right: 6px;
+}
+
+/* Rotate the caret/arrow icon when clicked on (using JavaScript) */
+.caret-down::before, .caret_neig-down::before {
+	transform: rotate(90deg);
+}
+
+/* Hide the nested list */
+.nested {
+	display: none;
+}
+
+/* Show the nested list when the user clicks on the caret/arrow (with JavaScript) */
+.active {
+	display: block;
+}
+
+.checkbox_list_parent, .checkbox_list_segment, .checkbox_list_neig_parent {
+	vertical-align: middle;
+	float: right;
+}
+
+.checkbox_list, .checkbox_list_neig {
+	vertical-align: middle;
+	display: inline;
+	float: right;
+	clear:both;
+}
+
+.list_child {
+	margin-bottom: 3px;
+}
+
+.list_child:last-child {
+    margin-bottom: 0px;
+}
+
+.route-text{
+	border : none;
+	whiteSpace: normal;
+	outline: none;
+	width: 50px;
+	padding: 0;
+	height:auto;
+}
+
+.route-text:focus {
+    outline:none;
+}
+
+.checkbox_stop {
+	vertical-align: middle;
+	display: inline;
+	float: right;
+}
