@@ -349,6 +349,7 @@ function buildNeighborhoodList(nid, name, level, parent, list){
 			//console.log(name)
 		}
 	    entry.appendChild(document.createTextNode(name));
+	    entry.style.overflow="hidden"
 	    //entry.style.width="80%"
 	    var checkbox = document.createElement("INPUT");
 	    checkbox.setAttribute("type", "checkbox");
@@ -371,6 +372,7 @@ function buildNeighborhoodList(nid, name, level, parent, list){
 	    checkbox.classList.add('checkbox_list_neig_parent');
 	    entry.appendChild(checkbox);
 	    entry.setAttribute("id", "n"+nid);
+	    entry.style.overflow="hidden"
 	    list.appendChild(entry);
 
 	    var listNeig = document.getElementById("n"+nid);

@@ -1,6 +1,12 @@
+html { height: 100%; }
+
 body {
-	margin: 0;
-	padding: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0px;
+    padding: 0px;
+    font-family: "Times New Roman", Times, serif;
+    overflow: auto;
 }
 
 #map {
@@ -41,7 +47,9 @@ body {
 }
 
 .container {
-	height: calc(95% - 8px);
+	height: calc(95vh - 8px);
+	height: -moz-calc(95vh - 8px);
+    height: -webkit-calc(95vh - 8px);
 	display: -webkit-flex;
 	display: flex;
 	-webkit-flex-direction: row;
@@ -60,6 +68,8 @@ body {
 .fixed {
 	width: 20%;
 	min-width: 360px;
+	height: 100%;
+	overflow: auto;
 }
 
 .flex-item {
@@ -157,6 +167,7 @@ body {
 	height: 24px;
 	margin-right: 4px;
 	position: relative;
+	width: 180px;
 }
 
 .calendar-text {
@@ -205,4 +216,14 @@ body {
   padding: 6px 12px;
   border: 1px solid #ccc;
   border-top: none;
+}
+
+.boxed {
+  border-radius: 6px;
+  border: 1px solid #D3D3D3;
+  background-color: white;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+  margin-bottom: 5px;
 }

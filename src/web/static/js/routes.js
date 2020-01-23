@@ -1,4 +1,5 @@
 var bounds = new mapboxgl.LngLatBounds();
+var selected_routes = []
 
 function buildRouteList(routes, stops, transp_mapping){
 	for ( var trans_id in routes) {
@@ -16,7 +17,7 @@ function addEventsRoutes(){
     for (i = 0; i < toggler.length; i++) {
       //console.log(toggler[i])
       toggler[i].addEventListener("click", function() {
-        this.parentElement.querySelector(".nested").classList.toggle("active");
+        this.parentElement.querySelector(".nested").classList.toggle("active_route");
         this.classList.toggle("caret-down");
       });
     }
@@ -173,7 +174,7 @@ function buildRouteListMode(transp_id, routes, transp_type, stops) {
 		var list = document.getElementById('list_routes');
 
 		var entry = document.createElement('li');
-		//entry.style.overflowX = "hidden";
+		entry.style.overflow = "hidden";
 		var span = document.createElement('span');
 		span.classList.add('caret');
 		entry.appendChild(span);
@@ -272,6 +273,7 @@ function buildRouteListMode(transp_id, routes, transp_type, stops) {
 			checkbox.classList.add('checkbox_stop_list');
 			checkbox.checked = true;
 			checkbox.style.float = "right";
+			//entry_stop.style.fontSize = "14px";
 			entry_stop.appendChild(checkbox);
 			entry_stop.setAttribute("id", "s_"+ route + "_" + transp_id + "_" + stop[0]);
 			entry_ul_child.appendChild(entry_stop);
@@ -285,8 +287,8 @@ function showRoute(route_id){
 	var route = route_id.split("_");
 	var route_name = route[1];
 	var transp_id = route[2]
-	img = document.getElementById("img_" + route_name + "_" + transp_id)
-	text = document.getElementById("text_" + route_name + "_" + transp_id);
+	var img = document.getElementById("img_" + route_name + "_" + transp_id)
+	var text = document.getElementById("text_" + route_name + "_" + transp_id);
 	console.log(route_name, transp_id)
 	if (!map.getLayer("route_" + route_name + "_" + transp_id)) {
 		img.src = '../../static/images/map-blue3-16.png';
@@ -364,14 +366,14 @@ function showRoute(route_id){
 		
 	}else{
 		//alert("Route is already shown on the map.");
-		clearRoute(route_id);
-		img.src = '../../static/images/map-blue2-16.png';
-		text.style.fontWeight="normal";
+		clearRoute(route_name + "_" + transp_id);
 	}
 }
 
 function addRouteLayer(route_name, transp_id, geom, color){
     console.log("Adding layer:" + route_name + "_" + transp_id)
+    console.log(selected_routes)
+    selected_routes.push(route_name+"_" + transp_id)
 	map.addLayer({
         "id": "route_"+route_name+"_" + transp_id,
         "type": "line",
@@ -389,7 +391,7 @@ function addRouteLayer(route_name, transp_id, geom, color){
         	// https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions-match
         	'line-color': color
         }
-    }, 'stops');
+    });
 }
 
 function getRemovedRoutes(routes){
@@ -440,14 +442,23 @@ function getRemovedStops(routes, stops){
 }
 
 function clearRoute(route_id){
+	
 	var route = route_id.split("_");
-	var route_name = route[1];
-	var transp_id = route[2]
-	console.log("Clearing route:" + route_name + '_' + transp_id)
-	map.removeLayer("route_"+ route_name + '_' + transp_id);
-	map.removeSource("route_"+ route_name + '_' + transp_id);
-	line = document.getElementById("line_" + route_name + "_" + transp_id)
-	line.parentNode.removeChild(line);
+	var route_name = route[0];
+	var transp_id = route[1]
+	
+	if (map.getLayer("route_" + route_name + "_" + transp_id)) {
+		console.log("Clearing route:" + route_name + '_' + transp_id)
+		map.removeLayer("route_"+ route_name + '_' + transp_id);
+		map.removeSource("route_"+ route_name + '_' + transp_id);
+		line = document.getElementById("line_" + route_name + "_" + transp_id)
+		line.parentNode.removeChild(line);
+	}
+	var img = document.getElementById("img_" + route_name + "_" + transp_id)
+	var text = document.getElementById("text_" + route_name + "_" + transp_id);
+	img.src = '../../static/images/map-blue2-16.png';
+	text.style.fontWeight="normal";
+	
 }
 
 function formatStopName(stop_name){
@@ -477,4 +488,20 @@ function getRandomColor() {
 	    color += letters[Math.floor(Math.random() * 16)];
 	  }
 	  return color;
+}
+
+function clearSelectedRoutes(){
+	$(".caret-down").removeClass("caret-down");
+	$(".active_route").removeClass("active_route");
+
+	list = document.getElementById ('list_routes');
+    var checkboxes = list.querySelectorAll ('input[type=checkbox]:not(:checked)');
+    for (checkbox of checkboxes){
+    	checkbox.checked = true;
+    }
+    
+    for (route of selected_routes){
+    	clearRoute(route);
+    }
+    routes = []
 }

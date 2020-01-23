@@ -87,7 +87,7 @@ class PostgisDataManager:
         except (Exception, psycopg2.DatabaseError) as error:
             print(error) 
     
-    def getStopsLocation(self, region):
+    def getStopsLocation(self, region, stops_level):
         sql = """select stop_id, stop_name, ST_AsGeoJSON(stop_location) 
                 from stops_{0}
                 where stop_type=1 and 
@@ -98,7 +98,7 @@ class PostgisDataManager:
         sql = sql.format(region);
         
         try:
-            features = []
+            features = {}
             self.connection.connect();
  
             cursor = self.connection.getCursor()
@@ -108,18 +108,28 @@ class PostgisDataManager:
             
             while row is not None:
                 (stop_id, name, location) = row
-                properties = {'name': name}
-                #print(nid, name, level, parent)
-                #print(polygon)
-                geometry = json.loads(location)
-                feature = Feature(geometry = geometry, properties = properties, id = stop_id)
-                #print(feature)
-                features.append(feature)
-    
+                if stop_id in stops_level:
+                    stop_level = stops_level[stop_id]
+                    #print(stop_level)
+                    properties = {'name': name}
+                    #print(nid, name, level, parent)
+                    #print(polygon)
+                    geometry = json.loads(location)
+                    feature = Feature(geometry = geometry, properties = properties, id = stop_id)
+                    
+                    if stop_level in features:
+                        features[stop_level].append(feature)
+                    else:
+                        features[stop_level] = [feature]
+                    #print(feature)
                 row = cursor.fetchone()
-            
+                
+            for level in features:
+                features[level] = FeatureCollection(features[level])
+                
             self.connection.close()
-            return FeatureCollection(features)
+            stops_level = None
+            return features
         
         except (Exception, psycopg2.DatabaseError) as error:
             print(error) 
@@ -178,28 +188,32 @@ class PostgisDataManager:
             
             while row is not None:
                 (route_id, route_name, stop_ids, stop_names, route_type ) = row
-                #print(route_id)
+                if route_type not in GTFS.ROUTE_LEVEL:
+                    row = cursor.fetchone()
+                    continue
+                route_level = GTFS.ROUTE_LEVEL[route_type]
+                #print(route_id, route_level)
                 list_stop_names = []
                 for i in range(0,len(stop_ids)):
                     stop_id = stop_ids[i]
                     list_stop_names.append([stop_id,stop_names[i]])
                     stop_route_id = route_name + "_" + str(route_type)
                     if stop_id in stop_routes:
-                        if stop_route_id not in stop_routes[stop_id]:  
-                            stop_routes[stop_id].append(stop_route_id)
+                        if route_level in stop_routes[stop_id]:
+                            if stop_route_id not in stop_routes[stop_id][route_level]:  
+                                stop_routes[stop_id][route_level].append(stop_route_id)
+                        else:
+                            stop_routes[stop_id][route_level] = [stop_route_id]
                     else:
-                        stop_routes[stop_id] = [stop_route_id]
+                        stop_routes[stop_id]={route_level : [stop_route_id]}
                     
                     if route_type in GTFS.ROUTE_LEVEL:
-                        route_level = GTFS.ROUTE_LEVEL[route_type]
                         if stop_id in stop_level:
                             if stop_level[stop_id] > route_level:
                                 stop_level[stop_id] = route_level
                         else:
                             stop_level[stop_id] = route_level
                         
-                #print(list_stop_names)
-                
                 if route_type in GTFS.ROUTE_TYPE:
                     route_stop_name = route_name + "_" + str(route_type)
                     if route_type in routes:
@@ -221,7 +235,6 @@ class PostgisDataManager:
                 row = cursor.fetchone()
                     
             self.connection.close()
-            print("DONE!!!")
             return routes, route_stops, stop_routes, stop_level
         
         except (Exception, psycopg2.DatabaseError) as error:

@@ -7,6 +7,7 @@ ul, #list_neighborhoods {
 #list_neighborhoods {
 	margin: 5px;
 	padding: 0;
+	overflow: auto;
 }
 
 /* Style the caret/arrow */
@@ -36,18 +37,6 @@ ul, #list_neighborhoods {
 /* Show the nested list when the user clicks on the caret/arrow (with JavaScript) */
 .active {
 	display: block;
-}
-
-.checkbox_list_parent {
-	vertical-align: middle;
-	float: right;
-}
-
-.checkbox_list {
-	vertical-align: middle;
-	float: right;
-	overflow:hidden;
-	display:inline;
 }
 
 div.list {

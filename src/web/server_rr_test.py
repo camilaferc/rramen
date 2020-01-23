@@ -70,8 +70,7 @@ def rramen():
     
     polygons = dataManager.getNeighborhoodsPolygons(region)
     routes, stops, stop_routes, stop_level = dataManager.getRoutes(region)
-    #print(stop_level)
-    stop_locations = dataManager.getStopsLocation(region)
+    stop_locations = dataManager.getStopsLocation(region, stop_level)
     
     return render_template('rramen.html', 
         ACCESS_KEY=MAPBOX_ACCESS_KEY,

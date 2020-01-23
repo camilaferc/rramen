@@ -57,13 +57,14 @@ ul, #list_routes {
 }
 
 /* Show the nested list when the user clicks on the caret/arrow (with JavaScript) */
-.active {
+.active_route {
 	display: block;
 }
 
 .checkbox_list_parent, .checkbox_list_segment, .checkbox_list_neig_parent {
 	vertical-align: middle;
 	float: right;
+	display: inline-block;
 }
 
 .checkbox_list, .checkbox_list_neig {
@@ -94,8 +95,12 @@ ul, #list_routes {
     outline:none;
 }
 
-.checkbox_stop {
+.checkbox_stop_list {
 	vertical-align: middle;
 	display: inline;
 	float: right;
+}
+
+.button_unselected {
+	color : #696969;
 }

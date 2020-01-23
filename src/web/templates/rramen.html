@@ -15,14 +15,14 @@
 		<script type="text/javascript" src="static/js/color_gradient.js?1"></script>
 		<script type="text/javascript" src="static/js/polygon.js?12"></script>
 		<script type="text/javascript" src="static/js/neighborhood.js?104"></script>
-		<script type="text/javascript" src="static/js/planner_menu.js"></script>
-		<script type="text/javascript" src="static/js/routes.js?338"></script>
-		<script type="text/javascript" src="static/js/stops.js?14"></script>
+		<script type="text/javascript" src="static/js/planner_menu.js?1"></script>
+		<script type="text/javascript" src="static/js/routes.js?352"></script>
+		<script type="text/javascript" src="static/js/stops.js?34"></script>
 		<script type="text/javascript" src="static/js/road_segment.js"></script>
 		
-		<link rel="stylesheet" type="text/css" href="static/css/rr_test.css?49">
-		<link rel="stylesheet" type="text/css" href="static/css/list_neighborhoods.css?15">
-		<link rel="stylesheet" type="text/css" href="static/css/planner.css?5">
+		<link rel="stylesheet" type="text/css" href="static/css/rr_test.css?69">
+		<link rel="stylesheet" type="text/css" href="static/css/list_neighborhoods.css?18">
+		<link rel="stylesheet" type="text/css" href="static/css/planner.css?10">
         
     </head>
     <body>
@@ -63,22 +63,21 @@
 				<button  id="new_target" class="button-add" value="Add" onClick="addTarget()" style="display:none;">+</button>
 				</div>
 				<div class="input" id="input_target"></div>
-				
-				<div id="neig_list_div" class="list">
-					<br>
-					<ul id="list_neighborhoods">
+				<br>
+				<div id="neig_list_div" class="list" style="overflow:auto;max-height:20vh;">
+					<ul id="list_neighborhoods" style="overflow:auto;">
 					</ul>
 				</div>
-				<br><br>
-				<div id="edit_buttons" style="width: 100%;display:none">
-					<button class="button-edit" onclick="showRoutes(this)">Edit Lines/Stops</button>
-					<div id="routes_list_div" style="width: 300px;max-height:30%; overflow:auto; display:none; padding:10px">
+				<br>
+				<div id="edit_buttons" style="width: 100%;display:none;">
+					<button class="button-edit" id="button-edit-routes" onclick="showRoutes(this)">Edit Lines/Stops</button>
+					<div id="routes_list_div" style="width: 300px;max-height:30vh; overflow:auto; display:none; padding:10px">
 						<ul id="list_routes" style="overflow:auto;">
 						</ul>
 					</div>
 					<hr style="padding:0px; margin: 0px; border: 0.8px solid #C8C8C8;">
 					<button class="button-edit" id="button-edit-segments" onclick="selectSegments(this)">Edit Road Segments</button>
-					<div id="segments_div" style="width: 300px;max-height:30%; overflow:auto; display:none">
+					<div id="segments_div" style="width: 300px;max-height:30vh; overflow:auto; display:none">
 						<p style="color:#696969;font-size:14px">Please select road segments from the map.</p>
 						<ul id="list_segments" style="width: 200px">
 						</ul>
@@ -92,6 +91,7 @@
 				<input type="text" style="display:none;" id="dateTimePicker" placeholder="Please select Date Time" data-input>
 				<br><br>
 				<button class="button-clear" id="clear_button" onClick="clearFields()">Clear</button> <button class="button-results" id="getResults" onClick="getResults()">Get Directions</button>
+				<br>
 			</div>
 
 		</div>
@@ -111,6 +111,8 @@
 	        var stop_routes = {{stop_routes|safe}}
 	        var transp_mapping = {{transp_mapping|safe}}
 	        var stop_locations = {{stop_locations|safe}}
+
+	        var LEVEL_IMAGE = {1:"rail-icon.png", 2:"urban-rail-icon.png", 3:"light-rail-icon.png", 4:"bus-icon.png"}
 	        
         	$( document ).ready(function() {
             	console.log( "document loaded" );
@@ -121,7 +123,8 @@
             mapboxgl.accessToken = '{{ ACCESS_KEY }}';
             var map = new mapboxgl.Map({
                 container: 'map',
-                style: 'mapbox://styles/mapbox/streets-v9',
+                //style: 'mapbox://styles/mapbox/streets-v9',
+                style: 'mapbox://styles/camilaferc/ck52r0hzk05zf1csdqwfxsozd',
                 center: [13.4050, 52.5200],
                 zoom: 12
             });
@@ -129,35 +132,57 @@
             // Add zoom and rotation controls to the map.
 			map.addControl(new mapboxgl.NavigationControl());
 
-            map.on('load', function () {
-            	map.addSource("polygons", {
-                	"type": "geojson",
-                	"data": polygons
-                	});
+            map.on('style.load', function () {
 
-                	// The feature-state dependent fill-opacity expression will render the hover effect
-                	// when a feature's hover state is set to true.
-                	map.addLayer({
-                		"id": "polygon-fills",
-                		"type": "fill",
-                		"source": "polygons",
-                		"layout": {},
-                		"paint": {
-                		"fill-color": "#627BC1",
-                		"fill-opacity": ["case",
-                		["boolean", ["feature-state", "hover"], false],
-                			0.4,
-                			0
-                		]
-                		}
-                	});
+                	/*for(level in LEVEL_IMAGE){
+                    	var image_name = LEVEL_IMAGE[level]
+                    	console.log(image_name)
+                    	map.loadImage('static/images/' + image_name, function(error, image) {
+                    		if (error) throw error;
+                    		console.log(image_name.split(".")[0])
+                    	    map.addImage(image_name.split(".")[0], image);
+                    	});
+                    }*/
+
+                	const images =[
+                		  {url: 'static/images/bus-icon.png', id: 'bus-icon'},
+                		  {url: 'static/images/rail-icon.png', id: 'rail-icon'},
+                		  {url: 'static/images/urban-rail-icon.png', id: 'urban-rail-icon'},
+                		  {url: 'static/images/light-rail-icon.png', id: 'light-rail-icon'},
+                	]
+
+                	Promise.all(
+                            images.map(img => new Promise((resolve, reject) => {
+                                map.loadImage(img.url, function (error, res) {
+                                    map.addImage(img.id, res)
+                                    resolve();
+                                })
+                            }))
+                    )
                 	
-                	map.loadImage('static/images/bus-icon.png', function(error, image) {
-                		if (error) throw error;
-                	    map.addImage('bus-icon', image);
-                	})
-                	
-                	addStopsLayer(stop_locations)                
+                	addStopsLayer(stop_locations)  
+
+                	map.addSource("polygons", {
+                    	"type": "geojson",
+                    	"data": polygons
+                    	});
+
+                    	// The feature-state dependent fill-opacity expression will render the hover effect
+                    	// when a feature's hover state is set to true.
+                    	map.addLayer({
+                    		"id": "polygon-fills",
+                    		"type": "fill",
+                    		"source": "polygons",
+                    		"layout": {},
+                    		"paint": {
+                    		"fill-color": "#627BC1",
+                    		"fill-opacity": ["case",
+                    		["boolean", ["feature-state", "hover"], false],
+                    			0.4,
+                    			0
+                    		]
+                    		}
+                    });              
             });
 
             map.on('error', e => {
@@ -510,7 +535,7 @@
     						        	// https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions-match
     						        	'line-color': '#ffdf00'
     						        }
-    						    }, 'stops');
+    						    });
 
 
     							var html = '<p style="width: 110px; padding:-10px"> Remove highlighted road segment? </p>' + 
@@ -536,100 +561,79 @@
                 map.zoomIn();
             });
 
-            map.on('click', 'stops', function(e) {
-            	// Here you can access e.features[0] which is the feature cliked
-                // With that you can do whatever you want with your feature
-                lonLat = e.lngLat
-                latitude = lonLat.lat
-                longitude = lonLat.lng
-                console.log(latitude, longitude)
-                console.log(e.features[0])
-                console.log(e.features[0].id)
-                var stop_id = e.features[0].id
-                list_routes = stop_routes[stop_id]
-                console.log(list_routes)
-
-                var html = ''
-                for (i = 0; i < list_routes.length; i++) {
-                    route_name = list_routes[i].split("_")[0]
-                    if(view == 0){
-                    	html += route_name + "<br>"
-                    }else{
-                    	var checkbox = document.getElementById(list_routes[i] + "_" + stop_id);
-                        if(checkbox.checked){
-                        	html +=  route_name + "<input type='checkbox' class='checkbox_stop' onclick='stopRouteSelection(this)' id='sr_" + list_routes[i] + "_" + stop_id + "' checked ><br>";
-                        }else{
-                        	html +=  route_name + "<input type='checkbox' class='checkbox_stop' onclick='stopRouteSelection(this)' id='sr_" + list_routes[i] + "_" + stop_id +"'><br>";
-                        }
-                    }
-                }
-                	                
-                var popup = new mapboxgl.Popup({closeOnClick: true, offset:'3px'})
-                .setLngLat({lat:latitude, lng: longitude})
-                .setHTML(html)
-                .addTo(map);
-            });
-
             var popup_stop = null;
-            map.on('mouseenter', 'stops', function(e) {
-          	  	map.getCanvas().style.cursor = 'pointer'
-          		lonLat = e.lngLat
-                latitude = lonLat.lat
-                longitude = lonLat.lng
-                console.log(latitude, longitude)
 
-                var stop_id = e.features[0].id
-                list_routes = stop_routes[stop_id]
-                console.log(list_routes)
+            for(level in LEVEL_IMAGE){
+            	var layer_name = "stops-" + LEVEL_IMAGE[level].split(".")[0]
+            	
+            	map.on('mouseenter', layer_name, function(e) {
+              	  	map.getCanvas().style.cursor = 'pointer'
+              	  	// Here you can access e.features[0] which is the feature cliked
+                        // With that you can do whatever you want with your feature
+                        lonLat = e.lngLat
+                        latitude = lonLat.lat
+                        longitude = lonLat.lng
+                        var stop_id = e.features[0].id
+                        list_routes_level = stop_routes[stop_id]
 
-                var html = ''
-                for (i = 0; i < list_routes.length; i++) {
-                    route_name = list_routes[i].split("_")[0]
-                    if(view == 0){
-                    	html += route_name + "<br>"
-                    }else{
-                    	var checkbox = document.getElementById(list_routes[i] + "_" + stop_id);
-                        if(checkbox.checked){
-                        	html +=  route_name + "<input type='checkbox' class='checkbox_stop' onclick='stopRouteSelection(this)' id='sr_" + list_routes[i] + "_" + stop_id + "' checked ><br>";
-                        }else{
-                        	html +=  route_name + "<input type='checkbox' class='checkbox_stop' onclick='stopRouteSelection(this)' id='sr_" + list_routes[i] + "_" + stop_id +"'><br>";
+                        var html = ''
+                        for (level in list_routes_level){
+                            var image_level = LEVEL_IMAGE[level]
+                            html += "<img src='static/images/" + image_level + "' style='vertical-align: text-top;'> "
+                            
+                            var list_routes = list_routes_level[level]
+                        	for (i = 0; i < list_routes.length; i++) {
+                                route_name = list_routes[i].split("_")[0]
+                                if(view == 0){
+                                	html += "<button class='boxed' id='sr_" + list_routes[i] + "_" + stop_id + "' onclick='stopRouteSelection(this)'>" + route_name + "</button> "
+                                }else{
+                                	var checkbox = document.getElementById(list_routes[i] + "_" + stop_id);
+                                    if(checkbox.checked){
+                                    	html += "<button class='boxed' id='sr_" + list_routes[i] + "_" + stop_id + "' onclick='stopRouteSelection(this)'>" + route_name + "</button> "
+                                    }else{
+                                    	html += "<button class='boxed button_unselected' id='sr_" + list_routes[i] + "_" + stop_id + "' onclick='stopRouteSelection(this)'>" + route_name + "</button> "
+                                    }
+                                }
+                                
+                            }
+                            html += "<br>"
                         }
+                        //console.log(html)
+                
+                   	if(!popup_stop || (popup_stop && !popup_stop.isOpen())){
+                   		popup_stop = new mapboxgl.Popup({closeOnClick: true, offset:'3px'})
+                        .setLngLat({lat:latitude, lng: longitude})
+                        .setHTML(html)
+                        .addTo(map);
+                    }              
+
+              	});
+              	
+             	map.on('mouseleave', layer_name, function(e){
+             		popup_stop_div = popup_stop._container
+             		popup_stop_div.onmouseleave = function(event) {
+                 		popup_stop.remove();
+                 		map.getCanvas().style.cursor = '';
+                 	};
+
+                    var bounds = popup_stop_div.getBoundingClientRect()
+                    var top = bounds.top
+                    var bottom = bounds.bottom
+                    var left = bounds.left
+                    var right = bounds.right
+
+                 	var x = e.originalEvent.x
+                 	var y = e.originalEvent.y
+
+                 	if(x >= Math.min(left, right) && x <= Math.max(left, right) && y >= Math.min(bottom, top) && y <= Math.max(bottom, top)){
+                     	//console.log("Mouse is INSIDE area!")
+                    }else{
+                    	 map.getCanvas().style.cursor = ''
+                    	 popup_stop.remove()
                     }
-                }
-               	if(!popup_stop || (popup_stop && !popup_stop.isOpen())){
-               		popup_stop = new mapboxgl.Popup({closeOnClick: true, offset:'3px'})
-                    .setLngLat({lat:latitude, lng: longitude})
-                    .setHTML(html)
-                    .addTo(map);
-                }              
-
-          	});
-         	map.on('mouseleave', 'stops', function(e){
-         		popup_stop_div = popup_stop._container
-         		popup_stop_div.onmouseleave = function(event) {popup_stop.remove()};
-
-                var bounds = popup_stop_div.getBoundingClientRect()
-                console.log(bounds)
-                var top = bounds.top
-                var bottom = bounds.bottom
-                var left = bounds.left
-                var right = bounds.right
-
-             	var x = e.originalEvent.x
-             	var y = e.originalEvent.y
-
-             	console.log(x,y)
-             	console.log(left,right, bottom, top)
-
-             	if(x >= Math.min(left, right) && x <= Math.max(left, right) && y >= Math.min(bottom, top) && y <= Math.max(bottom, top)){
-                 	console.log("Mouse is INSIDE area!")
-                }else{
-                	 console.log("Mouse is OUTSIDE area!")
-                	 map.getCanvas().style.cursor = ''
-                	 popup_stop.remove()
-                }
-              	 
-         	});
+                  	 
+             	});
+            }
 
 
             function addMarker(location){
@@ -767,24 +771,11 @@
 
             function clearFields() {
                 console.log("clearing map")
+                clearResults();
             	document.getElementById('inputSource').value = "";
             	document.getElementById('inputTarget').value = "";
 
             	var j;
-
-            	console.log(popups.length)
-            	for (j = 0; j < markers.length; j++) {
-            		markers[j].remove();
-            	}
-
-            	for (j = 0; j < popups.length; j++) {
-            		if (popups[j]){
-            			if (popups[j].isOpen()){
-            				popups[j].remove();
-            				console.log("removing popup:" + j)
-                		}
-                	}
-            	}
 
             	for (j = 1; j <= it ; j++) {
             		var element = document.getElementById("targetNode" + j);
@@ -835,15 +826,6 @@
             	parent_target.appendChild(neig_target);
             	parent_target.appendChild(new_target);            	
 				
-
-				if (map.getLayer("rr_layer")) {
-				    map.removeLayer("rr_layer");
-				}
-
-				if (map.getSource("rr_layer")) {
-				    map.removeSource("rr_layer");
-				}
-
 				var picker = document.getElementById ( "dateTimePicker" ) ;
             	picker.style.display = "none" ;
 
@@ -872,6 +854,28 @@
             	markerActivated = false;
             	polygon_source_coords = null;
             	polygon_target_coords = null;
+
+            	popup_stop = null;
+
+            	var list = document.getElementById("routes_list_div");
+            	list.style.display = "none";
+            	list = document.getElementById("segments_div");
+            	list.style.display = "none";
+            	var button = document.getElementById("button-edit-routes");
+            	button.className = button.className.replace(" active_edit", "");
+            	button = document.getElementById("button-edit-segments");
+            	button.className = button.className.replace(" active_edit", "");
+            	document.getElementById("list_segments").innerHTML = "";
+
+            	for (seg of popup_seg.keys()){
+            		if (map.getLayer("seg_" + seg)) {
+    				    map.removeLayer("seg_" + seg);
+    				    map.removeSource("seg_" + seg);
+    				}
+                }
+            	popup_seg = new Map();
+            	
+            	clearSelectedRoutes();
             }
 
             function clearResults() {
