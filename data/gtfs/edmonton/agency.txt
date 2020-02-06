@@ -1,0 +1,7 @@
+agency_id,agency_name,agency_url,agency_phone,agency_fare_url,agency_email,agency_lang,agency_timezone
+1,Edmonton Transit Service,http://www.takeets.com,,https://www.edmonton.ca/ets/fares-passes.aspx,,EN,America/Edmonton
+2,St. Albert Transit,http://www.ridestat.ca,780-418-6060,,,EN,America/Edmonton
+4,Strathcona County Transit,http://strathcona.ca/transit,780-464-RIDE,,,EN,America/Edmonton
+5,Spruce Grove Transit,https://www.sprucegrove.org/services/spruce-grove-transit,,,,EN,America/Edmonton
+6,Fort Saskatchewan Transit,https://www.fortsask.ca/en/living-here/transit.aspx,,,,EN,America/Edmonton
+7,Beaumont Transit,https://www.beaumont.ab.ca/476/Beaumont-Transit,,,,EN,America/Edmonton

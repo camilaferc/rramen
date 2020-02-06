@@ -27,7 +27,6 @@ class MultimodalNetwork:
     
     def __init__(self):
         self.graph = nx.DiGraph()
-        self.osmMapping = None
         
     def addNode(self, node_id, lat, lon, node_type, stop_id=None, route_id=None):
         if stop_id and route_id:
@@ -45,7 +44,9 @@ class MultimodalNetwork:
             else:
                 self.graph.add_edge(node_from, node_to, type=edge_type, modes = modes, travel_time_functions = travel_time_functions,
                                     original_edge_id=original_edge_id)
-        
+    def getNodesIds(self):
+        return list(self.graph.nodes)
+    
     def getNeighbors(self, node_id):
         return list(self.graph.adj[node_id])
     
@@ -68,12 +69,6 @@ class MultimodalNetwork:
         #self.time_neighbors += (time.time()- start)    
         return neig_travel_times
     
-    def setOsmMapping(self, osmMapping):
-        self.osmMapping = osmMapping
-        
-    def getOsmMapping(self):
-        return self.osmMapping
-    
     '''
     def getTravelTimeToNeighbors(self, node_id, arrival_time, mode):
         neig_travel_times = {}
@@ -95,7 +90,9 @@ class MultimodalNetwork:
         return None
     
     def getNode(self, node_id):
-        return self.graph.nodes[node_id]
+        if self.graph.has_node(node_id):
+            return self.graph.nodes[node_id]
+        return None
     
     def getNumNodes(self):
         return self.graph.number_of_nodes()

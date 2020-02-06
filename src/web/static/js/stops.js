@@ -1,5 +1,5 @@
 function addStopsLayer(stop_locations){
-	for(level in LEVEL_IMAGE){
+	for(level in stop_locations){
     	var layer_name = LEVEL_IMAGE[level].split(".")[0]
     	map.addSource("stops-" + layer_name, {
     	    type: "geojson",

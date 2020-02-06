@@ -7,14 +7,14 @@ import json
 import time
 
 from geojson import Feature, FeatureCollection
-from geojson.geometry import LineString
 from geojson import loads
+from geojson.geometry import LineString
 import psycopg2
 
-from database.PostGISConnection import PostGISConnection
+from .PostGISConnection import PostGISConnection
 from gtfs import GTFS
-from network.MultimodalNetwork import MultimodalNetwork
 from gtfs.GTFS import ROUTE_LEVEL
+from network.MultimodalNetwork import MultimodalNetwork
 
 
 class PostgisDataManager:
@@ -22,6 +22,53 @@ class PostgisDataManager:
     def __init__(self):
         self.connection = PostGISConnection()
         self.timeGeom = 0
+        
+    def getNetworkMBR(self, region):
+        sql = """SELECT ST_Extent(polygon) from neighborhoods_{0} WHERE level = 
+                (SELECT min(level) FROM neighborhoods_{0});
+            """
+        sql = sql.format(region);
+        
+        try:
+            self.connection.connect();
+ 
+            cursor = self.connection.getCursor()
+            
+            cursor.execute(sql)
+            (mbr, ) = cursor.fetchone()
+            mbr = mbr.replace("BOX", "").replace("(", "").replace(")", "").replace(",", " ")
+            mbr_li = [float(i) for i in list(mbr.split(" "))]
+            self.connection.close()
+            
+            return mbr_li
+        
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
+            
+    def getNetworkCenter(self, region): 
+        mbr = self.getNetworkMBR(region)
+        lat_center = float((mbr[1] + mbr[3])/2)
+        long_center = float((mbr[0] + mbr[2])/2)
+        return [long_center, lat_center]
+            
+    def getNumNodes(self, region):
+        sql = """SELECT max(GREATEST(source, target)) FROM roadnet_{};
+            """
+        sql = sql.format(region);
+        
+        try:
+            self.connection.connect();
+ 
+            cursor = self.connection.getCursor()
+            
+            cursor.execute(sql)
+            (max_id, ) = cursor.fetchone()
+            self.connection.close()
+            
+            return max_id
+        
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error) 
         
     def getChildrenStops(self, region, parent_id):
         sql = """SELECT stop_id
@@ -90,7 +137,7 @@ class PostgisDataManager:
     def getStopsLocation(self, region, stops_level):
         sql = """select stop_id, stop_name, ST_AsGeoJSON(stop_location) 
                 from stops_{0}
-                where stop_type=1 and 
+                where stop_parent is null and 
                 ST_Within(stop_location, (select polygon from neighborhoods_{0} where level = (
                 select min(level) from neighborhoods_{0}) ))
             ;   
@@ -241,11 +288,11 @@ class PostgisDataManager:
             print(error)  
     
     def getPointsWithinPolygon(self, region, coordinates):
-        sql = """SELECT osm_source_id as id FROM roadnet_{0} as p,
+        sql = """SELECT source as id FROM roadnet_{0} as p,
                 (SELECT {1}  as polygon) as pol
                  WHERE ST_Within(source_location, polygon)
                 UNION 
-                SELECT osm_target_id as id FROM roadnet_{0} as p,
+                SELECT target as id FROM roadnet_{0} as p,
                 (SELECT {1} as polygon) as pol
                 WHERE ST_Within(target_location, polygon)
             ;   
@@ -308,7 +355,7 @@ class PostgisDataManager:
             
     
     def getClosestEdgeRatio(self, lat, lon, region):
-        sql = """SELECT id, osm_source_id, osm_target_id, 
+        sql = """SELECT id, source, target, 
                 ST_LineLocatePoint(geom_way, point) as source_ratio,
                 ST_X(ST_LineInterpolatePoint(geom_way, ST_LineLocatePoint(geom_way, point))) as lon,
                 ST_Y(ST_LineInterpolatePoint(geom_way, ST_LineLocatePoint(geom_way, point))) as lat
@@ -325,18 +372,18 @@ class PostgisDataManager:
             cursor = self.connection.getCursor()
             
             cursor.execute(sql)
-            (edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat) = cursor.fetchone()
+            (edge_id, source, target, source_ratio, node_lon, node_lat) = cursor.fetchone()
             
             #print(edge_id, source_ratio)
             
             self.connection.close()
-            return (edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat)
+            return (edge_id, source, target, source_ratio, node_lon, node_lat)
         
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)
             
     def getClosestEdgeGeometry(self, lat, lon, region):
-        sql = """SELECT id, osm_id, osm_source_id, osm_target_id, ST_AsGeoJSON(geom_way)
+        sql = """SELECT id, osm_id, source, target, ST_AsGeoJSON(geom_way)
                 from roadnet_{},
                 (SELECT ST_SetSRID(ST_MakePoint({}, {}),4326) as point) as p
                 ORDER BY point <-> geom_way
@@ -350,22 +397,22 @@ class PostgisDataManager:
             cursor = self.connection.getCursor()
             
             cursor.execute(sql)
-            (edge_id, osm_id, osm_source, osm_target, geometry) = cursor.fetchone()
+            (edge_id, osm_id, source, target, geometry) = cursor.fetchone()
             
             #print(edge_id, source_ratio)
             
             self.connection.close()
-            return edge_id, osm_id, osm_source, osm_target, json.loads(geometry)
+            return edge_id, osm_id, source, target, json.loads(geometry)
         
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)
             
     def getClosestEdgeByClass(self, lat, lon, region, class_list):
-        sql = """SELECT id, osm_source_id, osm_target_id, 
+        sql = """SELECT id, source, target, 
                 ST_LineLocatePoint(geom_way, point) as source_ratio,
                 ST_X(ST_LineInterpolatePoint(geom_way, ST_LineLocatePoint(geom_way, point))) as lon,
                 ST_Y(ST_LineInterpolatePoint(geom_way, ST_LineLocatePoint(geom_way, point))) as lat
-                from roadnet_{},
+                from roadnet_{}, 
                 (SELECT ST_SetSRID(ST_MakePoint({}, {}),4326) as point) as p
                 WHERE clazz = ANY('{}'::int[])
                 ORDER BY point <-> geom_way
@@ -379,12 +426,12 @@ class PostgisDataManager:
             cursor = self.connection.getCursor()
             
             cursor.execute(sql)
-            (edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat) = cursor.fetchone()
+            (edge_id, source, target, source_ratio, node_lon, node_lat) = cursor.fetchone()
             
             #print(edge_id, source_ratio)
             
             self.connection.close()
-            return (edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat)
+            return (edge_id, source, target, source_ratio, node_lon, node_lat)
         
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)

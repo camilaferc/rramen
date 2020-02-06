@@ -4,7 +4,7 @@ Created on Oct 16, 2019
 @author: camila
 '''
 import psycopg2
-from database.config import config
+from conf.config import config
 
 class PostGISConnection:
     def __init__(self):
@@ -25,7 +25,9 @@ class PostGISConnection:
             
     def getCursor(self):
         return self.conn.cursor()
-            
+    
+    def commit(self):
+        self.conn.commit()
             
     def executeCommand(self, sql):
         """ Connect to the PostgreSQL database server """
@@ -44,7 +46,7 @@ class PostGISConnection:
             print(error)
             
     def close(self):
-        """ Connect to the PostgreSQL database server """
+        """ Closing connection to the PostgreSQL database server """
         if not self.conn:
             raise Exception('Connection not established!')
         try:

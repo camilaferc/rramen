@@ -29,8 +29,6 @@ class Path(object):
     def getPathGeometry(self, graph, node_id, region): 
         path = self.reconstructPathToNode(node_id)
     
-        print(len(path))
-        
         path_geometry = [] 
         for i in range(len(path) -1):
             node_from_id = path[i]
@@ -38,7 +36,9 @@ class Path(object):
            
             node_from = graph.getNode(node_from_id)
             node_to = graph.getNode(node_to_id)
-           
+            
+            edge = graph.getEdge(node_from_id, node_to_id)
+            
             if node_from["type"] == graph.ROAD and node_to["type"] == graph.ROAD:
                 #retrieve geometry from database
                 edge = graph.getEdge(node_from_id, node_to_id)
@@ -81,5 +81,4 @@ class Path(object):
                 if i == len(path) - 2:
                     path_geometry.append([node_to['lon'], node_to['lat']]) 
          
-        #print(path_geometry)
         return LineString(path_geometry)      

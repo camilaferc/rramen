@@ -5,10 +5,13 @@ Created on Oct 2, 2019
 
 table contains (departure_time, arrival_time) pairs for a given edge
 '''
-from travel_time_function.TravelTimeFunction import TravelTimeFunction
-from util import TimeUtil
 import bisect
 from datetime import timedelta
+import sys
+
+from travel_time_function.TravelTimeFunction import TravelTimeFunction
+from util import TimeUtil
+
 
 class TimeTable(TravelTimeFunction):
     
@@ -32,10 +35,11 @@ class TimeTable(TravelTimeFunction):
         day = TimeUtil.getDayOfTheWeekNumber(arrival_time)
         time = [arrival_time.time()]
         #print(time)
-        timetable = self.table[day]
-        
-        pos = bisect.bisect_left(timetable, time)
-        if pos < len(timetable):
+        timetable = self.table.get(day)
+        pos = sys.maxsize
+        if timetable:
+            pos = bisect.bisect_left(timetable, time)
+        if timetable and pos < len(timetable):
             dep_arrival = timetable[pos]
             departure = arrival_time
             arrival = arrival_time
@@ -49,9 +53,14 @@ class TimeTable(TravelTimeFunction):
             #departure can not happen on the same day
             day = (day + 1)%6
             extra_days = 1
-            while day not in self.table:
+            while day not in self.table and extra_days <= 7:
                 day = (day + 1)%6
                 extra_days += 1
+            
+            if day not in self.table:
+                departure = arrival_time + timedelta(days=extra_days)
+                arrival = departure
+                return [departure, arrival]
             
             dep_arrival = self.table[day][0]
             departure = arrival_time + timedelta(days=extra_days)
@@ -76,4 +85,7 @@ class TimeTable(TravelTimeFunction):
                     first = mid + 1    
         return self.table[0]
         '''
+        
+    def getTable(self):
+        return self.table
 

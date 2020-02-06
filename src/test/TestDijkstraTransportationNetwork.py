@@ -11,16 +11,18 @@ import time
 
 from database.PostgisDataManager import PostgisDataManager
 from load.LoadMultimodalNetwork import LoadMultimodalNetwork
+from path.Path import Path
 from shortest_path.Dijkstra import Dijsktra
 from web.server_rr_test import createVirtualNodeEdge
 
 
 def test():
-    load = LoadMultimodalNetwork("berlin")
+    region = "edmonton"
+    load = LoadMultimodalNetwork(region)
     graph = load.load()
     
     #nodes in the road network = 38728
-    max_id = 38728
+    #max_id = 38728
     targets_public = set()
     targets_private = set()
     
@@ -64,42 +66,46 @@ def test():
     targets.add(1678)
     '''
     dataManager = PostgisDataManager()
-    startLat = 52.52188
-    startLon = 13.411008
+    startLat = 53.523794
+    startLon = -113.511714
     
-    targetLat = 52.509553
-    targetLon = 13.375474
     
-    timestamp = datetime(2019, 11, 20, 20, 24, 0)
+    targetLat = 53.504094
+    targetLon = -113.498496
+    
+    timestamp = datetime(2020, 2, 5, 13, 45, 0)
     
     dij = Dijsktra(graph)
     
     
-    (edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat) = dataManager.getClosestEdgeByClass(startLat, startLon, "berlin", graph.PEDESTRIAN_WAYS)
+    (edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat) = dataManager.getClosestEdgeByClass(startLat, startLon, region, graph.PEDESTRIAN_WAYS)
+    print(edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat)
     s_public = createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, osm_source, osm_target, source_ratio)
     
     
     
-    (edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat) = dataManager.getClosestEdgeByClass(targetLat, targetLon, "berlin", graph.PEDESTRIAN_WAYS)
+    (edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat) = dataManager.getClosestEdgeByClass(targetLat, targetLon, region, graph.PEDESTRIAN_WAYS)
     print(edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat)
     t_public = createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, osm_source, osm_target, source_ratio)
-    print(t_public, graph.graph[t_public])
+    #print(t_public, graph.graph[t_public])
     targets_public.add(t_public)
     
     #targets_public.add(graph.osmMapping[3697399470])
     
-    print(str(s_public) + ":" + str(graph.getNode(s_public)))
-    print(targets_public)
+    #print(str(s_public) + ":" + str(graph.getNode(s_public)))
+    #print(targets_public)
     
+    print(s_public, targets_public)
     
     start = time.time()
-    dij.shortestPathToSetPublic(s_public, timestamp, targets_public, {graph.PEDESTRIAN, graph.PUBLIC})
+    travel_time_public, parents_public = dij.shortestPathToSetPublic(s_public, timestamp, targets_public, {graph.PEDESTRIAN, graph.PUBLIC})
+    print(travel_time_public)
     total = time.time() - start
     print ("Process time: " + str(total))
     
-    '''
     start = time.time()
-    path = dij.reconstructPathToNode(t_public)
+    path = Path(parents_public).reconstructPathToNode(t_public)
+    print(path)
     total = time.time() - start
     print ("Process time: " + str(total))
     
@@ -123,13 +129,12 @@ def test():
         print(node, arrival_time, graph.getNode(node))
         previous = node
     
-    '''
         
     '''
-    (edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat) = dataManager.getClosestEdge(startLat, startLon, "berlin")
+    (edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat) = dataManager.getClosestEdge(startLat, startLon, region)
     s_private = createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, osm_source, osm_target, source_ratio)
     
-    (edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat) = dataManager.getClosestEdge(targetLat, targetLon, "berlin")
+    (edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat) = dataManager.getClosestEdge(targetLat, targetLon, region)
     
     print(edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat)
     t_private = createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, osm_source, osm_target, source_ratio)

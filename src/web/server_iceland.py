@@ -14,8 +14,8 @@ app.config.from_object(__name__)
 
 MAPBOX_ACCESS_KEY = 'pk.eyJ1IjoiY2FtaWxhZmVyYyIsImEiOiJjazB3aGJ5emkwMzNqM29tbWxkZ2t3OWJwIn0.LYcGltgmo4yj5zqhDJGoEA'
 
-#app.config.from_envvar('APP_CONFIG_FILE', silent=True)
-#MAPBOX_ACCESS_KEY = app.config['MAPBOX_ACCESS_KEY']
+#app.conf.from_envvar('APP_CONFIG_FILE', silent=True)
+#MAPBOX_ACCESS_KEY = app.conf['MAPBOX_ACCESS_KEY']
 
 ROUTE = [
     {"lat": 64.0027441, "long": -22.7066262, "name": "Keflavik Airport", "is_stop_location": True},

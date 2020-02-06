@@ -14,3 +14,6 @@ class TravelTimeFunction:
     
     def splitFunctionRatio(self, ratio):
         pass
+    
+    def comp(self, function):
+        pass
