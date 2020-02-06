@@ -1,5 +1,4 @@
 ## RRAMEN | An Interactive Tool for Evaluating Choices and Changes in Transportation Networks
-![RRAMEN Interface](/images/rramen.png)
 <kbd><img src="/images/rramen.png" /></kbd>
 
 ---
@@ -14,3 +13,9 @@ RRAMEN is an interactive tool that supports different city-scale mobility-relate
 
 ### 2. Installation & Setup
 #### a. Datasets
+##### OSM Map
+[a link](https://www.openstreetmap.org/)
+##### OSM Boundaries
+[a link](https://wambachers-osm.website/boundaries/)
+##### General Transit Feed Specification (GTFS) data
+[a link](https://transitfeeds.com/)
