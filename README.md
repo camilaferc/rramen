@@ -14,8 +14,10 @@ RRAMEN is an interactive tool that supports different city-scale mobility-relate
 ### 2. Installation & Setup
 #### a. Datasets
 ##### OSM Map
-[a link](https://www.openstreetmap.org/)
+[https://www.openstreetmap.org/](https://www.openstreetmap.org/)
 ##### OSM Boundaries
-[a link](https://wambachers-osm.website/boundaries/)
+[https://wambachers-osm.website/boundaries/](https://wambachers-osm.website/boundaries/)
 ##### General Transit Feed Specification (GTFS) data
-[a link](https://transitfeeds.com/)
+[https://transitfeeds.com/](https://transitfeeds.com/)
+
+### 3. Background and Research
