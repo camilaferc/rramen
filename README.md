@@ -1,5 +1,6 @@
 ## RRAMEN | An Interactive Tool for Evaluating Choices and Changes in Transportation Networks
 ![RRAMEN Interface](/images/rramen.png)
+<kbd><img src="/images/rramen.png" /></kbd>
 
 ---
 
@@ -7,4 +8,9 @@ RRAMEN is an interactive tool that supports different city-scale mobility-relate
 
 ### 1. Examples & Usage
 
+#### a. Individual Users
+
+#### b. Urban Planners
+
 ### 2. Installation & Setup
+#### a. Datasets
