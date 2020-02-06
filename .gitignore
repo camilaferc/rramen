@@ -1,0 +1,12 @@
+venv/
+*.osm
+data/gtfs/berlin/shapes.txt
+data/gtfs/berlin/stop_times.txt
+data/gtfs/edmonton/stop_times.txt
+data/gtfs/paris/stop_times.txt
+data/osm/nyc/NewYork.osm
+data/osm/berlin/berlin-latest.osm
+data/osm/edmonton/edmonton.osm
+data/osm/paris/Paris.osm
+.git/objects/pack/pack-0be1af6f413a81ef3fd96053c0fdd06fd1b67967.pack
+.git/objects/pack/pack-c36bf18559b7039b6d3dd01265b5547e6cc5da7e.pack

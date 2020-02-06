@@ -4,6 +4,7 @@ var minLevelNeig = Number.MAX_SAFE_INTEGER;
 var minLevel = Number.MAX_SAFE_INTEGER;
 var parentSet = new Set();
 var childrenSet = new Set();
+var childrenFirstLevel = new Set();
 
 function createNeighborhoodList(polygon){
 	polygons.features.forEach(function(feature) {
@@ -39,13 +40,14 @@ function createNeighborhoodList(polygon){
 		}
 
 	});
-	//console.log(childrenMap)
+	//console.log(parentMap)
 	//console.log(minLevel)
 	
 	var list = document.getElementById('list_neighborhoods');
 	parentMap.get(minLevelNeig).forEach(
 			function(child) {
 				//console.log(child);
+				childrenFirstLevel.add(child["id"])
 				buildNeighborhoodList(child["id"], child["name"], child["level"],
 						child["parent"], list);
 	});
@@ -60,9 +62,9 @@ function addEventsNeighborhood(){
 	for (i = 0; i < toggler.length; i++) {
 		//console.log(toggler[i])
 		toggler[i].addEventListener("click", function() {
-			//console.log("clicking!")
-			//console.log(this)
-			this.parentElement.querySelector(".nested").classList.toggle("active");
+			console.log("clicking!")
+			console.log(this)
+			this.parentElement.querySelector(".nested_neig").classList.toggle("active");
 			this.classList.toggle("caret_neig-down");
 		});
 	}
@@ -88,6 +90,13 @@ function addEventsNeighborhood(){
 			  addEventsChildNeig(child)
 		  }
 	}
+	
+	for (let child of childrenFirstLevel) {
+		  //console.log(child);
+		  if(!parentSet.has(child)){
+			  addEventsChildNeig(child)
+		  }
+	}
 }
 
 function addEventsChildNeig(id){
@@ -98,8 +107,8 @@ function addEventsChildNeig(id){
 		//console.log(parent)
 		parent_checkbox = document.getElementById(parent)
 		if (this.checked){
-			console.log(this.id + " checked")
-			if(!parent_checkbox.checked) {
+			//console.log(this.id + " checked")
+			if(!parent_checkbox || !parent_checkbox.checked) {
 				//console.log(parent + " parent checked")
 				document.getElementById('inputTarget').value = "Neighborhood selected"
 				map.setFeatureState({
@@ -108,7 +117,9 @@ function addEventsChildNeig(id){
 				}, {
 					hover : true
 				});
-				markNeigParent(parent, parent_checkbox);
+				if(parent_checkbox){
+					markNeigParent(parent, parent_checkbox);
+				}
 			}
 		} else {
 			// Checkbox is not checked..
@@ -120,7 +131,9 @@ function addEventsChildNeig(id){
 				hover : false
 			});
 
-			updateParentColor(this.id, parent, parent_checkbox)
+			if(parent_checkbox){
+				updateParentColor(this.id, parent, parent_checkbox)
+			}
 
 		}
 	});
@@ -194,7 +207,7 @@ function addEventsParentNeig(id){
 	checkbox.addEventListener("change", function() {
 		if (this.checked) {
 			document.getElementById('inputTarget').value = "Neighborhood selected"
-			console.log(this.id + " checked")
+			//console.log(this.id + " checked")
 			map.setFeatureState({
 				source : 'polygons',
 				id : this.id
@@ -223,7 +236,7 @@ function addEventsParentChildNeig(id) {
 		//console.log(parent)
 		parent_checkbox = document.getElementById(parent)
 		if (this.checked) {
-			console.log(this.id + " checked")
+			//console.log(this.id + " checked")
 			if (!parent_checkbox.checked) {
 				document.getElementById('inputTarget').value = "Neighborhood selected"
 				map.setFeatureState({
@@ -357,6 +370,7 @@ function buildNeighborhoodList(nid, name, level, parent, list){
 	    checkbox.classList.add('checkbox_list_neig');
 	    entry.appendChild(checkbox);
 	    entry.style.overflow = "hidden";
+	    entry.style.marginLeft = "18px";
 	    entry.setAttribute("id", "n"+nid);
 	    list.appendChild(entry);
     }else{
@@ -378,7 +392,8 @@ function buildNeighborhoodList(nid, name, level, parent, list){
 	    var listNeig = document.getElementById("n"+nid);
 	    var entry1 = document.createElement('ul');
 	    entry1.style.width = "180px";
-	    entry1.classList.add('nested');
+	    entry1.style.padding = "12px";
+	    entry1.classList.add('nested_neig');
 	    entry1.setAttribute("id", "ul_n"+nid);
 	    listNeig.appendChild(entry1);
 
@@ -432,7 +447,7 @@ function clearSelectedNeighborhoods(){
 	var toggler = document.getElementsByClassName("caret_neig-down");
 	for (var i = 0; i < toggler.length; i++) {
 		console.log(toggler[i])
-		toggler[i].parentElement.querySelector(".nested").classList.toggle("active");
+		toggler[i].parentElement.querySelector(".nested_neig").classList.toggle("active");
 		toggler[i].classList.toggle("caret_neig-down");
 		//toggler[i].parentElement.querySelector("active").classList.toggle(".nested");
 		//toggler[i].classList.remove('caret-down');

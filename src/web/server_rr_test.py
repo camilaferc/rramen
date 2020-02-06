@@ -6,18 +6,10 @@ Created on Oct 29, 2019
 
 from _datetime import datetime
 from builtins import str
-from datetime import timedelta
-import sys
 import time
 
-from flask import Flask, request, session, g, redirect, \
-    url_for, abort, render_template, flash
-from flask.cli import ScriptInfo
-from flask_script import Manager, Server
-from flask_session import Session
-from geojson import Feature, Point, dumps, GeometryCollection, FeatureCollection, dump, loads
-from geojson.geometry import LineString, MultiLineString
-import requests
+from flask import Flask, request, render_template
+from geojson import Feature, Point, FeatureCollection
 
 from database.PostgisDataManager import PostgisDataManager
 from gtfs import GTFS
@@ -28,30 +20,19 @@ from shortest_path.Dijkstra import Dijsktra
 
 app = Flask(__name__)
 app.config.from_object(__name__)
-SESSION_TYPE = 'filesystem'
-app.config.from_object(__name__)
-Session(app)
 
-def loadData():
-    print("loading data!")
-    global graph
-    load = LoadMultimodalNetwork(region)
-    graph = load.load()
+region = "edmonton"
 
+    
+#app.conf.from_envvar('APP_CONFIG_FILE', silent=True)
 
-#app.config.from_envvar('APP_CONFIG_FILE', silent=True)
-
-#MAPBOX_ACCESS_KEY = app.config['MAPBOX_ACCESS_KEY']
+#MAPBOX_ACCESS_KEY = app.conf['MAPBOX_ACCESS_KEY']
 
 MAPBOX_ACCESS_KEY = 'pk.eyJ1IjoiY2FtaWxhZmVyYyIsImEiOiJjazB3aGJ5emkwMzNqM29tbWxkZ2t3OWJwIn0.LYcGltgmo4yj5zqhDJGoEA'
 
-#app.config.from_envvar('APP_CONFIG_FILE', silent=True)
-#MAPBOX_ACCESS_KEY = app.config['MAPBOX_ACCESS_KEY']
 
-region = "berlin"
-
-graph = None
 dataManager = PostgisDataManager()
+id_map_source_public = {}
 id_map_target_public = {}
 id_map_source_private = {}
 id_map_target_private = {}
@@ -62,15 +43,21 @@ tt_private = {}
 map_source_coord = {}
 map_target_coord = {}
 
+
+def loadData():
+    print("loading data!")
+    global graph
+    load = LoadMultimodalNetwork(region)
+    graph = load.load()
+
 @app.route('/rramen')
 def rramen():
-    #if not graph:
-    #    load = LoadMultimodalNetwork("berlin")
-    #    graph = load.load()
     
     polygons = dataManager.getNeighborhoodsPolygons(region)
     routes, stops, stop_routes, stop_level = dataManager.getRoutes(region)
     stop_locations = dataManager.getStopsLocation(region, stop_level)
+    
+    network_center = dataManager.getNetworkCenter(region)
     
     return render_template('rramen.html', 
         ACCESS_KEY=MAPBOX_ACCESS_KEY,
@@ -79,18 +66,12 @@ def rramen():
         stops = stops,
         stop_routes = stop_routes,
         transp_mapping = GTFS.ROUTE_TYPE,
-        stop_locations = stop_locations
+        stop_locations = stop_locations,
+        network_center = network_center
     )
     
-    #return render_template('rr_test.html', 
-    #    ACCESS_KEY=MAPBOX_ACCESS_KEY
-    #)
-
 @app.route('/rr_test')
 def mapbox_gl():
-    #if not graph:
-    #    load = LoadMultimodalNetwork("berlin")
-    #    graph = load.load()
     
     polygons = dataManager.getNeighborhoodsPolygons(region)
     
@@ -99,30 +80,12 @@ def mapbox_gl():
         polygons = polygons,
     )
     
-    #return render_template('rr_test.html', 
-    #    ACCESS_KEY=MAPBOX_ACCESS_KEY
-    #)
-
 @app.route('/rr_planner_test')
 def rr_planner():
     global graph, dataManager, region
     
-    #print(graph.getNumNodes())
-    #print(graph.getNumEdges())
-    
-    if "id_map_source_public" in session:
-        print("session already contains id_map_source_public!")
-    else:
-        print("id_map_source_public NOT created yet!")
-    
-    
-    #if not graph:
-    #    load = LoadMultimodalNetwork("berlin")
-    #    graph = load.load()
-    
     routes, stops, stop_routes = dataManager.getRoutes(region)
     stop_locations = dataManager.getStopsLocation(region)
-    #print(stops["S3_109"])
     return render_template('rr_planner_test.html', 
         ACCESS_KEY=MAPBOX_ACCESS_KEY,
         routes = routes, 
@@ -134,21 +97,12 @@ def rr_planner():
     
 @app.route('/rr_region_test')
 def rr_region():
-    global graph
-    if not graph:
-        load = LoadMultimodalNetwork("berlin")
-        graph = load.load()
-    
     return render_template('rr_region_test.html', 
         ACCESS_KEY=MAPBOX_ACCESS_KEY
     )
     
 @app.route('/rr_boundaries_test')
 def rr_boundaries():
-    global graph
-    
-    #load = LoadMultimodalNetwork("berlin")
-    #graph = load.load()
     
     return render_template('rr_boundaries_test.html', 
         ACCESS_KEY=MAPBOX_ACCESS_KEY
@@ -156,11 +110,6 @@ def rr_boundaries():
     
 @app.route('/rr_neighborhood_test')
 def rr_neighborhood():
-    global graph
-    
-    if not graph:
-        load = LoadMultimodalNetwork("berlin")
-        graph = load.load()
     polygons = dataManager.getNeighborhoodsPolygons(region)
     return render_template('rr_neighborhood_test.html', 
         ACCESS_KEY=MAPBOX_ACCESS_KEY,
@@ -170,16 +119,14 @@ def rr_neighborhood():
 @app.route('/receiver', methods = ['POST', 'GET'])
 def worker():
     # read json + reply
-    global graph, dataManager, region, id_map_source_private, id_map_target_private, id_map_target_public, tt_public, tt_private 
+    global graph, dataManager, region, id_map_source_public, id_map_source_private, id_map_target_private, id_map_target_public, tt_public, tt_private 
     global map_source_coord, map_target_coord
     data = request.get_json(force=True)
     
     map_source_coord = {}
     map_target_coord = {}
     
-    session["id_map_source_public"] = {}
-    if "id_map_source_public" in session:
-        print("session NOW contains id_map_source_public!")
+    id_map_source_public = {}
     id_map_target_public = {}
     id_map_source_private = {}
     id_map_target_private = {}
@@ -262,9 +209,9 @@ def getNodesFromMarkersCoordinates(coordinates, location_type):
     for i in range(len(coordinates)):
         c = coordinates[i]
         
-        (edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat) = dataManager.getClosestEdgeRatio(c['lat'], c['lon'], region)
-        print(edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat)
-        node_id_private = createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, osm_source, osm_target, source_ratio)
+        (edge_id, source, target, source_ratio, node_lon, node_lat) = dataManager.getClosestEdgeRatio(c['lat'], c['lon'], region)
+        print(edge_id, source, target, source_ratio, node_lon, node_lat)
+        node_id_private = createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, source, target, source_ratio)
         nodes_private.add(node_id_private)
         if location_type == "source":
             id_map_source_private[i] = node_id_private
@@ -274,11 +221,11 @@ def getNodesFromMarkersCoordinates(coordinates, location_type):
             map_target_coord[i] = (c['lat'], c['lon'])
         
         
-        (edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat) = dataManager.getClosestEdgeByClass(c['lat'], c['lon'], region, graph.PEDESTRIAN_WAYS)
-        node_id_public = createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, osm_source, osm_target, source_ratio)
+        (edge_id, source, target, source_ratio, node_lon, node_lat) = dataManager.getClosestEdgeByClass(c['lat'], c['lon'], region, graph.PEDESTRIAN_WAYS)
+        node_id_public = createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, source, target, source_ratio)
         nodes_public.add(node_id_public)
         if location_type == "source":
-            session["id_map_source_public"][i] = node_id_public
+            id_map_source_public[i] = node_id_public
             map_source_coord[i] = (c['lat'], c['lon'])
         else:
             id_map_target_public[i] = node_id_public
@@ -288,13 +235,13 @@ def getNodesFromMarkersCoordinates(coordinates, location_type):
 
 def getNodesWithinPolygon(polygon_coordinates, location_type):
     global map_source_coord, map_target_coord
-    global id_map_source_private, id_map_target_private, id_map_target_public
+    global id_map_source_public, id_map_source_private, id_map_target_private, id_map_target_public
     polygon_points = dataManager.getPointsWithinPolygon(region, polygon_coordinates)
     #print(polygon_coordinates)
     print(len(polygon_points))
     if location_type == "source":
         map_coord = map_source_coord
-        id_map_public = session["id_map_source_public"]
+        id_map_public = id_map_source_public
         id_map_private = id_map_source_private
     else:
         map_coord = map_target_coord
@@ -302,10 +249,8 @@ def getNodesWithinPolygon(polygon_coordinates, location_type):
         id_map_private = id_map_target_private
     
     nodes = set()
-    osm_mapping = graph.getOsmMapping()
     i = 0
-    for p in polygon_points:
-        node_id = osm_mapping[p]
+    for node_id in polygon_points:
         nodes.add(node_id)
         node = graph.getNode(node_id)
         
@@ -320,14 +265,14 @@ def getNodesWithinPolygon(polygon_coordinates, location_type):
 
 def getNodesWithinNeighborhoods(selected_neighborhoods, location_type):
     global map_source_coord, map_target_coord
-    global id_map_source_private, id_map_target_private, id_map_target_public
+    global id_map_source_public, id_map_source_private, id_map_target_private, id_map_target_public
     #print(selected_neighborhoods)
     neig_points = dataManager.getPointsWithinNeighborhoods(region, selected_neighborhoods)
     #print(neig_points)
     print(len(neig_points))
     if location_type == "source":
         map_coord = map_source_coord
-        id_map_public = session["id_map_source_public"]
+        id_map_public = id_map_source_public
         id_map_private = id_map_source_private
     else:
         map_coord = map_target_coord
@@ -335,10 +280,8 @@ def getNodesWithinNeighborhoods(selected_neighborhoods, location_type):
         id_map_private = id_map_target_private
     
     nodes = set()
-    osm_mapping = graph.getOsmMapping()
     i = 0
-    for p in neig_points:
-        node_id = osm_mapping[p]
+    for node_id in neig_points:
         nodes.add(node_id)
         node = graph.getNode(node_id)
         
@@ -360,8 +303,8 @@ def worker_region():
     
     startLat = data['startLat']
     startLon = data['startLon']
-    (edge_id, osm_source, osm_target, source_ratio, node_lon, node_lat) = dataManager.getClosestEdgeRatio(startLat, startLon, region)
-    source = createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, osm_source, osm_target, source_ratio)
+    (edge_id, source, target, source_ratio, node_lon, node_lat) = dataManager.getClosestEdgeRatio(startLat, startLon, region)
+    source = createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, source, target, source_ratio)
     print(graph.getNode(source))
     
     
@@ -370,10 +313,8 @@ def worker_region():
     #print(polygon_points)
     
     targets = set()
-    osm_mapping = graph.getOsmMapping()
     map_coord = {}
-    for p in polygon_points:
-        node_id = osm_mapping[p]
+    for node_id in polygon_points:
         targets.add(node_id)
         node = graph.getNode(node_id)
         map_coord[node_id] = (node['lat'], node['lon'])
@@ -427,7 +368,7 @@ def getRouteGeometry():
         
 @app.route('/path', methods = ['POST', 'GET'])
 def getPathGeometry():
-    global id_map_source_private, id_map_target_private, id_map_target_public, tt_public, tt_private
+    global id_map_source_public, id_map_source_private, id_map_target_private, id_map_target_public, tt_public, tt_private
     
     data = request.get_json(force=True)
     
@@ -436,17 +377,15 @@ def getPathGeometry():
     print(marker_id, location_type)
     
     if location_type == "source":
-        node_id_public = session["id_map_source_public"][marker_id]
+        node_id_public = id_map_source_public[marker_id]
         node_id_private = id_map_source_private[marker_id]
     else:
-        print(id_map_target_public)
-        print(id_map_target_private)
         node_id_public = id_map_target_public[marker_id]
         node_id_private = id_map_target_private[marker_id]
         
     paths = []
     
-    source_public = session["id_map_source_public"][0]
+    source_public = id_map_source_public[0]
     print(source_public)
     source_private = id_map_source_private[0]
     print(source_private)
@@ -480,8 +419,8 @@ def getSegmentGeometry():
     lon = data['longitude']
     #print(lat, lon)
     
-    edge_id, osm_id, osm_source, osm_target, geometry = dataManager.getClosestEdgeGeometry(lat, lon, region)
-    #print(edge_id, osm_id, osm_source, osm_target)
+    edge_id, osm_id, source, target, geometry = dataManager.getClosestEdgeGeometry(lat, lon, region)
+    #print(edge_id, osm_id, source, target)
     #print(geometry)
     
     #properties = {'line-color': 'r'}
@@ -553,10 +492,10 @@ def getRemovedStops(map_stops):
     return map_stops_children
     
 def getNodesColors(tt_public, tt_private):
-    global id_map_source_private, id_map_target_private, id_map_target_public
+    global id_map_source_public, id_map_source_private, id_map_target_private, id_map_target_public
     colored_type = "target"
     
-    if len(session["id_map_source_public"]) > 1 and len(id_map_target_public) == 1:
+    if len(id_map_source_public) > 1 and len(id_map_target_public) == 1:
         colored_type = "source"
         
     if colored_type == "source":
@@ -567,10 +506,10 @@ def getNodesColors(tt_public, tt_private):
         return node_colors, colored_type
             
 def colorSources(tt_public, tt_private):
-    global id_map_source_private, id_map_target_private, id_map_target_public
+    global id_map_source_public, id_map_source_private, id_map_target_private, id_map_target_public
     node_colors = {}
     for i in range (len(id_map_source_private)):
-        s_public = session["id_map_source_public"][i]
+        s_public = id_map_source_public[i]
         s_private = id_map_source_private[i]
         if s_public not in tt_public:
             print(s_public)
@@ -603,11 +542,11 @@ def colorSources(tt_public, tt_private):
 
 def colorTargets(tt_public, tt_private):
     print("Coloring targets...")
-    global id_map_source_private, id_map_target_private, id_map_target_public
+    global id_map_source_public, id_map_source_private, id_map_target_private, id_map_target_public
     node_colors = {}
     targets = {}
     for i in range (len(id_map_source_private)):
-        s_public = session["id_map_source_public"][i]
+        s_public = id_map_source_public[i]
         s_private = id_map_source_private[i]
         if s_public in tt_public and s_private in tt_private:
             tt_public_s = tt_public[s_public]
@@ -622,8 +561,10 @@ def colorTargets(tt_public, tt_private):
                 if t_public not in tt_public_s or t_private not in tt_private_s:
                     if t_public not in tt_public_s:
                         print(str(t_public) + " not found by public transit")
-                    else:
+                        print(graph.getNode(t_public))
+                    if t_private not in tt_private_s:
                         print(str(t_private) + " not found by car")
+                        print(graph.getNode(t_private))
                     #node_colors[j] = 0.5
                 else: 
                     if tt_public_s[t_public] <=  tt_private_s[t_private]:
@@ -641,22 +582,18 @@ def colorTargets(tt_public, tt_private):
     return node_colors
                 
 
-def createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, osm_source, osm_target, source_ratio):
-    osm_mapping = graph.getOsmMapping()
+def createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, source, target, source_ratio):
     if source_ratio == 0.0:
         # node is equal to the source
-        return osm_mapping[osm_source]
+        return source
     elif source_ratio == 1.0:
         #node is equal to the target
-        return osm_mapping[osm_target]
+        return target
     else:
-        node_id = graph.getNumNodes()
+        node_id = graph.getNumNodes() + 1
         graph.addNode(node_id, node_lat, node_lon, graph.ROAD)
         
         #splitting edge
-        source = osm_mapping[osm_source]
-        target = osm_mapping[osm_target]
-        
         original_edge = graph.getEdge(source, target)
         
         modes = original_edge['modes']
@@ -705,5 +642,5 @@ def createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, osm_source, osm_ta
 if __name__ == '__main__':
     print("main!")
     # run!
-    #loadData()
+    loadData()
     app.run()

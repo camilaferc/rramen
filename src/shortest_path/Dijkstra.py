@@ -316,6 +316,7 @@ class Dijsktra:
         print(time_neig)                        
         return travel_times
     
+    '''
     def reconstructPathToNode(self, node_id):
         if node_id not in self.parents:
             raise Exception('{} has not been expanded'.format(node_id))
@@ -329,7 +330,7 @@ class Dijsktra:
                 parent = self.parents[parent]
             path.reverse()
             return path
-                
+    '''            
     
     def shortestPathToSetHeap(self, s, departure_time, targets, allowed_modes):
         heap = FibonacciHeap()

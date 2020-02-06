@@ -40,9 +40,6 @@ class LoadTransportationNetwork:
         del self.routes_id
         del self.edges_timetable
         
-        #print(self.graph.getNumNodes())
-        #print(self.graph.getNumEdges())
-        
         #creating links within stations and to the road network
         self.loadLinks()
         self.loadTransferTimes()
@@ -139,12 +136,12 @@ class LoadTransportationNetwork:
             
             row = cursor.fetchone()
             
-            parents = self.parent_stops.keys()
+            #parents = self.parent_stops.keys()
             while row is not None:
                 (link_id, stop_id, osm_source, osm_target, edge_dist, source_ratio, edge_length, lon, lat) = row
-                if stop_id in parents:
-                    self.links[stop_id] = {'link_id': link_id, 'source':osm_source, 'target':osm_target, 'edge_dist':edge_dist, 
-                                           'source_ratio':source_ratio, 'edge_length':edge_length, 'lat':lat, 'lon':lon}
+                #if stop_id in parents:
+                self.links[stop_id] = {'link_id': link_id, 'source':osm_source, 'target':osm_target, 'edge_dist':edge_dist, 
+                                        'source_ratio':source_ratio, 'edge_length':edge_length, 'lat':lat, 'lon':lon}
                 row = cursor.fetchone()
                 
         except IOError as e:
@@ -158,56 +155,57 @@ class LoadTransportationNetwork:
                 conn.close()
                 
     def loadTransferTimes(self):
-        print("Loading transfer times...")
-        sql = """SELECT from_stop_id, to_stop_id, transfer_type, min_transfer_time, from_route_id, to_route_id, from_trip_id
-        FROM transfers_{};
-        """
-        sql = sql.format(self.region)
-        conn = None
-        
-        try:
-            conn = PostGISConnection()
-            conn.connect()
-            cursor = conn.conn.cursor()
-            cursor.execute(sql)
+        if self.parent_stops:
             
-            row = cursor.fetchone()
+            print("Loading transfer times...")
+            sql = """SELECT from_stop_id, to_stop_id, transfer_type, min_transfer_time, from_route_id, to_route_id, from_trip_id
+            FROM transfers_{};
+            """
+            sql = sql.format(self.region)
+            conn = None
             
-            while row is not None:
-                (from_stop_id, to_stop_id, transfer_type, min_transfer_time, from_route_id, to_route_id, from_trip_id) = row
-                if not min_transfer_time:
-                        min_transfer_time = self.graph.MIN_TRANSFER_TIME
-                if from_stop_id != to_stop_id and not from_trip_id:
-                    if not from_route_id:
-                        if from_stop_id in self.stop_transfers:
-                            self.stop_transfers[from_stop_id][to_stop_id] = min_transfer_time
-                        else:
-                            self.stop_transfers[from_stop_id] = {to_stop_id : min_transfer_time}
-                    else:
-                        if from_route_id in self.route_transfers:
-                            if to_route_id in self.route_transfers[from_route_id]:
-                                if from_stop_id in self.route_transfers[from_route_id][to_route_id]:
-                                    self.route_transfers[from_route_id][to_route_id][from_stop_id][to_stop_id] = min_transfer_time
-                                else: 
-                                    self.route_transfers[from_route_id][to_route_id][from_stop_id] = {to_stop_id:min_transfer_time}
-                            else:
-                                self.route_transfers[from_route_id][to_route_id] = {from_stop_id: {to_stop_id:min_transfer_time}}
-                        else:
-                            self.route_transfers[from_route_id] = {to_route_id : {from_stop_id: {to_stop_id:min_transfer_time}}}
+            try:
+                conn = PostGISConnection()
+                conn.connect()
+                cursor = conn.conn.cursor()
+                cursor.execute(sql)
+                
                 row = cursor.fetchone()
-            
-            #for stop in self.transfer_times:
-            #    print(self.transfer_times[stop])    
-        except IOError as e:
-            print("I/O error({0}): {1}".format(e.errno, e.strerror))
-        except (Exception, psycopg2.DatabaseError) as error:
-            print(error)
-        except: 
-            print("Unexpected error:", sys.exc_info()[0])
-        finally:
-            if conn is not None:
-                conn.close()
-    
+                
+                while row is not None:
+                    (from_stop_id, to_stop_id, transfer_type, min_transfer_time, from_route_id, to_route_id, from_trip_id) = row
+                    if not min_transfer_time:
+                        min_transfer_time = self.graph.MIN_TRANSFER_TIME
+                    if from_stop_id != to_stop_id and not from_trip_id:
+                        if not from_route_id:
+                            if from_stop_id in self.stop_transfers:
+                                self.stop_transfers[from_stop_id][to_stop_id] = min_transfer_time
+                            else:
+                                self.stop_transfers[from_stop_id] = {to_stop_id : min_transfer_time}
+                        else:
+                            if from_route_id in self.route_transfers:
+                                if to_route_id in self.route_transfers[from_route_id]:
+                                    if from_stop_id in self.route_transfers[from_route_id][to_route_id]:
+                                        self.route_transfers[from_route_id][to_route_id][from_stop_id][to_stop_id] = min_transfer_time
+                                    else: 
+                                        self.route_transfers[from_route_id][to_route_id][from_stop_id] = {to_stop_id:min_transfer_time}
+                                else:
+                                    self.route_transfers[from_route_id][to_route_id] = {from_stop_id: {to_stop_id:min_transfer_time}}
+                            else:
+                                self.route_transfers[from_route_id] = {to_route_id : {from_stop_id: {to_stop_id:min_transfer_time}}}
+                    row = cursor.fetchone()
+                
+                #for stop in self.transfer_times:
+                #    print(self.transfer_times[stop])    
+            except IOError as e:
+                print("I/O error({0}): {1}".format(e.errno, e.strerror))
+            except (Exception, psycopg2.DatabaseError) as error:
+                print(error)
+            except: 
+                print("Unexpected error:", sys.exc_info()[0])
+            finally:
+                if conn is not None:
+                    conn.close()
                     
     def loadRoutes(self):
         print("Loading routes...")
@@ -243,7 +241,7 @@ class LoadTransportationNetwork:
         print("Loading trips...")
         sql = """SELECT s.*, t.service_id FROM stop_times_{0} as s, trips_{0} as t
                 WHERE s.trip_id in
-                (select trip_id from trips_berlin where route_id='{1}') and
+                (select trip_id from trips_{0} where route_id='{1}') and
                 t.trip_id = s.trip_id
                 order by trip_id, stop_sequence
                 ;
@@ -257,8 +255,6 @@ class LoadTransportationNetwork:
             
             for route in self.routes_id:
                 #print(route)
-                #if route == "19046_100":
-                #    print("ROUTE FOUND!")
                 self.edges_timetable = {}
                 node_mapping = {}
                 
@@ -284,9 +280,6 @@ class LoadTransportationNetwork:
                             previous_node = -1
                             row = cursor.fetchone()
                             continue
-                        
-                        #if route == "19046_100":
-                        #    print(str(stop_id) + " is in the mbr")
                         
                         node_id = self.current_node_id
                         node_mapping[stop_id] = node_id
@@ -390,20 +383,21 @@ class LoadTransportationNetwork:
     
         '''
     def addTransfers(self):
-        for parent in self.parent_stops:
-            #connect the super node (parent) to the road network
-            parent_id = self.addLinkSuperNodeToRoadNetwork(parent)
+        for stop in self.links:
+            #connect the super node to the road network
+            stop_id = self.addLinkSuperNodeToRoadNetwork(stop)
             
-            list_nodes = self.parent_stops[parent]
-            #print(parent, len(list_nodes))
-            for node_from in list_nodes:
-                self.addLinkToSuperNode(node_from, parent_id)
-                for node_to in list_nodes:
-                    if node_from != node_to:
-                        transfer_time = self.getTransferTime(node_from, node_to)
-                        #transfer_time = 0
-                        self.graph.addEdge(node_from, node_to, self.graph.TRANSFER, {self.graph.PEDESTRIAN}, 
-                                       {self.graph.PEDESTRIAN:ConstantFunction(transfer_time)})
+            if stop in self.parent_stops:
+                list_nodes = self.parent_stops[stop]
+                #print(parent, len(list_nodes))
+                for node_from in list_nodes:
+                    self.addLinkToSuperNode(node_from, stop_id)
+                    for node_to in list_nodes:
+                        if node_from != node_to:
+                            transfer_time = self.getTransferTime(node_from, node_to)
+                            #transfer_time = 0
+                            self.graph.addEdge(node_from, node_to, self.graph.TRANSFER, {self.graph.PEDESTRIAN}, 
+                                           {self.graph.PEDESTRIAN:ConstantFunction(transfer_time)})
     
     def getTransferTime(self, node_from_id, node_to_id):
         node_from = self.graph.getNode(node_from_id)
@@ -432,14 +426,14 @@ class LoadTransportationNetwork:
         else:
             return transfer_time_stop
     
-    def addLinkSuperNodeToRoadNetwork(self, parent_stop):
-        #create parent node
-        parent_id = self.current_node_id
+    def addLinkSuperNodeToRoadNetwork(self, super_stop):
+        #create super stop node
+        stop_id = self.current_node_id
         self.current_node_id += 1
-        stop = self.stops[parent_stop]
-        self.graph.addNode(parent_id, stop['lat'], stop['lon'], self.graph.SUPER_NODE)
+        stop = self.stops[super_stop]
+        self.graph.addNode(stop_id, stop['lat'], stop['lon'], self.graph.SUPER_NODE)
             
-        link = self.links[parent_stop]
+        link = self.links[super_stop]
         edge_id = link['link_id']
         source = self.osm_mapping[link['source']]
         target = self.osm_mapping[link['target']]
@@ -449,16 +443,16 @@ class LoadTransportationNetwork:
         
         if source_ratio == 0.0:
             #transfer node is equal to the source
-            self.graph.addEdge(parent_id, source, self.graph.TRANSFER, {self.graph.PEDESTRIAN}, 
+            self.graph.addEdge(stop_id, source, self.graph.TRANSFER, {self.graph.PEDESTRIAN}, 
                     {self.graph.PEDESTRIAN:ConstantFunction(edge_time)})
-            self.graph.addEdge(source, parent_id, self.graph.TRANSFER, {self.graph.PEDESTRIAN}, 
+            self.graph.addEdge(source, stop_id, self.graph.TRANSFER, {self.graph.PEDESTRIAN}, 
                     {self.graph.PEDESTRIAN:ConstantFunction(edge_time)})
             
         elif source_ratio == 1.0:
             #transfer node is equal to the target
-            self.graph.addEdge(parent_id, target, self.graph.TRANSFER, {self.graph.PEDESTRIAN}, 
+            self.graph.addEdge(stop_id, target, self.graph.TRANSFER, {self.graph.PEDESTRIAN}, 
                     {self.graph.PEDESTRIAN:ConstantFunction(edge_time)})
-            self.graph.addEdge(target, parent_id, self.graph.TRANSFER, {self.graph.PEDESTRIAN}, 
+            self.graph.addEdge(target, stop_id, self.graph.TRANSFER, {self.graph.PEDESTRIAN}, 
                     {self.graph.PEDESTRIAN:ConstantFunction(edge_time)})
             
         else:
@@ -481,13 +475,13 @@ class LoadTransportationNetwork:
                     {self.graph.PEDESTRIAN:ConstantFunction(time_target)}, edge_id, 2)
             
             #connecting new node to super node
-            self.graph.addEdge(parent_id, node_id, self.graph.TRANSFER, {self.graph.PEDESTRIAN}, 
+            self.graph.addEdge(stop_id, node_id, self.graph.TRANSFER, {self.graph.PEDESTRIAN}, 
                     {self.graph.PEDESTRIAN:ConstantFunction(edge_time)})
-            self.graph.addEdge(node_id, parent_id, self.graph.TRANSFER, {self.graph.PEDESTRIAN}, 
+            self.graph.addEdge(node_id, stop_id, self.graph.TRANSFER, {self.graph.PEDESTRIAN}, 
                     {self.graph.PEDESTRIAN:ConstantFunction(edge_time)})
             
             
-        return parent_id
+        return stop_id
         
     def addLinkToSuperNode(self, node_id, parent_node_id):
         self.graph.addEdge(parent_node_id, node_id, self.graph.TRANSFER, {self.graph.PEDESTRIAN}, 

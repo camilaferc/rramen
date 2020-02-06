@@ -14,14 +14,14 @@
 		
 		<script type="text/javascript" src="static/js/color_gradient.js?1"></script>
 		<script type="text/javascript" src="static/js/polygon.js?12"></script>
-		<script type="text/javascript" src="static/js/neighborhood.js?104"></script>
+		<script type="text/javascript" src="static/js/neighborhood.js?123"></script>
 		<script type="text/javascript" src="static/js/planner_menu.js?1"></script>
 		<script type="text/javascript" src="static/js/routes.js?352"></script>
-		<script type="text/javascript" src="static/js/stops.js?34"></script>
+		<script type="text/javascript" src="static/js/stops.js?35"></script>
 		<script type="text/javascript" src="static/js/road_segment.js"></script>
 		
-		<link rel="stylesheet" type="text/css" href="static/css/rr_test.css?69">
-		<link rel="stylesheet" type="text/css" href="static/css/list_neighborhoods.css?18">
+		<link rel="stylesheet" type="text/css" href="static/css/rr_test.css?72">
+		<link rel="stylesheet" type="text/css" href="static/css/list_neighborhoods.css?20">
 		<link rel="stylesheet" type="text/css" href="static/css/planner.css?10">
         
     </head>
@@ -111,6 +111,7 @@
 	        var stop_routes = {{stop_routes|safe}}
 	        var transp_mapping = {{transp_mapping|safe}}
 	        var stop_locations = {{stop_locations|safe}}
+        	var network_center = {{network_center|safe}}
 
 	        var LEVEL_IMAGE = {1:"rail-icon.png", 2:"urban-rail-icon.png", 3:"light-rail-icon.png", 4:"bus-icon.png"}
 	        
@@ -125,7 +126,7 @@
                 container: 'map',
                 //style: 'mapbox://styles/mapbox/streets-v9',
                 style: 'mapbox://styles/camilaferc/ck52r0hzk05zf1csdqwfxsozd',
-                center: [13.4050, 52.5200],
+                center: [network_center[0], network_center[1]],
                 zoom: 12
             });
             //map.scrollZoom.disable();
@@ -185,11 +186,11 @@
                     });              
             });
 
-            map.on('error', e => {
+            /*map.on('error', e => {
                 // Hide those annoying non-error errors
                 if (e && e.error !== 'Error: Not Found')
                     console.error(e);
-            });
+            });*/
 
             var view = 0;
 
@@ -563,7 +564,7 @@
 
             var popup_stop = null;
 
-            for(level in LEVEL_IMAGE){
+            for(level in stop_locations){
             	var layer_name = "stops-" + LEVEL_IMAGE[level].split(".")[0]
             	
             	map.on('mouseenter', layer_name, function(e) {
@@ -787,6 +788,10 @@
                 	element.parentNode.removeChild(element);
             	}
 
+            	for (j = 0; j < markers.length; j++) {
+                    markers[j].remove()
+            	}
+
             	var parent_source = document.getElementById("source_add");
             	var marker_source = document.getElementById ("marker-button-source");
             	marker_source.parentNode.removeChild(marker_source);
@@ -897,6 +902,7 @@
                 	}
             	}
 
+
 				if (map.getLayer("rr_layer")) {
 				    map.removeLayer("rr_layer");
 				}
@@ -944,7 +950,7 @@
 			                    "data": res
 			                },
 		                    'paint': {
-		                    	'circle-radius': 6,
+		                    	'circle-radius': 8,
 		                    	// color circles by rr
 		                    	'circle-color': [
 		                    		'interpolate',

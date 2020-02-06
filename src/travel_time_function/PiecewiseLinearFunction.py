@@ -21,6 +21,16 @@ class PiecewiseLinearFunction(TravelTimeFunction):
     
     def __repr__(self):
         return "functions:" + str(self.list_functions)
+    
+    def comp(self, function):
+        value_a = self.list_functions[0].y1
+        value_b = function.list_functions[0].y1
+        if value_a > value_b:
+            return 1
+        elif value_a > value_b:
+            return 0
+        else:
+            return -1
             
     def buildFunctions(self, x, y):
         functions = []
@@ -32,6 +42,7 @@ class PiecewiseLinearFunction(TravelTimeFunction):
             functions.append(LinearFunction(x_prev, y_prev, x_cur, y_cur))
             x_prev = x_cur
             y_prev = y_cur
+        functions.append(LinearFunction(x_prev, y_prev, x[0], y[0]))
         return functions
     
     def splitFunctionRatio(self, ratio):
@@ -77,8 +88,8 @@ class PiecewiseLinearFunction(TravelTimeFunction):
     def getTravelTime(self, arrival_time):
         total_sec = TimeUtil.getTotalSeconds(arrival_time)
         pos = int(total_sec/self.interval_length)
-        if pos > len(self.list_functions):
-            pos = (pos % len(self.list_functions)) - 1
+        if pos >= len(self.list_functions):
+            pos = (pos % len(self.list_functions))
         linear_function = self.list_functions[pos]
         return linear_function.getValue(total_sec)
         

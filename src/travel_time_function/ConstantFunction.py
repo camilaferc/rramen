@@ -12,6 +12,17 @@ class ConstantFunction(TravelTimeFunction):
     def getTravelTime(self, arrival_time):
         return self.travel_time
     
+    def getTravelCost(self):
+        return self.travel_time
+    
+    def comp(self, function):
+        if self.travel_time > function.travel_time:
+            return 1
+        elif self.travel_time > function.travel_time:
+            return 0
+        else:
+            return -1
+    
     def __str__(self):
         return "travel time:" + str(self.travel_time)
     

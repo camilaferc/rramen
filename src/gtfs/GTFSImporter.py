@@ -4,79 +4,21 @@ Created on Oct 16, 2019
 
 @author: camila
 '''
-from database.PostGISConnection import PostGISConnection
-import sys
+from _datetime import datetime
 import csv
+import os
+import sys
+
 import psycopg2
-from psycopg2.extensions import AsIs
+from psycopg2._psycopg import AsIs
+from psycopg2.sql import SQL, Identifier
+
+from database.PostGISConnection import PostGISConnection
+from gtfs import GTFS
 from network.MultimodalNetwork import MultimodalNetwork
 
+
 class GTFSImporter:
-    '''
-    * REQUIRED. One or more transit agencies that provide the data in this feed.
-    '''
-    AGENCY_FILE = "agency.txt"
-    
-    '''
-    * REQUIRED. Dates for service IDs using a weekly schedule. Specify when service starts and ends, as well as days of the week where service is available.
-    '''
-    CALENDAR_FILE = "calendar.txt";
-    
-    '''
-    * REQUIRED. Individual locations where vehicles pick up or drop off passengers.
-    '''
-    STOPS_FILE = "stops.txt";
-    
-    '''
-    * REQUIRED. Transit routes. A route is a group of trips that are displayed to riders as a single service.
-    '''
-    ROUTES_FILE = "routes.txt";
-    
-    '''
-    * REQUIRED. Trips for each route. A trip is a sequence of two or more stops that occurs at specific time.
-    '''
-    TRIPS_FILE = "trips.txt";
-    
-    '''
-    * REQUIRED. Times that a vehicle arrives at and departs from individual stops for each trip.
-    '''
-    STOP_TIMES_FILE = "stop_times.txt";
-    
-    '''
-    * OPTIONAL. Exceptions for the service IDs defined in the calendar.txt file. If calendar_dates.txt includes ALL dates of service, this file may be specified instead of calendar.txt.
-    '''
-    CALENDAR_DATES_FILE = "calendar_dates.txt"; 
-    
-    '''
-    * OPTIONAL. Fare information for a transit organization's routes.
-    '''
-    FARE_ATTRIBUTES_FILE = "fare_attributes.txt";
-    
-    '''
-    * OPTIONAL. Rules for applying fare information for a transit organization's routes.
-    '''
-    FARE_RULES_FILE = "fare_rules.txt";
-    
-    '''
-    * OPTIONAL. Rules for drawing lines on a map to represent a transit organization's routes.
-    '''
-    SHAPES_FILE = "shapes.txt";
-    
-    '''
-    * OPTIONAL. Headway (time between trips) for routes with variable frequency of service.
-    '''
-    FREQUENCIES_FILE = "frequencies.txt";
-    
-    '''
-    * OPTIONAL. Rules for making connections at transfer points between routes.
-    '''
-    TRANSFERS_FILE = "transfers.txt";
-    
-    '''
-    * OPTIONAL. Additional information about the feed itself, including publisher, version, and expiration information.    
-    '''
-    FEED_INFO_FILE = "feed_info.txt";
-    
     def __init__(self, gtfs_dir, region):
         self.conn = PostGISConnection()
         self.gtfs_dir = gtfs_dir
@@ -96,7 +38,6 @@ class GTFSImporter:
         self.createTableTrips()
         self.createTableStopTimes()
         self.createTableLinks()
-        self.createTableTransfers()
         self.createTableRoutesGeometry()
         
     def populateTables(self):
@@ -113,38 +54,38 @@ class GTFSImporter:
     
     def createTableAgency(self):
         sql = """
-        CREATE TABLE IF NOT EXISTS agency_{} (
-            agency_id integer NOT NULL,
+        CREATE TABLE IF NOT EXISTS {} (
+            agency_id character varying NOT NULL,
             agency_name character varying NOT NULL,
             agency_url character varying NOT NULL,
             agency_timezone character varying NOT NULL,    
-            CONSTRAINT agency_pkey PRIMARY KEY (agency_id)
+            CONSTRAINT {} PRIMARY KEY (agency_id)
         );
         """
-        sql = sql.format(self.region)
+        sql = SQL(sql).format(Identifier("agency_"+str(self.region)),
+                              Identifier("agency_"+str(self.region)+"_pkey"))
         self.conn.executeCommand(sql)
         
     def populateTableAgency(self):
-        fName = self.gtfs_dir + self.AGENCY_FILE
-        sql = """INSERT INTO agency_{}(agency_id, agency_name, agency_url, agency_timezone) 
-                 VALUES ({}, {}, {}, {});
+        print("Creating table agency...")
+        fName = self.gtfs_dir + GTFS.AGENCY_FILE
+        sql = """INSERT INTO {}(agency_id, agency_name, agency_url, agency_timezone) 
+                 VALUES (%s, %s, %s, %s);
             """
-        commands = ""
+        sql = SQL(sql).format(Identifier("agency_"+str(self.region)))
         f = None
         try:
+            cursor = self.conn.getCursor()
             with open(fName, 'r') as f:
-                line = f.readline()
-                line = f.readline()
-                while line:
-                    (agency_id, agency_name, agency_url, agency_timezone) = line.split(",")[0:4]
-                    print(agency_id, agency_name, agency_url, agency_timezone)
-                    commands += sql.format(self.region, agency_id, agency_name.replace('"', '\''), agency_url.replace('"', '\''), agency_timezone.replace('"', '\''))
-                    print(agency_id)
-                    line = f.readline()
-            self.conn.executeCommand(commands)
-   
+                reader = csv.DictReader(f) # read rows into a dictionary format
+                for row in reader: # read a row as {column1: value1, column2: value2,...}
+                    cursor.execute(sql, (row.get('agency_id'), row.get('agency_name'), row.get('agency_url'), row.get('agency_timezone')))
+                self.conn.commit()
+                cursor.close()
         except IOError as e:
             print("I/O error({0}): {1}".format(e.errno, e.strerror))
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
         except: 
             print("Unexpected error:", sys.exc_info()[0])
         finally:
@@ -154,8 +95,8 @@ class GTFSImporter:
         
     def createTableCalendar(self):
         sql = """
-        CREATE TABLE IF NOT EXISTS calendar_{} (
-            service_id integer NOT NULL,
+        CREATE TABLE IF NOT EXISTS {} (
+            service_id character varying NOT NULL,
             monday boolean NOT NULL,
             tuesday boolean NOT NULL,
             wednesday boolean NOT NULL,
@@ -163,37 +104,79 @@ class GTFSImporter:
             friday boolean NOT NULL,
             saturday boolean NOT NULL,
             sunday boolean NOT NULL,
-            start_date date NOT NULL,
-            end_date date NOT NULL,    
-            CONSTRAINT calendar_pkey PRIMARY KEY (service_id)
+            CONSTRAINT {} PRIMARY KEY (service_id)
         );
         """
-        sql = sql.format(self.region)
+        sql = SQL(sql).format(Identifier("calendar_"+str(self.region)),
+                              Identifier("calendar_"+str(self.region)+"_pkey"))
         self.conn.executeCommand(sql)
     
     def populateTableCalendar(self):
-        fName = self.gtfs_dir + self.CALENDAR_FILE
-        sql = """INSERT INTO calendar_{}(service_id, monday, tuesday, wednesday, thursday, friday, saturday, sunday, start_date, end_date) 
-                 VALUES ({}, {}, {}, {}, {}, {}, {}, {}, to_date('{}','YYYYMMDD'), to_date('{}','YYYYMMDD'));
+        print("Creating table calendar...")
+        fName = self.gtfs_dir + GTFS.CALENDAR_FILE
+        sql = """INSERT INTO {}(service_id, monday, tuesday, wednesday, thursday, friday, saturday, sunday) 
+                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                 ON CONFLICT DO NOTHING;
             """
-        commands = ""
+        sql = SQL(sql).format(Identifier("calendar_"+str(self.region)))
         f = None
+        calendar = {}
         try:
-            with open(fName, 'r') as f:
-                line = f.readline()
-                line = f.readline()
-                while line:
-                    print(line)
-                    (service_id, monday, tuesday, wednesday, thursday, friday, saturday, sunday, start_date, end_date) = line.split(",")
-                    print(service_id, monday, tuesday, wednesday, thursday, friday, saturday, sunday, start_date, end_date)
-                    commands += sql.format(self.region, service_id, bool(monday), bool(tuesday), bool(wednesday), 
-                                bool(thursday), bool(friday), bool(saturday), bool(sunday), str(start_date), str(end_date))
-                    print(service_id)
+            if os.path.isfile(fName):
+                with open(fName, 'r') as f:
                     line = f.readline()
-            self.conn.executeCommand(commands)
+                    line = f.readline()
+                    while line:
+                        (service_id, monday, tuesday, wednesday, thursday, friday, saturday, sunday, _ ,_) = line.split(",")
+                        calendar_service = {}
+                        if monday:
+                            calendar_service[0] = True
+                        if tuesday:
+                            calendar_service[1] = True
+                        if wednesday:
+                            calendar_service[2] = True
+                        if thursday:
+                            calendar_service[3] = True
+                        if friday:
+                            calendar_service[4] = True
+                        if saturday:
+                            calendar_service[5] = True
+                        if sunday:
+                            calendar_service[6] = True   
+                        calendar[service_id] = calendar_service
+                        #print(service_id, monday, tuesday, wednesday, thursday, friday, saturday, sunday, start_date, end_date)
+                        line = f.readline()
+            fName = self.gtfs_dir + GTFS.CALENDAR_DATE_FILE
+            if os.path.isfile(fName):
+                with open(fName, 'r') as f:
+                    line = f.readline()
+                    line = f.readline()
+                    while line:
+                        (service_id, date, exception_type) = line.split(",")
+                        if int(exception_type) == 1:
+                            day = datetime.strptime(date, '%Y%m%d').weekday()
+                            if service_id in calendar:
+                                calendar[service_id][day] = True
+                            else:
+                                calendar_service = {}
+                                calendar_service[day] = True
+                                calendar[service_id] = calendar_service
+                                
+                        line = f.readline()
+            #else:
+            #    raise SystemExit("No calendar file provided!")
+            cursor = self.conn.getCursor()
+            for service_id in calendar:
+                service = calendar[service_id]
+                cursor.execute(sql, (service_id, service.get(0, False), service.get(1, False), service.get(2, False), service.get(3, False), 
+                                     service.get(4, False), service.get(5, False), service.get(6, False)))
+            self.conn.commit()
+            cursor.close()
    
         except IOError as e:
             print("I/O error({0}): {1}".format(e.errno, e.strerror))
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
         except: 
             print("Unexpected error:", sys.exc_info()[0])
         finally:
@@ -202,42 +185,54 @@ class GTFSImporter:
         
     def createTableStops(self):
         sql = """
-        CREATE TABLE IF NOT EXISTS stops_{} (
-            stop_id bigint NOT NULL,
+        CREATE TABLE IF NOT EXISTS {0} (
+            stop_id character varying NOT NULL,
             stop_name character varying NOT NULL,
             stop_lat double precision NOT NULL,
             stop_lon double precision NOT NULL,
             stop_location geometry NOT NULL,
             stop_type integer NULL,
-            stop_parent bigint NULL,
-            CONSTRAINT stops_pkey PRIMARY KEY (stop_id)
+            stop_parent character varying NULL,
+            CONSTRAINT {1} PRIMARY KEY (stop_id)
         );
+        
+        CREATE INDEX IF NOT EXISTS {2}
+        ON {0}
+        USING gist
+        (stop_location);
         """
-        sql = sql.format(self.region)
+        sql = SQL(sql).format(Identifier("stops_"+str(self.region)),
+                              Identifier("stops_"+str(self.region)+"_pkey"),
+                              Identifier("stops_"+str(self.region)+"_geom_idx"))
         self.conn.executeCommand(sql)
         
         
     def populateTableStops(self):
-        fName = self.gtfs_dir + self.STOPS_FILE
-        sql = """INSERT INTO stops_{0}(stop_id, stop_name, stop_lat, stop_lon, stop_location, stop_type, stop_parent) 
-                 VALUES ({1}, '{2}', {3}, {4}, ST_SetSRID(ST_MakePoint({4},{3}),4326), {5}, {6});
+        print("Creating table stops...")
+        fName = self.gtfs_dir + GTFS.STOPS_FILE
+        sql = """INSERT INTO {}(stop_id, stop_name, stop_lat, stop_lon, stop_location, stop_type, stop_parent) 
+                 VALUES (%s, %s, %s, %s, ST_SetSRID(ST_MakePoint(%s, %s),4326), %s, %s);
             """
-        commands = ""
+        sql = SQL(sql).format(Identifier("stops_"+str(self.region)))
         f = None
         try:
+            cursor = self.conn.getCursor()
             with open(fName, 'r') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    parent = 'NULL'
-                    if row['parent_station']:
-                        parent = row['parent_station']
-                    sql_final = sql.format(self.region, row['stop_id'], row['stop_name'], row['stop_lat'], row['stop_lon'], row['location_type'], parent)
-                    #print(sql_final)
-                    commands += sql_final
-            self.conn.executeCommand(commands)
+                    for i in row:
+                        if row[i] == '':
+                            row[i] = None
+                    cursor.execute(sql, (row.get('stop_id'), row.get('stop_name'), row.get('stop_lat'), row.get('stop_lon'), 
+                                         row.get('stop_lon'), row.get('stop_lat'),
+                                         row.get('location_type'), row.get('parent_station')))
+            self.conn.commit()
+            cursor.close()
    
         except IOError as e:
             print("I/O error({0}): {1}".format(e.errno, e.strerror))
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
         except: 
             print("Unexpected error:", sys.exc_info()[0])
         finally:
@@ -246,71 +241,65 @@ class GTFSImporter:
         
     def createTableRoutes(self):
         sql = """
-        CREATE TABLE IF NOT EXISTS routes_{0} (
+        CREATE TABLE IF NOT EXISTS {} (
             route_id varchar NOT NULL,
-            agency_id integer NOT NULL,
+            agency_id varchar NOT NULL,
             route_short_name varchar NOT NULL,
             route_long_name varchar NULL,
             route_type integer NOT NULL,    
-            CONSTRAINT routes_pkey PRIMARY KEY (route_id),
-            CONSTRAINT routes_agency_id_gtfsinfo_id_fkey FOREIGN KEY (agency_id)
-            REFERENCES agency_{0} (agency_id) MATCH SIMPLE
+            CONSTRAINT {} PRIMARY KEY (route_id),
+            CONSTRAINT {} FOREIGN KEY (agency_id)
+            REFERENCES {} (agency_id) MATCH SIMPLE
             ON UPDATE NO ACTION ON DELETE NO ACTION
         );
         """
-        sql = sql.format(self.region)
+        sql = SQL(sql).format(Identifier("routes_"+str(self.region)),
+                              Identifier("routes_"+str(self.region)+"_pkey"),
+                              Identifier("routes_"+str(self.region)+"_agency_id_gtfsinfo_id_fkey"),
+                              Identifier("agency_"+str(self.region)))
         self.conn.executeCommand(sql)
     
-    '''
     def createTableRoutesGeometry(self):
         sql = """
-        CREATE TABLE IF NOT EXISTS routes_geometry_{0} (
+        CREATE TABLE IF NOT EXISTS {} (
             route_id varchar NOT NULL,
+            trip_id varchar NOT NULL,
             route_short_name varchar NOT NULL,
-            stops bigint[] NOT NULL,
-            route_geom geometry NOT NULL,
-            CONSTRAINT routes_geometry_{0}_pkey PRIMARY KEY (route_id)
-        );
-        """
-        sql = sql.format(self.region)
-        self.conn.executeCommand(sql)
-    '''  
-        
-    def createTableRoutesGeometry(self):
-        sql = """
-        CREATE TABLE IF NOT EXISTS routes_geometry_{0} (
-            route_id varchar NOT NULL,
-            trip_id bigint NOT NULL,
-            route_short_name varchar NOT NULL,
-            stops bigint[] NOT NULL,
+            stops varchar[] NOT NULL,
             stop_names varchar[] NOT NULL,
             route_geom geometry NOT NULL,
-            CONSTRAINT routes_geometry_{0}_pkey PRIMARY KEY (route_id, trip_id)
+            CONSTRAINT {} PRIMARY KEY (route_id, trip_id)
         );
         """
-        sql = sql.format(self.region)
+        sql = SQL(sql).format(Identifier("routes_geometry_"+str(self.region)),
+                              Identifier("routes_geometry_"+str(self.region)+"_pkey"))
         self.conn.executeCommand(sql)
          
     def populateTableRoutes(self):
-        fName = self.gtfs_dir + self.ROUTES_FILE
-        sql = """INSERT INTO routes_{0}(route_id, route_short_name, route_long_name, route_type, agency_id) 
-                 VALUES ('{1}', '{2}', {3}, {4}, {5});
+        print("Creating table routes...")
+        fName = self.gtfs_dir + GTFS.ROUTES_FILE
+        sql = """INSERT INTO {}(route_id, route_short_name, route_long_name, route_type, agency_id) 
+                 VALUES (%s, %s, %s, %s, %s);
             """
-        commands = ""
+        sql = SQL(sql).format(Identifier("routes_"+str(self.region)))
         f = None
         try:
+            cursor = self.conn.getCursor()
             with open(fName, 'r') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    longName = 'NULL'
-                    if row['route_long_name']:
-                        longName = "'"+ row['route_long_name']+"'"
-                    print(self.region, row['route_id'], row['route_short_name'], row['route_long_name'], row['route_type'], row['agency_id'])
-                    commands += sql.format(self.region, row['route_id'], row['route_short_name'], longName, row['route_type'], row['agency_id'])
-            self.conn.executeCommand(commands)
+                    for i in row:
+                        if row[i] == '':
+                            row[i] = None
+                    #print(self.region, row['route_id'], row['route_short_name'], row['route_long_name'], row['route_type'], row['agency_id'])
+                    cursor.execute(sql, (row.get('route_id'), row.get('route_short_name'), row.get('route_long_name'), 
+                                         row.get('route_type'), row.get('agency_id')))
+            self.conn.commit()
    
         except IOError as e:
             print("I/O error({0}): {1}".format(e.errno, e.strerror))
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
         except: 
             print("Unexpected error:", sys.exc_info()[0])
         finally:
@@ -318,19 +307,25 @@ class GTFSImporter:
                 f.close()   
     
     def populateTableRoutesGeometry(self):
-        sql_insert = """INSERT INTO routes_geometry_{0}(route_id, trip_id, route_short_name, stops, stop_names, route_geom) 
-                 VALUES ('{1}', {2}, '{3}', '{4}', '{5}', {6});
+        print("Creating table routes geometry...")
+        sql_insert = """INSERT INTO {}(route_id, trip_id, route_short_name, stops, stop_names, route_geom) 
+                 VALUES (%s, %s, %s, %s, %s, ST_GeomFromText('LINESTRING(%s)', 4326));
             """
-        try:
-            sql_routes = """
-                    SELECT route_id, route_short_name FROM routes_{0};
-            """
+        sql_insert = SQL(sql_insert).format(Identifier("routes_geometry_"+str(self.region)))
             
-            sql_geometry = """
-                    SELECT ST_Intersects({1}, 
-                    (SELECT polygon from neighborhoods_{0} where level = (SELECT min(level) FROM neighborhoods_{0})));
+        sql_routes = """
+                    SELECT route_id, route_short_name FROM {};
             """
-            sql_routes = sql_routes.format(self.region)
+        sql_routes = SQL(sql_routes).format(Identifier("routes_"+str(self.region)))
+            
+        sql_geometry = """
+                SELECT ST_Intersects(ST_GeomFromText('LINESTRING(%s)', 4326), 
+                (SELECT polygon from {0} where level = (SELECT min(level) FROM {0})));
+        """
+        sql_geometry = SQL(sql_geometry).format(Identifier("neighborhoods_"+str(self.region)))
+            
+        try:
+            
             cursor = self.conn.getCursor()
             cursor.execute(sql_routes)
             routes = {}
@@ -343,16 +338,19 @@ class GTFSImporter:
                 row = cursor.fetchone()
             
             sql_stops = """select st.stop_id, trip_id, s.stop_lat, s.stop_lon, s.stop_parent, s.stop_name 
-                        from stop_times_{0} st, stops_{0} s
+                        from {} st, {} s
                         where trip_id in
-                        (select trip_id from trips_berlin where route_id = '{1}')
+                        (select trip_id from {} where route_id = %s)
                         and st.stop_id = s.stop_id
                         ORDER BY trip_id, stop_sequence;
                         """
+            sql_stops = SQL(sql_stops).format(Identifier("stop_times_"+str(self.region)),
+                                              Identifier("stops_"+str(self.region)),
+                                              Identifier("trips_"+str(self.region)))
             for route in routes:
-                print(route)
-                sql_stops_route = sql_stops.format(self.region, route)
-                cursor.execute(sql_stops_route)
+                #print(route)
+                cursor.execute(sql_stops, (route, ))
+                
                 row = cursor.fetchone()
                 trips_set = []
                 trips_id = []
@@ -365,15 +363,13 @@ class GTFSImporter:
                 
                 previous_trip = -1
                 
-                geometry = "ST_GeomFromText('LINESTRING("
+                geometry = ""
                 while row is not None:
                     (stop_id, trip_id, lat, lon, parent, name) = row
                     if not parent:
-                        print("Parent does not exist:" + str(stop_id))
+                        #stop does not have a parent
                         parent = stop_id
                     if trip_id != previous_trip:
-                        #print("different trip!")
-                        print(trip_id)
                         if previous_trip != -1:
                             route_set = set(route_stops)
                             res = self.checkNewTrip(trips_set, route_set)
@@ -383,21 +379,19 @@ class GTFSImporter:
                                 trip_stops[previous_trip] = route_stops
                                 trip_names[previous_trip] = stop_names
                             if res >= 0:
-                                print("removing:" + str(res))
                                 del trips_set[res]
                                 del trips_id[res]
                             
                             geometry = geometry[:-1]
-                            geometry += ")', 4326)"
                             trip_geometry[previous_trip] = geometry
                             
-                        geometry = "ST_GeomFromText('LINESTRING("
+                        geometry = ""
                         geometry += str(lon) + " " + str(lat) + ","
                         route_stops = [parent]
-                        stop_names = ['"' + str(name) + '"']
+                        stop_names = [name]
                     else:
                         route_stops.append(parent)
-                        stop_names.append('"' + str(name) + '"')
+                        stop_names.append(name)
                         geometry += str(lon) + " " + str(lat) + ","
                     previous_trip = trip_id
                     row = cursor.fetchone()
@@ -410,41 +404,24 @@ class GTFSImporter:
                     trip_stops[previous_trip] = route_stops
                     trip_names[previous_trip] = stop_names
                 if res >= 0:
-                    print("removing:" + str(res))
                     del trips_set[res]
                     del trips_id[res]
                 
                 geometry = geometry[:-1]
-                geometry += ")', 4326)"
                 trip_geometry[previous_trip] = geometry
                 
                 for trip_id in trips_id:
-                    print(trip_id)
-                    geometry_trip = trip_geometry[trip_id]
+                    geometry_trip = AsIs(trip_geometry[trip_id])
                     stops = trip_stops[trip_id]
-                    if(len(stops) <=1):
-                        print("trip is too short! " + str(stops))
-                    sql_geometry_id = sql_geometry.format(self.region, geometry_trip)
-                    cursor.execute(sql_geometry_id)
+                        
+                    cursor.execute(sql_geometry, (geometry_trip, ))
                     (intersects, ) = cursor.fetchone()
+                    
                     if intersects:
-                        str_stops = str(stops)
-                        str_stops = str_stops[1:-1]
-                        str_stops = "{" + str_stops + "}"
-                        
-                        seperator = ', '
-                        str_names = trip_names[trip_id]
-                        #str_names = str_names[1:-1]
-                        str_names = seperator.join(str_names)
-                        str_names = "{" + str_names + "}"
-                        #print(str_names)
-                        
-                        sql_insert_route = sql_insert.format(self.region, route, trip_id, routes[route], str_stops, str_names, geometry_trip)
-                        self.conn.executeCommand(sql_insert_route)
-                        print(str(trip_id) + " INSERTED!")
-                    else:
-                        print(str(trip_id) + " does not intersect the region")
-   
+                        names = trip_names[trip_id]
+                        cursor.execute(sql_insert, (route, trip_id, routes[route], stops, names, geometry_trip))
+                        self.conn.commit()
+            cursor.close()
         except IOError as e:
             print("I/O error({0}): {1}".format(e.errno, e.strerror))
         except (Exception, psycopg2.DatabaseError) as error:
@@ -453,23 +430,19 @@ class GTFSImporter:
             print("Unexpected error:", sys.exc_info()[0]) 
     
     def checkNewTrip(self, trips_set, new_trip):
+        if not new_trip:
+            return -2
         if not trips_set:
-            print("adding new trip")
             return -1
         else:
             for i in range(len(trips_set)):
                 trip = trips_set[i]
                 if new_trip == trip:
-                    print("trip already exists!")
                     return -2
                 elif new_trip.issubset(trip):
-                    print("trip is subset of existing trip!")
                     return -2 
                 elif trip.issubset(new_trip): 
-                    print("adding new trip")
-                    print("existing trip should be removed!")
                     return i 
-            print("adding new trip")
             return -1   
                     
         
@@ -550,96 +523,50 @@ class GTFSImporter:
         
     def createTableTrips(self):
         sql = """
-        CREATE TABLE IF NOT EXISTS trips_{0} (
+        CREATE TABLE IF NOT EXISTS {0} (
             route_id varchar NOT NULL,
-            trip_id bigint NOT NULL,
-            service_id integer NOT NULL,    
-            CONSTRAINT trips_pkey PRIMARY KEY (trip_id),
-            CONSTRAINT trips_service_id_fkey FOREIGN KEY (service_id)
-                REFERENCES calendar_{0} (service_id) MATCH SIMPLE
+            trip_id character varying NOT NULL,
+            service_id character varying NOT NULL,    
+            CONSTRAINT {1} PRIMARY KEY (trip_id),
+            CONSTRAINT {2} FOREIGN KEY (service_id)
+                REFERENCES {3} (service_id) MATCH SIMPLE
                 ON UPDATE NO ACTION ON DELETE NO ACTION,
-            CONSTRAINT trips_route_id_fkey FOREIGN KEY (route_id)
-                REFERENCES routes_{0} (route_id) MATCH SIMPLE
+            CONSTRAINT {4} FOREIGN KEY (route_id)
+                REFERENCES {5} (route_id) MATCH SIMPLE
                 ON UPDATE NO ACTION ON DELETE NO ACTION
             );
+            
+        CREATE INDEX IF NOT EXISTS {6}
+        ON {0}
+        USING btree (route_id);
         """
-        sql = sql.format(self.region)
+        sql = SQL(sql).format(Identifier("trips_"+str(self.region)),
+                              Identifier("trips_"+str(self.region)+"_pkey"),
+                              Identifier("trips_"+str(self.region)+"_service_id_fkey"),
+                              Identifier("calendar_"+str(self.region)),
+                              Identifier("trips_"+str(self.region)+"_route_id_fkey"),
+                              Identifier("routes_"+str(self.region)),
+                              Identifier("route_trip_"+str(self.region)+"_idx"))
         self.conn.executeCommand(sql)
         
     
     def populateTableTrips(self):
-        fName = self.gtfs_dir + self.TRIPS_FILE
-        sql = """INSERT INTO trips_{0}(route_id, trip_id, service_id) 
-                 VALUES ('{1}', {2}, {3});
+        print("Creating table trips...")
+        fName = self.gtfs_dir + GTFS.TRIPS_FILE
+        sql = """INSERT INTO {}(route_id, trip_id, service_id) 
+                 VALUES (%s, %s, %s);
             """
-        commands = ""
+        sql = SQL(sql).format(Identifier("trips_"+str(self.region)))
         f = None
         try:
+            cursor = self.conn.getCursor()
             with open(fName, 'r') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
                     #print(self.region, row['route_id'], row['trip_id'], row['service_id'])
-                    commands += sql.format(self.region, row['route_id'], row['trip_id'], row['service_id'])
-            self.conn.executeCommand(commands)
-   
-        except IOError as e:
-            print("I/O error({0}): {1}".format(e.errno, e.strerror))
-        except: 
-            print("Unexpected error:", sys.exc_info()[0])
-        finally:
-            if f is not None:
-                f.close()   
-        
-    def createTableStopTimes(self):
-        sql = """
-        CREATE TABLE IF NOT EXISTS stop_times_{0} (
-            trip_id bigint NOT NULL,
-            arrival_time time NOT NULL,
-            departure_time time NOT NULL,
-            stop_id bigint NOT NULL,
-            stop_sequence integer NOT NULL,    
-            CONSTRAINT stop_times_stop_id_fkey FOREIGN KEY (stop_id)
-                REFERENCES stops_{0} (stop_id) MATCH SIMPLE
-                ON UPDATE NO ACTION ON DELETE NO ACTION,
-            CONSTRAINT stop_times_trip_id_fkey FOREIGN KEY (trip_id)
-                REFERENCES trips_{0} (trip_id) MATCH SIMPLE
-                ON UPDATE NO ACTION ON DELETE NO ACTION
-        );
-        """
-        sql = sql.format(self.region)
-        self.conn.executeCommand(sql)
-        
-    def populateTableStopTimes(self):
-        fName = self.gtfs_dir + self.STOP_TIMES_FILE
-        sql = """INSERT INTO stop_times_%s(trip_id, arrival_time, departure_time, stop_id, stop_sequence) 
-                 VALUES (%s, %s, %s, %s, %s);
-            """
-        records = []
-        f = None
-        try:
-            with open(fName, 'r') as f:
-                reader = csv.DictReader(f)
-                for row in reader:
-                    #print(row['trip_id'])
-                    #print(self.region, row['route_id'], row['trip_id'], row['service_id'])
-                    hour_arrival, min_arrival, sec_arrival = row['arrival_time'].split(":")
-                    if int(hour_arrival) > 23:
-                        hour_arrival = int(hour_arrival)%24
-                        row['arrival_time'] = str(hour_arrival) + ":" + min_arrival + ":" + sec_arrival 
-                    hour_departure, min_departure, sec_departure = row['departure_time'].split(":")
-                    if int(hour_departure) > 23:
-                        hour_departure = int(hour_departure)%24
-                        row['departure_time'] = str(hour_departure) + ":" + min_departure + ":" + sec_departure
-                    
-                    records.append((AsIs(self.region), row['trip_id'], row['arrival_time'], row['departure_time'],
-                                row['stop_id'], row['stop_sequence']))
-                    #commands += sql.format(self.region, row['trip_id'], row['arrival_time'], row['departure_time'],
-                    #            row['stop_id'], row['stop_sequence'])
-            #self.conn.executeCommand(commands)
-            cursor = self.conn.conn.cursor()
-            #cursor.execute(sql, ("berlin", '105286112', '6:18:00', '6:18:00', '790002155692', '0'))
-            cursor.executemany(sql, records)
-            self.conn.conn.commit()
+                    cursor.execute(sql, (row['route_id'], row['trip_id'], row['service_id']))
+            self.conn.commit()
+            cursor.close()
    
         except IOError as e:
             print("I/O error({0}): {1}".format(e.errno, e.strerror))
@@ -649,61 +576,145 @@ class GTFSImporter:
             print("Unexpected error:", sys.exc_info()[0])
         finally:
             if f is not None:
-                f.close()  
+                f.close()   
+        
+    def createTableStopTimes(self):
+        sql = """
+        CREATE TABLE IF NOT EXISTS {0} (
+            trip_id character varying  NOT NULL,
+            arrival_time time NOT NULL,
+            departure_time time NOT NULL,
+            stop_id character varying NOT NULL,
+            stop_sequence integer NOT NULL,    
+            CONSTRAINT {1} FOREIGN KEY (stop_id)
+                REFERENCES {2} (stop_id) MATCH SIMPLE
+                ON UPDATE NO ACTION ON DELETE NO ACTION,
+            CONSTRAINT {3} FOREIGN KEY (trip_id)
+                REFERENCES {4} (trip_id) MATCH SIMPLE
+                ON UPDATE NO ACTION ON DELETE NO ACTION
+        );
+        
+        """
+        sql = SQL(sql).format(Identifier("stop_times_"+str(self.region)),
+                              Identifier("stop_times_"+str(self.region)+"_stop_id_fkey"),
+                              Identifier("stops_"+str(self.region)),
+                              Identifier("stop_times_"+str(self.region)+"_trip_id_fkey"),
+                              Identifier("trips_"+str(self.region)))
+        self.conn.executeCommand(sql)
     
+    def populateTableStopTimes(self):
+        print("Creating table stop times...")
+        fName = self.gtfs_dir + GTFS.STOP_TIMES_FILE
+        sql = """INSERT INTO {}(trip_id, arrival_time, departure_time, stop_id, stop_sequence) 
+                 VALUES (%s, %s, %s, %s, %s);
+            """
+        sql = SQL(sql).format(Identifier("stop_times_"+str(self.region)))
+        records = []
+        f = None
+        try:
+            cursor = self.conn.conn.cursor()
+            count = 0
+            with open(fName, 'r') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    hour_arrival, min_arrival, sec_arrival = row['arrival_time'].split(":")
+                    if int(hour_arrival) > 23:
+                        hour_arrival = int(hour_arrival)%24
+                        row['arrival_time'] = str(hour_arrival) + ":" + min_arrival + ":" + sec_arrival 
+                    hour_departure, min_departure, sec_departure = row['departure_time'].split(":")
+                    if int(hour_departure) > 23:
+                        hour_departure = int(hour_departure)%24
+                        row['departure_time'] = str(hour_departure) + ":" + min_departure + ":" + sec_departure
+                    
+                    records.append((row['trip_id'], row['arrival_time'], row['departure_time'],
+                                row['stop_id'], row['stop_sequence']))
+                    count += 1
+                    if count%10000 == 0:
+                        #print("COMMIT", count)
+                        cursor.executemany(sql, records)
+                        self.conn.commit()
+                        records = []
+                        
+            cursor.executemany(sql, records)
+            
+            sql_index = """CREATE INDEX IF NOT EXISTS {0}
+                        ON {1}
+                        USING btree
+                        (trip_id);"""
+            sql_index = SQL(sql_index).format(Identifier("stop_trip_"+str(self.region)+"_idx"),
+                              Identifier("stop_times_"+str(self.region)))
+                        
+            cursor.execute(sql_index)
+            self.conn.commit()
+            cursor.close()
+            records = None
+        except IOError as e:
+            print("I/O error({0}): {1}".format(e.errno, e.strerror))
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
+        except: 
+            print("Unexpected error:", sys.exc_info()[0])
+        finally:
+            if f is not None:
+                f.close()  
+        
     def createTableTransfers(self):
         
         sql = """
-        CREATE TABLE IF NOT EXISTS transfers_{0} (
-            from_stop_id bigint NOT NULL,
-            to_stop_id bigint NOT NULL,
+        CREATE TABLE IF NOT EXISTS {0} (
+            from_stop_id character varying NOT NULL,
+            to_stop_id character varying NOT NULL,
             transfer_type integer NOT NULL,
             min_transfer_time integer NULL,
             from_route_id varchar NULL,
             to_route_id varchar NULL,
-            from_trip_id bigint NULL,
-            to_trip_id bigint NULL,
-            CONSTRAINT trips_from_stop_fkey FOREIGN KEY (from_stop_id)
-                REFERENCES stops_{0} (stop_id) MATCH SIMPLE
+            from_trip_id varchar NULL,
+            to_trip_id varchar NULL,
+            CONSTRAINT {1} FOREIGN KEY (from_stop_id)
+                REFERENCES {2} (stop_id) MATCH SIMPLE
                 ON UPDATE NO ACTION ON DELETE NO ACTION,
-            CONSTRAINT trips_to_stop_fkey FOREIGN KEY (to_stop_id)
-                REFERENCES stops_{0} (stop_id) MATCH SIMPLE
+            CONSTRAINT {3} FOREIGN KEY (to_stop_id)
+                REFERENCES {2} (stop_id) MATCH SIMPLE
                 ON UPDATE NO ACTION ON DELETE NO ACTION
         );
         """
-        sql = sql.format(self.region)
+        sql = SQL(sql).format(Identifier("transfers_"+str(self.region)),
+                              Identifier("trips_from_stop_"+str(self.region)+"_fkey"),
+                              Identifier("stops_"+str(self.region)),
+                              Identifier("trips_to_stop_"+str(self.region)+"_fkey"))
         self.conn.executeCommand(sql)
         
     def populateTableTransfers(self):
-        fName = self.gtfs_dir + self.TRANSFERS_FILE
-        sql = """INSERT INTO transfers_%s(from_stop_id, to_stop_id, transfer_type, min_transfer_time, from_route_id, to_route_id, from_trip_id, to_trip_id) 
-                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
+        fName = self.gtfs_dir + GTFS.TRANSFERS_FILE
+        
+        if not os.path.isfile(fName):
+            print("Transfer file not provided. OK")
+            return
+        
+        print("Creating table transfers...")
+        
+        self.createTableTransfers()
+        
+        sql = """INSERT INTO {0}(from_stop_id, to_stop_id, transfer_type, min_transfer_time, from_route_id, to_route_id, from_trip_id, to_trip_id) 
+                 SELECT %s, %s, %s, %s, %s, %s, %s, %s
+                 WHERE EXISTS (SELECT * FROM {1} WHERE stop_id = %s) and EXISTS (SELECT * FROM {1} WHERE stop_id = %s);
             """
+        sql = SQL(sql).format(Identifier("transfers_"+str(self.region)),
+                              Identifier("stops_"+str(self.region)))
         records = []
         f = None
         try:
             with open(fName, 'r') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    min_transfer_time = AsIs('NULL')
-                    if row['min_transfer_time']:
-                        min_transfer_time = row['min_transfer_time']
-                    from_route_id = AsIs('NULL')
-                    if 'from_route_id' in row and row['from_route_id']:
-                        from_route_id = row['from_route_id']
-                    to_route_id = AsIs('NULL')
-                    if 'to_route_id' in row and row['to_route_id']:
-                        to_route_id = row['to_route_id']
-                    from_trip_id = AsIs('NULL')
-                    if 'from_trip_id' in row and row['from_trip_id']:
-                        from_trip_id = row['from_trip_id']
-                    to_trip_id = AsIs('NULL')
-                    if 'to_trip_id' in row and row['to_trip_id']:
-                        to_trip_id = row['to_trip_id']
-                    
-                    records.append((AsIs(self.region), row['from_stop_id'], row['to_stop_id'], row['transfer_type'],
-                                min_transfer_time, from_route_id, to_route_id, from_trip_id, to_trip_id))
-            cursor = self.conn.conn.cursor()
+                    for i in row:
+                        if row[i] == '':
+                            row[i] = None
+                    records.append((row.get('from_stop_id'), row.get('to_stop_id'), row.get('transfer_type'),
+                                row.get('min_transfer_time'), row.get('from_route_id'), row.get('to_route_id'), 
+                                row.get('from_trip_id'), row.get('to_trip_id'),
+                                row.get('from_stop_id'), row.get('to_stop_id')))
+            cursor = self.conn.getCursor()
             cursor.executemany(sql, records)
             self.conn.conn.commit()
    
@@ -719,97 +730,161 @@ class GTFSImporter:
         
     def createTableLinks(self):
         sql = """
-        CREATE TABLE IF NOT EXISTS links_{0} (
+        CREATE TABLE IF NOT EXISTS {0} (
             link_id bigint NOT NULL,
-            stop_id bigint NOT NULL,
+            stop_id character varying NOT NULL,
             edge_id bigint NOT NULL,
-            osm_source bigint NOT NULL,
-            osm_target bigint NOT NULL,
+            source bigint NOT NULL,
+            target bigint NOT NULL,
             edge_dist double precision NOT NULL,
             source_ratio double precision NOT NULL,
             edge_length double precision NOT NULL,
             point_location geometry NOT NULL,
             source_point_geom geometry NULL,   
             point_target_geom geometry NULL,   
-            CONSTRAINT links_{0}_pkey PRIMARY KEY (link_id), 
-            CONSTRAINT links_{0}_stop_id_fkey FOREIGN KEY (stop_id)
-                REFERENCES stops_{0} (stop_id) MATCH SIMPLE
+            CONSTRAINT {1} PRIMARY KEY (link_id), 
+            CONSTRAINT {2} FOREIGN KEY (stop_id)
+                REFERENCES {3} (stop_id) MATCH SIMPLE
                 ON UPDATE NO ACTION ON DELETE NO ACTION,
-            CONSTRAINT link_{0}_edge_id_fkey FOREIGN KEY (edge_id)
-                REFERENCES roadnet_{0} (id) MATCH SIMPLE
+            CONSTRAINT {4} FOREIGN KEY (edge_id)
+                REFERENCES {5} (id) MATCH SIMPLE
                 ON UPDATE NO ACTION ON DELETE NO ACTION
         );
         """
         
-        sql = sql.format(self.region)
+        sql = SQL(sql).format(Identifier("links_"+str(self.region)),
+                              Identifier("links_"+str(self.region)+"_pkey"),
+                              Identifier("links_"+str(self.region)+"_stop_id_fkey"),
+                              Identifier("stops_"+str(self.region)),
+                              Identifier("link_"+str(self.region)+"_edge_id_fkey"),
+                              Identifier("roadnet_"+str(self.region)))
         self.conn.executeCommand(sql)
         
     
     def getParentsIds(self):
         ids = []
-        cur = self.conn.conn.cursor()
         
-        sql = """SELECT stop_id from stops_berlin
+        sql = """SELECT stop_id from {}
                 WHERE stop_type = 1
                 ORDER BY stop_id;"""
-        sql = sql.format(self.region)
+        sql = SQL(sql).format(Identifier("stops_"+str(self.region)))
         
-        # execute a statement
-        cur.execute(sql)
- 
-        # display the result
-        row = cur.fetchone()
+        try:
+            cursor = self.conn.getCursor()
+            # execute a statement
+            cursor.execute(sql)
+     
+            # display the result
+            row = cursor.fetchone()
+            
+            while row is not None:
+                (id,) = row
+                ids.append(id)
+                row = cursor.fetchone()
+            cursor.close()
+            return ids
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
+        except: 
+            print("Unexpected error:", sys.exc_info()[0])
+    
+    def getStopsParent(self):
+        stop_parent = {}
         
-        while row is not None:
-            (id,) = row
-            ids.append(id)
-            row = cur.fetchone()
-        return ids
+        sql = """SELECT stop_id, stop_parent
+                FROM {}
+                ORDER BY stop_id;"""
+        sql = SQL(sql).format(Identifier("stops_"+str(self.region)))
+    
+        try:
+            cursor = self.conn.getCursor()
+            # execute a statement
+            cursor.execute(sql)
+     
+            # display the result
+            row = cursor.fetchone()
+            
+            while row is not None:
+                (id, stop_parent_id) = row
+                stop_parent[id] = stop_parent_id
+                row = cursor.fetchone()
+            cursor.close()
+            return stop_parent
+    
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
+        except: 
+            print("Unexpected error:", sys.exc_info()[0])
     
     def populateTableLinks(self):
-        stop_ids = self.getParentsIds()
-        sql = """INSERT INTO links_%s(link_id, stop_id, edge_id, osm_source, osm_target, edge_dist, source_ratio, edge_length, point_location, 
+        print("Creating table links...")
+        stop_parent = self.getStopsParent()
+        
+        sql = """INSERT INTO {}(link_id, stop_id, edge_id, source, target, edge_dist, source_ratio, edge_length, point_location, 
                 source_point_geom, point_target_geom) 
                  VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
             """
+        sql = SQL(sql).format(Identifier("links_"+str(self.region)))
         records = []
         link_id = 0
+        list_pedestrian_ways = list(MultimodalNetwork.PEDESTRIAN_WAYS)
         try:
-            cursor = self.conn.conn.cursor()
-            sql_select = """SELECT stop_id, edge_id, osm_source, osm_target,
-                    ST_Distance(stop_location::geography, geom_way::geography)/1000
-                    AS edge_dist, 
-                    source_ratio,
-                    km as edge_length,  
-                    ST_LineInterpolatePoint(geom_way, source_ratio) as point_location, 
-                    ST_GeometryN(ST_Split(ST_Snap(geom_way, ST_ClosestPoint(geom_way, stop_location), 0.00001), ST_ClosestPoint(geom_way, stop_location)), 1) as source_point_geom,
-                    ST_GeometryN(ST_Split(ST_Snap(geom_way, ST_ClosestPoint(geom_way, stop_location), 0.00001), ST_ClosestPoint(geom_way, stop_location)), 2) as point_target_geom
-                    FROM 
-                    (SELECT stop_id, roadnet_{0}.id AS edge_id, roadnet_{0}.osm_source_id AS osm_source, roadnet_{0}.osm_target_id AS osm_target,
-                    stops_{0}.stop_location as stop_location, roadnet_{0}.geom_way as geom_way, roadnet_{0}.km as km,
-                    ST_LineLocatePoint(geom_way, stop_location) as source_ratio
-                    FROM roadnet_{0}, stops_{0} 
-                    WHERE stops_{0}.stop_id = {1} and roadnet_{0}.clazz= ANY('{2}'::int[])
-                    ORDER BY ST_Distance(stops_{0}.stop_location::geography, roadnet_{0}.geom_way::geography) LIMIT 1) as r;
-                    """
-            for stop in stop_ids:
-                sql_select_stop = sql_select.format(self.region, stop, MultimodalNetwork.PEDESTRIAN_WAYS)
-                cursor.execute(sql_select_stop)
-                (stop_id, edge_id, osm_source, osm_target, edge_dist, source_ratio, edge_length, point_location, 
-                 source_point_geom, point_target_geom) = cursor.fetchone()
-                print(stop_id, edge_id)
-                records.append((AsIs(self.region), link_id, stop_id, edge_id, osm_source, osm_target, edge_dist, source_ratio, edge_length, 
-                                         point_location, source_point_geom, point_target_geom))
-                link_id += 1
-                
-                if link_id%100 == 0:
-                    print("Committing...")
-                    cursor.executemany(sql, records)
-                    self.conn.conn.commit()
-                    records = []
+            cursor = self.conn.getCursor()
+            sql_select = """
+            WITH closest_candidates AS (
+              SELECT
+                id AS edge_id, source, target,
+                geom_way as geom_way, km as km
+              FROM
+                {0}
+              WHERE clazz= ANY(%s)
+              ORDER BY
+                geom_way <-> (select stop_location from {1} where stop_id = %s)
+              LIMIT 100
+            )
+
+            SELECT edge_id, source, target,
+            ST_Distance(stop_location::geography, geom_way::geography)/1000 AS edge_dist, 
+            source_ratio,
+            km as edge_length, 
+            ST_LineInterpolatePoint(geom_way, source_ratio) as point_location, 
+            ST_GeometryN(ST_Split(ST_Snap(geom_way, ST_ClosestPoint(geom_way, stop_location), 0.00001), ST_ClosestPoint(geom_way, stop_location)), 1) as source_point_geom,
+            ST_GeometryN(ST_Split(ST_Snap(geom_way, ST_ClosestPoint(geom_way, stop_location), 0.00001), ST_ClosestPoint(geom_way, stop_location)), 2) as point_target_geom
+            FROM 
+            (SELECT geom_way, edge_id, source, target, km, stop_location as stop_location, ST_LineLocatePoint(geom_way, stop_location) as source_ratio 
+                FROM {1}, closest_candidates
+                WHERE stop_id = %s
+                ORDER BY
+                ST_Distance(geom_way, stop_location)
+                LIMIT 1) as r
+            ;
+            """
+            sql_select = SQL(sql_select).format(Identifier("roadnet_"+str(self.region)),
+                                                Identifier("stops_"+str(self.region)))
+            
+            for stop in stop_parent:
+                parent = stop_parent[stop]
+                if parent:
+                    continue
+                else:
+                    cursor.execute(sql_select, (list_pedestrian_ways, stop, stop))
+                    (edge_id, source, target, edge_dist, source_ratio, edge_length, point_location, 
+                     source_point_geom, point_target_geom) = cursor.fetchone()
+                    #print(stop, edge_id)
+                    records.append((link_id, stop, edge_id, source, target, edge_dist, source_ratio, edge_length, 
+                                             point_location, source_point_geom, point_target_geom))
+                    link_id += 1
+                    
+                    if link_id%100 == 0:
+                        #print("Committing...")
+                        cursor.executemany(sql, records)
+                        self.conn.commit()
+                        records = []
                     
             cursor.executemany(sql, records)
-            self.conn.conn.commit()   
+            self.conn.commit()
+            cursor.close()
+            stop_parent = None 
                 
    
         except IOError as e:
@@ -818,8 +893,3 @@ class GTFSImporter:
             print(error)
         except: 
             print("Unexpected error:", sys.exc_info()[0])
-        
-    
-gtfs = GTFSImporter("/home/camila/gtfs-schema-master/GTFS_Berlin/" , "berlin")
-gtfs.run()
-        

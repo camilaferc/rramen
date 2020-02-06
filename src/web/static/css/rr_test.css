@@ -29,9 +29,9 @@ body {
 .marker_source {
 	border: none;
 	cursor: pointer;
-	height: 40px;
-	width: 40px;
-	background-image: url(../images/marker-40-orange.png);
+	height: 32px;
+	width: 32px;
+	background-image: url(../images/marker-orange.png);
 	background-color: rgba(0, 0, 0, 0);
 	transform: translate(28px, 56px, 0);
 }
@@ -39,9 +39,9 @@ body {
 .marker_target {
 	border: none;
 	cursor: pointer;
-	height: 40px;
-	width: 40px;
-	background-image: url(../images/marker-40-green.png);
+	height: 32px;
+	width: 32px;
+	background-image: url(../images/marker-green.png);
 	background-color: rgba(0, 0, 0, 0);
 	transform: translate(28px, 56px, 0);
 }

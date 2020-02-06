@@ -3,12 +3,13 @@ Created on Oct 22, 2019
 
 @author: camila
 '''
-from load.LoadTransportationNetwork import LoadTransportationNetwork
+from transit.LoadTransportationNetwork import LoadTransportationNetwork
 from network.MultimodalNetwork import MultimodalNetwork
 
 def test():
+    region = "edmonton"
     graph = MultimodalNetwork()
-    load = LoadTransportationNetwork("berlin", graph)
+    load = LoadTransportationNetwork(region, graph)
     load.load()
     
 test()

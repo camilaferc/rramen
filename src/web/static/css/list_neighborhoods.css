@@ -30,7 +30,7 @@ ul, #list_neighborhoods {
 }
 
 /* Hide the nested list */
-.nested {
+.nested_neig {
 	display: none;
 }
 
