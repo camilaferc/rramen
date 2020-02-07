@@ -6,9 +6,11 @@ Created on Oct 29, 2019
 
 from _datetime import datetime
 from builtins import str
+import sys
 import time
 
 from flask import Flask, request, render_template
+from flask_iniconfig import INIConfig
 from geojson import Feature, Point, FeatureCollection
 
 from database.PostgisDataManager import PostgisDataManager
@@ -16,19 +18,18 @@ from gtfs import GTFS
 from load.LoadMultimodalNetwork import LoadMultimodalNetwork
 from path.Path import Path
 from shortest_path.Dijkstra import Dijsktra
+import pathlib
 
 
 app = Flask(__name__)
-app.config.from_object(__name__)
+INIConfig(app)
+app.config.from_inifile(str(pathlib.Path(__file__).resolve().parents[2]) + '/config.ini')
+#app.config.from_envvar('APP_CONFIG_FILE', silent=True)
 
-region = "edmonton"
+MAPBOX_ACCESS_KEY = (app.config.get('mapbox') or {}).get('MAPBOX_ACCESS_KEY')
 
-    
-#app.conf.from_envvar('APP_CONFIG_FILE', silent=True)
-
-#MAPBOX_ACCESS_KEY = app.conf['MAPBOX_ACCESS_KEY']
-
-MAPBOX_ACCESS_KEY = 'pk.eyJ1IjoiY2FtaWxhZmVyYyIsImEiOiJjazB3aGJ5emkwMzNqM29tbWxkZ2t3OWJwIn0.LYcGltgmo4yj5zqhDJGoEA'
+if not MAPBOX_ACCESS_KEY:
+    raise SystemExit("No mapbox token provided.")
 
 
 dataManager = PostgisDataManager()
@@ -45,7 +46,6 @@ map_target_coord = {}
 
 
 def loadData():
-    print("loading data!")
     global graph
     load = LoadMultimodalNetwork(region)
     graph = load.load()
@@ -640,7 +640,9 @@ def createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, source, target, so
 
     
 if __name__ == '__main__':
-    print("main!")
+    global region
+    region = sys.argv[1]
+    print(region)
     # run!
-    loadData()
+    #loadData()
     app.run()

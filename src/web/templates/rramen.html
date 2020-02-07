@@ -120,7 +120,8 @@
           		createNeighborhoodList(polygons);
     	        buildRouteList(routes, stops, transp_mapping)
         	});
-        	
+
+        	console.log("key", '{{ ACCESS_KEY }}')
             mapboxgl.accessToken = '{{ ACCESS_KEY }}';
             var map = new mapboxgl.Map({
                 container: 'map',
