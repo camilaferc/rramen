@@ -21,7 +21,7 @@ RRAMEN reads the database connection values (username, password, database name, 
 #### b. Mapbox
 RRAMEN employs Mapbox to display the map and visualize results. Mapbox requires an access token which can be obtained after creating an account on [https://account.mapbox.com/auth/signup/](https://account.mapbox.com/auth/signup/).
 
-The `MAPBOX_ACCESS_KEY` must be in the `config.ini` file under the `[mapbox]` section
+The `MAPBOX_ACCESS_KEY` must be set in the `config.ini` file under the `[mapbox]` section.
 
 #### c. Datasets
 In order to solve RR queries, RRAMEN requires the following datasets for a given region of interest.
