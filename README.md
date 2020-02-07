@@ -12,11 +12,14 @@ RRAMEN is an interactive tool that supports different city-scale mobility-relate
 #### b. Urban Planners
 
 ### 2. Installation & Setup
-#### a. Datasets
+#### a. Database
+RRAMEN uses PostGIS to store road and public transportation network data. 
+It requires PostgreSQL 10.10 or higher and PostGIS 2.5 or higher.
+#### b. Datasets
 In order to solve RR queries, RRAMEN requires the following datasets for a given region of interest.
 ##### OSM Map
 RRAMEN uses OSM maps ([https://www.openstreetmap.org/](https://www.openstreetmap.org/)) in order to model a city's road network.
-After downloading an OSM map for a given region, the `.osm` file must be placed in `data/osm/<region-name>/<osm-file>`.
+After downloading an OSM map for a given region, the `.osm` file must be placed in `data/osm/<region-name>/<osm-file>` under RRAMEN's root directory.
 ##### OSM Boundaries
 [https://wambachers-osm.website/boundaries/](https://wambachers-osm.website/boundaries/)
 ##### General Transit Feed Specification (GTFS) data
