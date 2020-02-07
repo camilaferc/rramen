@@ -21,7 +21,10 @@ In order to solve RR queries, RRAMEN requires the following datasets for a given
 RRAMEN uses OSM maps ([https://www.openstreetmap.org/](https://www.openstreetmap.org/)) in order to model a city's road network.
 After downloading an OSM map for a given region, the `.osm` file must be placed in `data/osm/<region-name>/<osm-file>` under RRAMEN's root directory.
 ##### OSM Boundaries
-[https://wambachers-osm.website/boundaries/](https://wambachers-osm.website/boundaries/)
+In order to allow users to select neighborhoods from a city, RRAMEN requires `.json` files containing a hierarchy of boundaries that separates the given region into smaller areas. Such data can be manually downloaded from [https://wambachers-osm.website/boundaries/](https://wambachers-osm.website/boundaries/) or using the following command:
+```
+curl -f -o <region-name>.zip --url 'https://wambachers-osm.website/boundaries/exportBoundaries?cliVersion=1.0&cliKey=<client-key>&exportFormat=json&exportLayout=levels&exportAreas=land&from_al=2&to_al=12&union=false&selected=<region-code>'
+```
 ##### General Transit Feed Specification (GTFS) data
 [https://transitfeeds.com/](https://transitfeeds.com/)
 
