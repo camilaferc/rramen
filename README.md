@@ -46,4 +46,10 @@ RRAMEN requires the following text files:
 
 The `.txt` files from a GTFS feed must be placed in `data/gtfs/<region-name>/` under RRAMEN's root directory.
 
+#### c. Data Importer
+Once all required datasets are in the `data/` folder, they can be imported into the database. In order to do so, simply run:
+```
+./data_importer.sh <region-name>
+```
+
 ### 3. Background and Research

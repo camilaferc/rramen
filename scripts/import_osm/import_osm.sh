@@ -6,8 +6,11 @@ if [ -z "$1" ]; then
 fi
 
 region=$1
-#echo $region
 
+cur_dir=$PWD
+SCRIPT=$(dirname `realpath $0`)
+cd $SCRIPT
+#dir_root=$(dirname $(dirname $(dirname "$SCRIPT")))
 dir=../../data/osm/$region/
 
 for file in "$dir"*; do
@@ -15,15 +18,16 @@ for file in "$dir"*; do
 		osm_file=$file
                 break 1
             fi
-        done
+done
 
+echo $osm_file
 if [ -z "$osm_file" ]; then
 	echo "Error: OSM file not found!"
 	exit 2
 fi
 #echo $osm_file
 
-source <(grep = ../../conf/database.ini)
+source <(grep = ../../config.ini)
 
 pg_host=$host
 pg_port=$port
@@ -63,3 +67,5 @@ echo "END;" >> temp.sql
 PGPASSWORD="$pg_password" psql -h "$pg_host" -d "$pg_db" -U "$pg_user" -p "$pg_port" -f temp.sql
 rm -rf ./temp
 rm temp.sql
+
+cd $cur_dir

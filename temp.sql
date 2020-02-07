@@ -1,0 +1,15 @@
+BEGIN;
+ALTER TABLE roadnet_paris_2po_4pgr RENAME TO roadnet_paris;
+ALTER TABLE roadnet_paris ADD COLUMN source_location GEOMETRY;
+ALTER TABLE roadnet_paris ADD COLUMN target_location GEOMETRY;
+CREATE INDEX roadnet_paris_source_idx ON roadnet_paris USING gist (source_location);
+CREATE INDEX roadnet_paris_target_idx ON roadnet_paris USING gist (target_location);
+CREATE INDEX roadnet_paris_clazz_idx ON roadnet_paris USING btree (clazz);
+CREATE UNIQUE INDEX roadnet_paris_edge_idx ON roadnet_paris USING btree (id);
+CREATE INDEX roadnet_paris_geom_way_idx ON roadnet_paris USING gist (geom_way);
+UPDATE roadnet_paris SET source_location=ST_SetSRID(ST_MakePoint(x1,y1), 4326), target_location=ST_SetSRID(ST_MakePoint(x2,y2), 4326);
+ALTER TABLE roadnet_paris DROP COLUMN x1;
+ALTER TABLE roadnet_paris DROP COLUMN y1;
+ALTER TABLE roadnet_paris DROP COLUMN x2;
+ALTER TABLE roadnet_paris DROP COLUMN y2;
+END;
