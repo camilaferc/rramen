@@ -25,9 +25,9 @@ In order to allow users to select neighborhoods from a city, RRAMEN requires `.j
 ```
 curl -f -o <region-name>.zip --url 'https://wambachers-osm.website/boundaries/exportBoundaries?cliVersion=1.0&cliKey=<client-key>&exportFormat=json&exportLayout=levels&exportAreas=land&from_al=2&to_al=12&union=false&selected=<region-code>'
 ```
-Where <client_key> is a key obtained from [https://wambachers-osm.website/boundaries/](https://wambachers-osm.website/boundaries/) and <region-code> is the number of the relation for the region you want to download, which can be obtained from [https://wambachers-osm.website/boundaries/](https://wambachers-osm.website/boundaries/) or [https://www.openstreetmap.org/](https://www.openstreetmap.org/). For instance, <region-code> for Berlin is 62422.
+Where <client-key> is a key obtained from [https://wambachers-osm.website/boundaries/](https://wambachers-osm.website/boundaries/) and <region-code> is the number of the relation representing the region you want to download, which can be obtained from [https://wambachers-osm.website/boundaries/](https://wambachers-osm.website/boundaries/) or [https://www.openstreetmap.org/](https://www.openstreetmap.org/). For instance, <region-code> for Berlin is 62422.
 
-More details about how to obatain the boundaries for a given region can be found [here](https://wambachers-osm.website/index.php/projekte/internationale-administrative-grenzen/boundaries-map-4-3-english)
+More details about how to obtain the boundaries for a given region can be found [here](https://wambachers-osm.website/index.php/projekte/internationale-administrative-grenzen/boundaries-map-4-3-english)
 
 ##### General Transit Feed Specification (GTFS) data
 [https://transitfeeds.com/](https://transitfeeds.com/)
