@@ -63,6 +63,6 @@ You can start the server by running:
 ```
 ./run.sh <region-name>
 ```
-Browse to [http://127.0.0.1:5000/rramen](http://127.0.0.1:5000/rramen) to use RRAMEN.
+Next, browse to [http://127.0.0.1:5000/rramen](http://127.0.0.1:5000/rramen) to use RRAMEN.
 
 ### 3. Background and Research
