@@ -16,7 +16,7 @@ RRAMEN is an interactive tool that supports different city-scale mobility-relate
 RRAMEN uses PostGIS to store road and public transportation network data. 
 It requires PostgreSQL 10.10 or higher and PostGIS 2.5 or higher.
 
-RRAMEN uses a config file `config.ini` to store the database connection values (username, password, database name, etc.). `config-sample.ini` (under the root directory) is a sample config file. You must set the database connection values under the section `[postgresql]` and copy the contents of the file to a file named `config.ini`.
+RRAMEN reads the database connection values (username, password, database name, etc.) from a config file `config.ini`. `config-sample.ini` (located in the root directory) is a sample config file. You must set the database connection values under the section `[postgresql]` and copy the contents of the sample file to a file named `config.ini`, which should be placed in the root directory.
 #### b. Datasets
 In order to solve RR queries, RRAMEN requires the following datasets for a given region of interest.
 ##### OSM Map
