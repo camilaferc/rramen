@@ -32,6 +32,16 @@ More details about how to export the boundaries for a given region can be found 
 The exported `.json` files must be placed in `data/osm_boundaries/<region-name>/` under RRAMEN's root directory.
 
 ##### General Transit Feed Specification (GTFS) data
-[https://transitfeeds.com/](https://transitfeeds.com/)
+Finally, RRAMEN uses GTFS feeds to build public transportation networks with the corresponding timetables. Such feeds can be obtained, for instance, from [https://transitfeeds.com/](https://transitfeeds.com/). 
+RRAMEN requires the following text files:
+* agency.txt
+* stops.txt
+* routes.txt
+* trips.txt
+* stop_times.txt
+* calendar.txt (if not provided, calendar_dates.txt must be provided)
+* transfers.txt (optional)
+
+The `.txt` files from a GTFS feed must be placed in `data/gtfs/<region-name>/` under RRAMEN's root directory.
 
 ### 3. Background and Research
