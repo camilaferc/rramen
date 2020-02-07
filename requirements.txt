@@ -60,7 +60,7 @@ python-apt==1.1.0b1+ubuntu0.16.4.8
 python-dateutil==2.6.0
 python-rake==1.0.7
 pytz==2016.10
-PyYAML==3.11
+PyYAML==5.1
 pyzmq==15.2.0
 qtconsole==4.3.0
 requests==2.18.3
