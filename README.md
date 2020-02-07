@@ -17,7 +17,13 @@ RRAMEN uses PostGIS to store road and public transportation network data.
 It requires PostgreSQL 10.10 or higher and PostGIS 2.5 or higher.
 
 RRAMEN reads the database connection values (username, password, database name, etc.) from a config file `config.ini`. `config-sample.ini` (located in the root directory) is a sample config file. You must set the database connection values under the section `[postgresql]` and copy the contents of the sample file to a file named `config.ini`, which should be placed in the root directory.
-#### b. Datasets
+
+#### b. Mapbox
+RRAMEN employs Mapbox to display the map and visualize results. Mapbox requires an access token which can be obtained after creating an account on [https://account.mapbox.com/auth/signup/](https://account.mapbox.com/auth/signup/).
+
+The `MAPBOX_ACCESS_KEY` must be in the `config.ini` file under the `[mapbox]` section
+
+#### c. Datasets
 In order to solve RR queries, RRAMEN requires the following datasets for a given region of interest.
 ##### OSM Map
 RRAMEN uses OSM maps ([https://www.openstreetmap.org/](https://www.openstreetmap.org/)) in order to model a city's road network.
@@ -46,8 +52,8 @@ RRAMEN requires the following text files:
 
 The `.txt` files from a GTFS feed must be placed in `data/gtfs/<region-name>/` under RRAMEN's root directory.
 
-#### c. Data Importer
-Once all required datasets are in the `data/` folder, they can be imported into the database. In order to do so, simply run:
+#### d. Data Importer
+Once the database connection values are set in `config.ini` and all required datasets are in the `data/` folder, the networks can be imported into the database. In order to do so, simply run:
 ```
 ./data_importer.sh <region-name>
 ```
