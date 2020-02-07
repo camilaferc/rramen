@@ -19,7 +19,7 @@ It requires PostgreSQL 10.10 or higher and PostGIS 2.5 or higher.
 RRAMEN reads the database connection values (username, password, database name, etc.) from a config file `config.ini`. `config-sample.ini` (located in the root directory) is a sample config file. You must set the database connection values under the section `[postgresql]` and copy the contents of the sample file to a file named `config.ini`, which should be placed in the root directory.
 
 #### b. Mapbox
-RRAMEN employs Mapbox to display the map and visualize results. Mapbox requires an access token which can be obtained after creating an account on [https://account.mapbox.com/auth/signup/](https://account.mapbox.com/auth/signup/).
+RRAMEN employs Mapbox to display the map and visualize results. Mapbox requires an access token which can be obtained after creating an account on [https://account.mapbox.com/auth/signup/](https://account.mapbox.com/auth/signup/). Once your account is set up, you can find your API key on [https://www.mapbox.com/studio/](https://www.mapbox.com/studio/) under the “Access Token” section.
 
 The `MAPBOX_ACCESS_KEY` must be set in the `config.ini` file under the `[mapbox]` section.
 
@@ -57,5 +57,12 @@ Once the database connection values are set in `config.ini` and all required dat
 ```
 ./data_importer.sh <region-name>
 ```
+
+#### e. Starting the server
+You can start the server by running:
+```
+./run.sh <region-name>
+```
+Browse to [http://127.0.0.1:5000/rramen](http://127.0.0.1:5000/rramen) to use RRAMEN.
 
 ### 3. Background and Research
