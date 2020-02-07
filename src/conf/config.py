@@ -8,7 +8,7 @@ Created on Oct 5, 2019
 from configparser import ConfigParser
 from pathlib import Path
  
-def config(filename= str(Path(__file__).resolve().parents[2]) + '/conf/database.ini', section='postgresql'):
+def config(filename= str(Path(__file__).resolve().parents[2]) + '/config.ini', section='postgresql'):
     # create a parser
     parser = ConfigParser()
     # read conf file

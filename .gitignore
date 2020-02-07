@@ -13,3 +13,4 @@ data/osm/paris/Paris.osm
 .settings/
 .project
 .pydevproject
+.config.ini
