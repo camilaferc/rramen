@@ -76,7 +76,7 @@ tornado==4.2.1
 traitlets==4.0.0
 ttystatus==0.32
 unity-lens-photos==1.0
-urllib3==1.22
+urllib3==1.24.2
 wcwidth==0.1.7
 webencodings==0.5.1
 widgetsnbextension==2.0.0
