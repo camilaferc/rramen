@@ -27,7 +27,9 @@ curl -f -o <region-name>.zip --url 'https://wambachers-osm.website/boundaries/ex
 ```
 Where `<client-key>` is a key obtained from [https://wambachers-osm.website/boundaries/](https://wambachers-osm.website/boundaries/) and `<region-code>` is the number of the relation representing the region you want to export, which can be obtained from [https://wambachers-osm.website/boundaries/](https://wambachers-osm.website/boundaries/) or [https://www.openstreetmap.org/](https://www.openstreetmap.org/). For instance, `<region-code>` for Berlin is 62422.
 
-More details about how to obtain the boundaries for a given region can be found [here](https://wambachers-osm.website/index.php/projekte/internationale-administrative-grenzen/boundaries-map-4-3-english)
+More details about how to export the boundaries for a given region can be found [here](https://wambachers-osm.website/index.php/projekte/internationale-administrative-grenzen/boundaries-map-4-3-english).
+
+The exported `.json` files must be placed in `data/osm_boundaries/<region-name>/` under RRAMEN's root directory.
 
 ##### General Transit Feed Specification (GTFS) data
 [https://transitfeeds.com/](https://transitfeeds.com/)
