@@ -1,18 +1,18 @@
 function addStopsLayer(stop_locations){
 	for(level in stop_locations){
-    	var layer_name = LEVEL_IMAGE[level].split(".")[0]
-    	map.addSource("stops-" + layer_name, {
+    	var image_name = LEVEL_IMAGE[level].split(".")[0]
+    	map.addSource("stops-" + level, {
     	    type: "geojson",
     	    data: stop_locations[level],
     	});
     	const zoom = 11 + parseInt(level, 10);
     	map.addLayer({
     	    "type": "symbol",
-    	    "id": "stops-" + layer_name,
-    	    "source": "stops-" + layer_name,
+    	    "id": "stops-" + level,
+    	    "source": "stops-" + level,
     	    "minzoom": zoom,
     	    "layout": {
-    	        "icon-image": layer_name,
+    	        "icon-image": image_name,
     	        "icon-offset": [0,-8],
     	        "text-field": "{name}",
     	        "text-anchor": "top",

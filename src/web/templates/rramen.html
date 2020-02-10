@@ -17,7 +17,7 @@
 		<script type="text/javascript" src="static/js/neighborhood.js?123"></script>
 		<script type="text/javascript" src="static/js/planner_menu.js?1"></script>
 		<script type="text/javascript" src="static/js/routes.js?352"></script>
-		<script type="text/javascript" src="static/js/stops.js?35"></script>
+		<script type="text/javascript" src="static/js/stops.js?37"></script>
 		<script type="text/javascript" src="static/js/road_segment.js"></script>
 		
 		<link rel="stylesheet" type="text/css" href="static/css/rr_test.css?72">
@@ -113,15 +113,14 @@
 	        var stop_locations = {{stop_locations|safe}}
         	var network_center = {{network_center|safe}}
 
-	        var LEVEL_IMAGE = {1:"rail-icon.png", 2:"urban-rail-icon.png", 3:"light-rail-icon.png", 4:"bus-icon.png"}
+	        var LEVEL_IMAGE = {1:"rail-icon.png", 2:"rail-icon.png", 3:"urban-rail-icon.png", 4:"light-rail-icon.png", 5:"bus-icon.png"}
 	        
         	$( document ).ready(function() {
-            	console.log( "document loaded" );
+            	//console.log( "document loaded" );
           		createNeighborhoodList(polygons);
     	        buildRouteList(routes, stops, transp_mapping)
         	});
 
-        	console.log("key", '{{ ACCESS_KEY }}')
             mapboxgl.accessToken = '{{ ACCESS_KEY }}';
             var map = new mapboxgl.Map({
                 container: 'map',
@@ -135,16 +134,6 @@
 			map.addControl(new mapboxgl.NavigationControl());
 
             map.on('style.load', function () {
-
-                	/*for(level in LEVEL_IMAGE){
-                    	var image_name = LEVEL_IMAGE[level]
-                    	console.log(image_name)
-                    	map.loadImage('static/images/' + image_name, function(error, image) {
-                    		if (error) throw error;
-                    		console.log(image_name.split(".")[0])
-                    	    map.addImage(image_name.split(".")[0], image);
-                    	});
-                    }*/
 
                 	const images =[
                 		  {url: 'static/images/bus-icon.png', id: 'bus-icon'},
@@ -566,7 +555,7 @@
             var popup_stop = null;
 
             for(level in stop_locations){
-            	var layer_name = "stops-" + LEVEL_IMAGE[level].split(".")[0]
+            	var layer_name = "stops-" + level
             	
             	map.on('mouseenter', layer_name, function(e) {
               	  	map.getCanvas().style.cursor = 'pointer'

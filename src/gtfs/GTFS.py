@@ -4,9 +4,9 @@ Created on Nov 24, 2019
 @author: camila
 '''
 
-ROUTE_TYPE = {3:"Bus", 100: "Railway", 109: "Suburban Railway", 400:"Urban Railway", 700: "Bus", 900: "Tram"}
+ROUTE_TYPE = {0: "Tram", 1: "Suburban Railway", 2: "Railway", 3:"Bus", 100: "Railway", 109: "Suburban Railway", 400:"Urban Railway", 700: "Bus", 900: "Tram"}
 
-ROUTE_LEVEL = {3:4, 100: 1, 109: 1, 400:2, 700: 4, 900: 3}
+ROUTE_LEVEL = {0:4, 1:2, 2:1, 3:5, 100: 1, 109: 2, 400:3, 700: 5, 900: 4}
 
 '''
 * REQUIRED. One or more transit agencies that provide the data in this feed.
