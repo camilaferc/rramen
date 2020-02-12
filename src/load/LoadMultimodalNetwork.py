@@ -3,9 +3,11 @@ Created on Oct 20, 2019
 
 @author: camila
 '''
-from network.MultimodalNetwork import MultimodalNetwork
+
 from load.LoadRoadNetwork import LoadRoadNetwork
+from network.MultimodalNetwork import MultimodalNetwork
 from transit.LoadTransportationNetwork import LoadTransportationNetwork
+
 
 class LoadMultimodalNetwork:
     

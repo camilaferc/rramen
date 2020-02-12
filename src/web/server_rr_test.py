@@ -133,6 +133,8 @@ def worker():
     
     sources_coordinates = data['sources']
     targets_coordinates = data['targets']
+    print(sources_coordinates)
+    print(targets_coordinates)
     polygon_source_coords = data['polygon_source_coords']
     polygon_target_coords = data['polygon_target_coords']
     selected_neighborhoods = data['selected_neighborhoods']
@@ -208,6 +210,8 @@ def getNodesFromMarkersCoordinates(map_coordinates, location_type):
     nodes_public = set()
     for i in map_coordinates:
         c = map_coordinates[i]
+        
+        i = int(i)
         
         (edge_id, source, target, source_ratio, node_lon, node_lat) = dataManager.getClosestEdgeRatio(c['lat'], c['lon'], region)
         print(edge_id, source, target, source_ratio, node_lon, node_lat)
@@ -377,17 +381,45 @@ def getPathGeometry():
     print(marker_id, location_type)
     
     if location_type == "source":
-        node_id_public = id_map_source_public[marker_id]
-        node_id_private = id_map_source_private[marker_id]
+        
+        if len(id_map_source_public) <= 1 or len(id_map_target_public) > 1:
+            res = {"path_geom": None, "tt_public": None, "tt_private": None}
+            return res
+            
+        print(id_map_source_public)
+        print(id_map_source_private)
+        
+        source_public = id_map_source_public[marker_id]
+        source_private = id_map_source_private[marker_id]
+        
+        target_id = None
+        for key in id_map_target_public:
+            target_id = key
+        
+        node_id_public = id_map_target_public[target_id]
+        node_id_private = id_map_target_private[target_id]
     else:
+        if len(id_map_source_public) > 1:
+            res = {"path_geom": -1, "tt_public": -1, "tt_private": -1}
+            return res
+        
+        if len(id_map_source_public) > 1 and len(id_map_target_public) == 1:
+            res = {"path_geom": None, "tt_public": None, "tt_private": None}
+            return res
+        
+        source_id = None
+        for key in id_map_source_public:
+            source_id = key
+            
+        source_public = id_map_source_public[source_id]
+        source_private = id_map_source_private[source_id]
+        
         node_id_public = id_map_target_public[marker_id]
         node_id_private = id_map_target_private[marker_id]
         
     paths = []
     
-    source_public = id_map_source_public[0]
     print(source_public)
-    source_private = id_map_source_private[0]
     print(source_private)
     
     pathPublic = Path(parent_tree_public[source_public])
@@ -644,5 +676,5 @@ if __name__ == '__main__':
     region = sys.argv[1]
     print(region)
     # run!
-    #loadData()
+    loadData()
     app.run()

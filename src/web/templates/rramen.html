@@ -117,7 +117,7 @@
 	        var stop_locations = {{stop_locations|safe}}
         	var network_center = {{network_center|safe}}
 
-	        var LEVEL_IMAGE = {1:"rail-icon.png", 2:"rail-icon.png", 3:"urban-rail-icon.png", 4:"light-rail-icon.png", 5:"bus-icon.png"}
+	        var LEVEL_IMAGE = {1:"rail-icon.png?1", 2:"rail-icon.png?1", 3:"urban-rail-icon.png?1", 4:"light-rail-icon.png?1", 5:"bus-icon.png?1"}
 	        
         	$( document ).ready(function() {
             	//console.log( "document loaded" );
@@ -140,10 +140,10 @@
             map.on('style.load', function () {
 
                 	const images =[
-                		  {url: 'static/images/bus-icon.png', id: 'bus-icon'},
+                		  {url: 'static/images/bus-icon.png?1', id: 'bus-icon'},
                 		  {url: 'static/images/rail-icon.png?1', id: 'rail-icon'},
-                		  {url: 'static/images/urban-rail-icon.png', id: 'urban-rail-icon'},
-                		  {url: 'static/images/light-rail-icon.png', id: 'light-rail-icon'},
+                		  {url: 'static/images/urban-rail-icon.png?1', id: 'urban-rail-icon'},
+                		  {url: 'static/images/light-rail-icon.png?1', id: 'light-rail-icon'},
                 	]
 
                 	Promise.all(
@@ -208,8 +208,8 @@
 				edit_buttons.style.display = "inline";
 			}
 
-            var targets = new Map();
-            var sources = new Map();
+            var targets = {};
+            var sources = {};
             
             var timer = 0;
             var delay = 250;
@@ -271,16 +271,24 @@
     													var geom = res["path_geom"];
     													var tt_public = res["tt_public"];
                                     	                var tt_private = res["tt_private"];
-    													
-                                    	                console.log(tt_public, tt_private);
 
-    													var html = '<font color="blue">' + tt_public + ' min </font><br><font color="red">' + tt_private + ' min </font>'
-                                    	                var popup = new mapboxgl.Popup({closeOnClick: false, anchor: 'top'})
-                                                        .setLngLat({lat:latitude, lng: longitude})
-                                                        .setHTML(html)
-                                                        .addTo(map);
+                                    	                if(!geom){
+                                    	                	var html = 'node not colored'
+                                        	                var popup = new mapboxgl.Popup({closeOnClick: false, anchor: 'top'})
+                                                            .setLngLat({lat:latitude, lng: longitude})
+                                                            .setHTML(html)
+                                                            .addTo(map);
+                                        	            }else{
+                                        	            	console.log(tt_public, tt_private);
 
-                                    	                addPathLayer(el.id, geom);
+        													var html = '<font color="blue">' + tt_public + ' min </font><br><font color="red">' + tt_private + ' min </font>'
+                                        	                var popup = new mapboxgl.Popup({closeOnClick: false, anchor: 'top'})
+                                                            .setLngLat({lat:latitude, lng: longitude})
+                                                            .setHTML(html)
+                                                            .addTo(map);
+
+                                        	                addPathLayer(el.id, geom);
+                                            	        }
 
                                     	                popup.on('close', function(e) {
                                                             console.log("popup closed")
@@ -305,7 +313,7 @@
                           				.addTo(map);
 
                         				markers.push(marker);
-                        				sources.set(sourceId, coord) 
+                        				sources[sourceId] = coord
                         				sourceId = sourceId + 1;
 
                         				document.getElementById('sourceNode'+is).value = str;
@@ -335,7 +343,7 @@
                                       	el.addEventListener('click', e => {
                                             e.stopPropagation();
                                             //functions
-                                            console.log("marker" + el.id + " clicked");
+                                            console.log("marker " + el.id + " clicked");
                                             
                                             if (map.getLayer("rr_layer")) {
                                         		if (!map.getLayer("paths_"+el.id)) {
@@ -345,17 +353,31 @@
     													var geom = res["path_geom"];
     													var tt_public = res["tt_public"];
                                     	                var tt_private = res["tt_private"];
-    													
-                                    	                console.log(tt_public, tt_private);
 
-    													var html = '<font color="blue">' + tt_public + ' min </font><br><font color="red">' + tt_private + ' min </font>'
-                                    	                var popup = new mapboxgl.Popup({closeOnClick: false, anchor: 'top'})
-                                                        .setLngLat({lat:latitude, lng: longitude})
-                                                        .setHTML(html)
-                                                        .addTo(map);
+                                    	                if(!geom){
+                                    	                	var html = 'node not colored'
+                                        	                var popup = new mapboxgl.Popup({closeOnClick: false, anchor: 'top'})
+                                                            .setLngLat({lat:latitude, lng: longitude})
+                                                            .setHTML(html)
+                                                            .addTo(map);
+                                        	            }else if(geom == -1){
+                                        	            	var html = 'more than one source selected'
+                                            	            var popup = new mapboxgl.Popup({closeOnClick: false, anchor: 'top'})
+                                                            .setLngLat({lat:latitude, lng: longitude})
+                                                            .setHTML(html)
+                                                            .addTo(map);
+                                            	        }else{
+                                            	        	console.log(tt_public, tt_private);
 
-                                    	                addPathLayer(el.id, geom);
+        													var html = '<font color="blue">' + tt_public + ' min </font><br><font color="red">' + tt_private + ' min </font>'
+                                        	                var popup = new mapboxgl.Popup({closeOnClick: false, anchor: 'top'})
+                                                            .setLngLat({lat:latitude, lng: longitude})
+                                                            .setHTML(html)
+                                                            .addTo(map);
 
+                                        	                addPathLayer(el.id, geom);
+                                                	    }
+                                        	            
                                     	                popup.on('close', function(e) {
                                                             console.log("popup closed")
                                                             if (map.getLayer("paths_"+el.id)) {
@@ -379,7 +401,7 @@
                           				.addTo(map);
 
                         				markers.push(marker);
-                        				targets.set(targetId, coord) 
+                        				targets[targetId] = coord
                         				targetId = targetId + 1;
 
                         				document.getElementById('targetNode'+it).value = str;
@@ -644,7 +666,7 @@
                 	var markerDiv = document.getElementById("marker_s_"+ marker)
                 	console.log(markerDiv)
                 	markerDiv.parentNode.removeChild(markerDiv);
-                    sources.delete(parseInt(marker, 10))
+                    delete sources[parseInt(marker, 10)]
                     console.log(marker, sources)
                     inputSource.removeAttribute("marker")
                 }
@@ -732,7 +754,7 @@
                 	var markerDiv = document.getElementById("marker_t_"+ marker)
                 	console.log(markerDiv)
                 	markerDiv.parentNode.removeChild(markerDiv);
-                    targets.delete(parseInt(marker, 10))
+                    delete targets[parseInt(marker, 10)]
                     console.log(marker, targets)
                     inputTarget.removeAttribute("marker")
                 }
@@ -881,8 +903,8 @@
 				targetId = 0;
 				sourceId = 0;
             	
-            	sources = new Map()
-            	targets = new Map()
+            	sources = {}
+            	targets = {}
             	markers = []
             	popups = []
 
@@ -948,7 +970,7 @@
             	//console.log(sources.size, targets.size) 
             	clearResults();
             	checked_neig = getSelectedNeighborhoods()
-            	if((sources.size == 0 && !polygon_source_coords ) || (targets.size == 0 && !polygon_target_coords && checked_neig.length == 0 )) {
+            	if((Object.keys(sources).length == 0 && !polygon_source_coords ) || (Object.keys(targets).length == 0 && !polygon_target_coords && checked_neig.length == 0 )) {
             		alert("Some coordinates are missing."); 
                	}
                	else {
@@ -958,6 +980,8 @@
             			now = true;
                 	}
             		console.log(timestamp)
+            		console.log(sources)
+            		console.log(targets)
             		var data_input = {"sources": sources, "targets":targets, "timestamp":timestamp, "polygon_source_coords":polygon_source_coords,
                 		"polygon_target_coords": polygon_target_coords, "selected_neighborhoods":checked_neig}
             		

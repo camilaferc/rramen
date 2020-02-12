@@ -6,7 +6,6 @@ Created on Oct 20, 2019
 import sys
 
 import psycopg2
-import datetime
 
 from database.PostGISConnection import PostGISConnection
 from network.MultimodalNetwork import MultimodalNetwork
@@ -107,7 +106,7 @@ class LoadTransportationNetwork:
             row = cursor.fetchone()
             while row is not None:
                 (source, target, type, modes, cost, original_edge_id, edge_position) = row
-                #print(source, target, t_monday)
+                #print(source, target)
                 self.graph.addEdge(source, target, type, modes, {MultimodalNetwork.PEDESTRIAN:ConstantFunction(cost)}, original_edge_id, edge_position)
                 row = cursor.fetchone()
                 

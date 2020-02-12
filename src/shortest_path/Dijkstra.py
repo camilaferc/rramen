@@ -8,18 +8,37 @@ from util.FibonacciHeap import FibonacciHeap
 from datetime import timedelta
 import time
 import queue as Q
+from threading import Thread, Event
 
 
 class Dijsktra:
     def __init__(self, graph):
         self.graph = graph
+        self.stop_event = Event()
+        self.timeout = 10
         
     def manyToManyPrivate(self, sources, targets, departure_time):
         print("Computing travel times by car...")
         travel_times = {}
         parents = {}
         for s in sources:
-            travel_times_s, parents_s = self.shortestPathToSetPrivate(s, departure_time, targets)
+            # create another Thread
+            self.stop_event = Event()
+            travel_times_s = {}
+            parents_s = {}
+            action_thread = Thread(target=self.shortestPathToSetPrivate, args=[s, departure_time, targets, travel_times_s, parents_s])
+         
+            # start the thread and we wait 'timeout' seconds before the code continues to execute.
+            action_thread.start()
+            action_thread.join(timeout=self.timeout)
+            
+         
+            # send a signal that the other thread should stop.
+            self.stop_event.set()
+    
+            #travel_times_s, parents_s = self.shortestPathToSetPrivate(s, departure_time, targets)
+            #print(travel_times_s)
+            #print(parents_s)
             travel_times[s] = travel_times_s
             parents[s] = parents_s
         return travel_times, parents
@@ -38,18 +57,23 @@ class Dijsktra:
             parents[s] = parents_s
         return travel_times, parents
     
-    def shortestPathToSetPrivate(self, s, departure_time, targets):
+    def shortestPathToSetPrivate(self, s, departure_time, targets, travel_times, parents):
         q = Q.PriorityQueue()
-        travel_times = {}
+        #travel_times = {}
         closed_set = set()
         targets = set(targets)
-        parents = {}
+        #parents = {}
         
         q.put((0, s, departure_time, -1, []))
         
         time_neig = 0
         
         while not q.empty():
+            
+            if self.stop_event.is_set():
+                print("Timed out!")
+                break
+        
             v_min = q.get()
             
             #if not v_min:
@@ -170,7 +194,7 @@ class Dijsktra:
                         
                         q.put((total_tt, to, arrival_time_to, vid))
                         
-        print(time_neig)                        
+        #print(time_neig)                        
         return travel_times, parents
     
     
@@ -182,8 +206,6 @@ class Dijsktra:
         parents = {}
         
         q.put((0, s, departure_time, -1))
-        
-        time_neig = 0
         
         while not q.empty():
             v_min = q.get()
@@ -208,7 +230,6 @@ class Dijsktra:
                 
                     if not targets:
                         #print(heapNodes)
-                        print(time_neig)
                         return travel_times, parents
                 
                 #checking if v_min is a super node to avoid re-expanding the transportation nodes
@@ -226,9 +247,7 @@ class Dijsktra:
                         parent_type = self.graph.getNode(parent)['type']
                         if parent_type == self.graph.TRANSPORTATION:
                             out_of_station = True
-                start = time.time()
                 travel_times_neighbors = self.graph.getTravelTimeToNeighbors(vid, arrival_time, allowed_modes)
-                time_neig += (time.time()-start)
                 
                 only_routes = False
                 if vid_type == self.graph.PUBLIC:
@@ -261,7 +280,6 @@ class Dijsktra:
                         
                         q.put((total_tt, to, arrival_time_to, vid))
                         
-        print(time_neig)                        
         return travel_times, parents
     
     def shortestPathToSet(self, s, departure_time, targets, allowed_modes):
