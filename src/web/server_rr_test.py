@@ -202,12 +202,12 @@ def worker():
     return gc
     
 
-def getNodesFromMarkersCoordinates(coordinates, location_type): 
+def getNodesFromMarkersCoordinates(map_coordinates, location_type): 
     global id_map_source_private, id_map_target_private, id_map_target_public
     nodes_private = set()
     nodes_public = set()
-    for i in range(len(coordinates)):
-        c = coordinates[i]
+    for i in map_coordinates:
+        c = map_coordinates[i]
         
         (edge_id, source, target, source_ratio, node_lon, node_lat) = dataManager.getClosestEdgeRatio(c['lat'], c['lon'], region)
         print(edge_id, source, target, source_ratio, node_lon, node_lat)
@@ -508,7 +508,7 @@ def getNodesColors(tt_public, tt_private):
 def colorSources(tt_public, tt_private):
     global id_map_source_public, id_map_source_private, id_map_target_private, id_map_target_public
     node_colors = {}
-    for i in range (len(id_map_source_private)):
+    for i in id_map_source_private:
         s_public = id_map_source_public[i]
         s_private = id_map_source_private[i]
         if s_public not in tt_public:
@@ -524,7 +524,7 @@ def colorSources(tt_public, tt_private):
             tt_private_s = tt_private[s_private]
             num_public = 0
             num_total = 0
-            for j in range (len(id_map_target_private)):
+            for j in id_map_target_private:
                 t_public = id_map_target_public[j]
                 t_private = id_map_target_private[j]
                 
@@ -545,7 +545,7 @@ def colorTargets(tt_public, tt_private):
     global id_map_source_public, id_map_source_private, id_map_target_private, id_map_target_public
     node_colors = {}
     targets = {}
-    for i in range (len(id_map_source_private)):
+    for i in id_map_source_private:
         s_public = id_map_source_public[i]
         s_private = id_map_source_private[i]
         if s_public in tt_public and s_private in tt_private:
@@ -553,7 +553,7 @@ def colorTargets(tt_public, tt_private):
             tt_private_s = tt_private[s_private]
             #print(tt_public_s)
             #print(tt_private_s)
-            for j in range (len(id_map_target_private)):
+            for j in id_map_target_private:
                 t_public = id_map_target_public[j]
                 t_private = id_map_target_private[j]
                 #print(t_public, t_private)

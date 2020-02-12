@@ -86,6 +86,20 @@ body {
 	width: 16px;
 }
 
+
+.button-close {
+	background-color: white;
+	padding: 4px;
+	text-align: center;
+	text-decoration: none;
+	display: inline-block;
+	cursor: pointer;
+	border: none;
+	position: relative;
+	margin-right: 1px;
+	vertical-align: middle;
+}
+
 .button-marker {
 	background-color: white;
 	color: white;

@@ -16,13 +16,13 @@ const STYLES_DRAW = [ {
 
 function addPolygonLocation(location, map) {
 	currentPolygon = location
-	if (location == "source" && polygon_source_coords != null) {
-		alert("Source polygon has already been drawn!")
+	if (location == "source") {
+		alert("Region as source currently not supported.")
 		return
 
 	}
-	if (location == "target" && polygon_target_coords != null) {
-		alert("Target polygon has already been drawn!")
+	if (location == "target" && it > 0 && targets.size > 1) {
+		alert("Mixed destination types not supported (point already selected).")
 		return
 
 	}
@@ -44,33 +44,43 @@ function addPolygonLocation(location, map) {
 		map.on('draw.delete', function (e) {
 			deleteRegion();
 		});
-		//map.on('draw.create', updateArea('draw.create', polygon_source_coords, polygon_target_coords, currentPolygon, draw));
-		//map.on('draw.delete', updateArea('draw.delete', polygon_source_coords, polygon_target_coords, currentPolygon, draw));
-		//map.on('draw.update', updateArea('draw.update', polygon_source_coords, polygon_target_coords, currentPolygon, draw));
 	} else {
 		draw.changeMode('draw_polygon');
 	}
 
 }
 
+function removePolygonTarget(){
+	deleteRegion();
+	if (draw){
+		var data = draw.getAll();
+		if (data.features[0]){
+			var first_id = data.features[0].id
+			draw.delete(first_id)
+		}
+    }
+}
+
 function updateRegion(currentPolygon) {
-	console.log("Updating region")
 	var data = draw.getAll();
-	console.log(data);
-	console.log(data.features);
 	var len = data.features.length;
 	if (currentPolygon == "source") {
 		polygon_source_coords = data.features[len - 1].geometry.coordinates;
-		console.log(polygon_source_coords);
-		if (document.getElementById('inputSource').value == "") {
-			document.getElementById('inputSource').value = "Polygon drawn"
+		//console.log(polygon_source_coords);
+		if (document.getElementById('sourceNode' + is).value == "") {
+			document.getElementById('sourceNode' + is).value = "Polygon drawn"
 		}
 	} else {
-		polygon_target_coords = data.features[len - 1].geometry.coordinates;
-		console.log(polygon_target_coords);
-		if (document.getElementById('inputTarget').value == "") {
-			document.getElementById('inputTarget').value = "Polygon drawn"
+		if (polygon_target_coords != null){
+			removePolygonTarget()
 		}
+		var targetNode = document.getElementById('targetNode'+it)
+		removeMarkerTarget(targetNode)
+		removeNeighborhoodTarget()
+		var new_target = document.getElementById ("new_target") ;
+		new_target.style.display = "none" ;
+		polygon_target_coords = data.features[len - 1].geometry.coordinates;
+		targetNode.value = "Polygon drawn"
 	}
 }
 
@@ -80,23 +90,19 @@ function deleteRegion(){
 }
 
 function updateArea(type, polygon_source_coords, polygon_target_coords, currentPolygon, draw) {
-	console.log(type)
+	//console.log(type)
 	if (type == 'draw.create' || type == 'draw.update') {
-		console.log("Updating source")
 		var data = draw.getAll();
-		console.log(data);
-		console.log(data.features);
-		//console.log(data.features[0].geometry.coordinates);
 		var len = data.features.length;
 		if (currentPolygon == "source") {
 			polygon_source_coords = data.features[len - 1].geometry.coordinates;
-			console.log(polygon_source_coords);
+			//console.log(polygon_source_coords);
 			if (document.getElementById('inputSource').value == "") {
 				document.getElementById('inputSource').value = "Polygon drawn"
 			}
 		} else {
 			polygon_target_coords = data.features[len - 1].geometry.coordinates;
-			console.log(polygon_target_coords);
+			//console.log(polygon_target_coords);
 			if (document.getElementById('inputTarget').value == "") {
 				document.getElementById('inputTarget').value = "Polygon drawn"
 			}
@@ -111,13 +117,12 @@ function updateArea(type, polygon_source_coords, polygon_target_coords, currentP
 
 function updateAreaTarget(e) {
 	if (e.type == 'draw.create' || e.type == 'draw.update') {
-		console.log("Updating target")
+		//console.log("Updating target")
 		var data = draw_target.getAll();
 		console.log(data);
 		console.log(data.features);
-		//console.log(data.features[0].geometry.coordinates);
 		polygon_target_coords = data.features[0].geometry.coordinates;
-		console.log(polygon_target_coords);
+		//console.log(polygon_target_coords);
 	} else if (e.type == 'draw.delete') {
 		polygon_target_coords = null;
 	}

@@ -110,7 +110,7 @@ function addEventsChildNeig(id){
 			//console.log(this.id + " checked")
 			if(!parent_checkbox || !parent_checkbox.checked) {
 				//console.log(parent + " parent checked")
-				document.getElementById('inputTarget').value = "Neighborhood selected"
+				document.getElementById('targetNode'+it).value = "Neighborhood selected"
 				map.setFeatureState({
 					source : 'polygons',
 					id : this.id
@@ -206,7 +206,7 @@ function addEventsParentNeig(id){
 	const checkbox = document.getElementById(id);
 	checkbox.addEventListener("change", function() {
 		if (this.checked) {
-			document.getElementById('inputTarget').value = "Neighborhood selected"
+			document.getElementById('targetNode'+it).value = "Neighborhood selected"
 			//console.log(this.id + " checked")
 			map.setFeatureState({
 				source : 'polygons',
@@ -238,7 +238,7 @@ function addEventsParentChildNeig(id) {
 		if (this.checked) {
 			//console.log(this.id + " checked")
 			if (!parent_checkbox.checked) {
-				document.getElementById('inputTarget').value = "Neighborhood selected"
+				document.getElementById('targetNode'+it).value = "Neighborhood selected"
 				map.setFeatureState({
 					source : 'polygons',
 					id : this.id
@@ -456,4 +456,37 @@ function clearSelectedNeighborhoods(){
 
 function trunc(str, n) {
 	 return str.slice(0, n) + "."
+}
+
+function addNeighborhoodLocation(location){
+    if(location == "source"){
+    	alert("Neighborhood as source currently not supported.")
+    	return
+    }
+    if (location == "target" && it > 0 && targets.size > 1) {
+		alert("Mixed destination types not supported (point already selected).")
+		return
+
+	}
+    else{
+    	var divList = document.getElementById("neig_div");
+    	divList.style.display = "block";
+    	document.getElementById('targetNode' + it).value = "Select neighborhoods"
+    	var targetNode = document.getElementById('targetNode'+it)
+        if (targetNode.value != ""){
+        	removeMarkerTarget(targetNode)
+        	removePolygonTarget()
+        }
+    		
+    }
+}
+
+function removeNeighborhoodTarget(){
+	closeNeighborhoodList()
+	clearSelectedNeighborhoods();
+}
+
+function closeNeighborhoodList(){
+	var divList = document.getElementById("neig_div");
+	divList.style.display = "none";
 }

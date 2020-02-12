@@ -13,15 +13,15 @@
 		<link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.0.9/mapbox-gl-draw.css' type='text/css' />
 		
 		<script type="text/javascript" src="static/js/color_gradient.js?1"></script>
-		<script type="text/javascript" src="static/js/polygon.js?12"></script>
-		<script type="text/javascript" src="static/js/neighborhood.js?123"></script>
+		<script type="text/javascript" src="static/js/polygon.js?37"></script>
+		<script type="text/javascript" src="static/js/neighborhood.js?132"></script>
 		<script type="text/javascript" src="static/js/planner_menu.js?1"></script>
 		<script type="text/javascript" src="static/js/routes.js?352"></script>
-		<script type="text/javascript" src="static/js/stops.js?37"></script>
-		<script type="text/javascript" src="static/js/road_segment.js"></script>
+		<script type="text/javascript" src="static/js/stops.js?39"></script>
+		<script type="text/javascript" src="static/js/road_segment.js?2"></script>
 		
-		<link rel="stylesheet" type="text/css" href="static/css/rr_test.css?72">
-		<link rel="stylesheet" type="text/css" href="static/css/list_neighborhoods.css?20">
+		<link rel="stylesheet" type="text/css" href="static/css/rr_test.css?78">
+		<link rel="stylesheet" type="text/css" href="static/css/list_neighborhoods.css?21">
 		<link rel="stylesheet" type="text/css" href="static/css/planner.css?10">
         
     </head>
@@ -39,34 +39,38 @@
 				
 				<h4>Choose points from the map</h4>
 				
-				<div class="input" id="source_add">
+				<div class="input" id="input_source" style="display: inline-block;">
 				<div style="display: inline-block;" >
 					<img src="static/images/letter_s.png?2"  style="position:relative; top:10px"> 
 				</div>
-				<input type="text" id="inputSource" value="" class="input-text" readonly>
-				<button id="marker-button-source" class="button-image button-marker" onClick="addMarker('source')"><img src="static/images/marker-orange.png"></button>
-				<button id="polygon-button-source" class="button-image button-marker" onClick="addPolygon('source')"><img src="static/images/polygon.png"></button>
-				<button id="neig-button-source" class=" button-image button-marker" onClick="addNeighborhood('source')"><img src="static/images/images.png"></button>
+				<input type="text" id="sourceNode0" value="" class="input-text" readonly>
+				<button id="marker-button-source" title='Select a point' class="button-image button-marker" onClick="addMarker('source')"><img src="static/images/marker-orange.png"></button>
+				<button id="polygon-button-source" title='Draw a region (currently not supported)' class="button-image button-marker" onClick="addPolygon('source')"><img src="static/images/polygon.png"></button>
+				<button id="neig-button-source" title='Select a neighborhood (currently not supported)' class=" button-image button-marker" onClick="addNeighborhood('source')"><img src="static/images/images.png"></button>
 				<button id="new_source" class="button-add" value="Add" onClick="addSource()" style="display:none;">+</button>
 				</div>
-				<div class="input" id="input_source"></div>
-				<br>
+				<br><br>
 				
-				<div class="input" id="target_add">
+				<div class="input" id="input_target">
 				<div style="display: inline-block;" >
 					<img src="static/images/letter_d.png"  style="position:relative; top:10px"> 
 				</div> 
-				<input type="text" id="inputTarget" value="" class="input-text" readonly> 
-				<button id="marker-button-target" class="button-image button-marker" onClick="addMarker('target')"><img src="static/images/marker-orange.png"></button>
-				<button id="polygon-button-target" class="button-image button-marker" onClick="addPolygon('target')"><img src="static/images/polygon.png"></button>
-				<button id="neig-button-target" class=" button-image button-marker" onClick="addNeighborhood('target')"><img src="static/images/images.png"></button>
+				<input type="text" id="targetNode0" value="" class="input-text" readonly> 
+				<button id="marker-button-target" title='Select a point' class="button-image button-marker" onClick="addMarker('target')"><img src="static/images/marker-orange.png"></button>
+				<button id="polygon-button-target" title='Draw a region' class="button-image button-marker" onClick="addPolygon('target')"><img src="static/images/polygon.png"></button>
+				<button id="neig-button-target" title='Select a neighborhood' class=" button-image button-marker" onClick="addNeighborhood('target')"><img src="static/images/images.png"></button>
 				<button  id="new_target" class="button-add" value="Add" onClick="addTarget()" style="display:none;">+</button>
 				</div>
-				<div class="input" id="input_target"></div>
 				<br>
-				<div id="neig_list_div" class="list" style="overflow:auto;max-height:20vh;">
-					<ul id="list_neighborhoods" style="overflow:auto;">
-					</ul>
+				<div id="neig_div" style="width: 320px; display:none">
+					<div id="neig_list_div" class="list" style="overflow:auto;max-height:20vh;">
+						<ul id="list_neighborhoods" style="overflow:auto;">
+						</ul>
+					</div>
+					<div style="float:right;display:inline-block;">
+						<img id="close_list_neighborhoods" title='Close list' width="20px" style="cursor:pointer;" onClick="closeNeighborhoodList()" src="static/images/clear.svg">
+					</div>
+					<br><br>
 				</div>
 				<br>
 				<div id="edit_buttons" style="width: 100%;display:none;">
@@ -78,7 +82,7 @@
 					<hr style="padding:0px; margin: 0px; border: 0.8px solid #C8C8C8;">
 					<button class="button-edit" id="button-edit-segments" onclick="selectSegments(this)">Edit Road Segments</button>
 					<div id="segments_div" style="width: 300px;max-height:30vh; overflow:auto; display:none">
-						<p style="color:#696969;font-size:14px">Please select road segments from the map.</p>
+						<p style="color:#696969;font-size:14px">Please right click the map to select road segments.</p>
 						<ul id="list_segments" style="width: 200px">
 						</ul>
 					</div>
@@ -137,7 +141,7 @@
 
                 	const images =[
                 		  {url: 'static/images/bus-icon.png', id: 'bus-icon'},
-                		  {url: 'static/images/rail-icon.png', id: 'rail-icon'},
+                		  {url: 'static/images/rail-icon.png?1', id: 'rail-icon'},
                 		  {url: 'static/images/urban-rail-icon.png', id: 'urban-rail-icon'},
                 		  {url: 'static/images/light-rail-icon.png', id: 'light-rail-icon'},
                 	]
@@ -204,8 +208,8 @@
 				edit_buttons.style.display = "inline";
 			}
 
-            var targets = [];
-            var sources = [];
+            var targets = new Map();
+            var sources = new Map();
             
             var timer = 0;
             var delay = 250;
@@ -222,6 +226,7 @@
             var popups = []
 
             var markerActivated = false;
+            var currentLocation = null;
 
             map.on('click', function(e) {
                 if (markerActivated){
@@ -238,59 +243,20 @@
     			
                             console.log(str)
                             
-                            //if(document.getElementById('inputSource').hidden == false) { 
-                            	if(document.getElementById('inputSource').value == "") {
-                    				//add marker
-                                    // create a HTML element for each feature
-                					
-                        			var el = document.createElement('div');
-                        			el.className = 'marker_source';
-                        			el.style.right = '-5px';
-                                    el.style.top = '-12px';
-
-                                    el.addEventListener('click', e => {
-                                        e.stopPropagation();
-                                        //functions
-                                        console.log("source" + " clicked")
-                                        
-                                        var popup = new mapboxgl.Popup({closeOnClick: false, anchor: 'top'})
-                                        .setLngLat({lat:latitude, lng: longitude})
-                                        .setHTML("<strong>source</strong>")
-                                        .addTo(map);
-
-                                        popup.on('close', function(e) {
-                                            console.log("popup closed")
-                                        })
-
-                                        popups.push(popup);
-                                        
-                                    }, true);
-
-                        			// make a marker for each feature and add to the map
-                        			var marker = new mapboxgl.Marker(el)
-                          				.setLngLat(e.lngLat)
-                          				.addTo(map);
-                      				
-                          			markers.push(marker);
-
-                          			document.getElementById('inputSource').value = str;
-
-                          			//if(!document.getElementById('targetNode1') || (document.getElementById('targetNode1') && document.getElementById('targetNode1').value == "")) {
-                          				var new_source = document.getElementById ( "new_source" ) ;
-                              			new_source.style.display = "inline" ;
-                          			//}
-
-                              		sources.push(coord)
-                					
-                    			}
-                            	else if(document.getElementById('sourceNode'+is) && document.getElementById('sourceNode'+is).value == "") {
+                            	if(currentLocation == "source" && document.getElementById('sourceNode'+is)) {
+                                	var sourceNode = document.getElementById('sourceNode'+is)
+                                	if (sourceNode.value != ""){
+                                		removeMarkerSource(sourceNode)
+                                    }
                     				//add marker
                                     // create a HTML element for each feature
                         				var el = document.createElement('div');
                         				el.className = 'marker_source';
                         				el.style.right = '-5px';
                                       	el.style.top = '-12px';
-                                      	el.setAttribute("id", targetId);
+                                      	el.setAttribute("id", "marker_s_"+ sourceId);
+
+                                      	document.getElementById('sourceNode'+is).setAttribute("marker", sourceId)
 
                                       	el.addEventListener('click', e => {
                                             e.stopPropagation();
@@ -298,8 +264,8 @@
                                             console.log("marker" + el.id + " clicked");
                                             
                                             if (map.getLayer("rr_layer")) {
-                                        		if (!map.getLayer("paths"+el.id)) {
-                                            		var path_data = {"location_type": "source", "id": el.id}
+                                        		if (!map.getLayer("paths_"+el.id)) {
+                                            		var path_data = {"location_type": "source", "id": el.id.split("_")[2]}
                                         			$.post("path", JSON.stringify(path_data) , function(res){
                                     					//console.log(marker_id)
     													var geom = res["path_geom"];
@@ -318,12 +284,12 @@
 
                                     	                popup.on('close', function(e) {
                                                             console.log("popup closed")
-                                                            if (map.getLayer("paths"+el.id)) {
-    				    										map.removeLayer("paths"+el.id);
+                                                            if (map.getLayer("paths_"+el.id)) {
+    				    										map.removeLayer("paths_"+el.id);
     														}
 
-    														if (map.getSource("paths"+el.id)) {
-    				    										map.removeSource("paths"+el.id);
+    														if (map.getSource("paths_"+el.id)) {
+    				    										map.removeSource("paths_"+el.id);
     														}
                                                         })
 
@@ -339,89 +305,32 @@
                           				.addTo(map);
 
                         				markers.push(marker);
-                        				targetId = targetId + 1;
+                        				sources.set(sourceId, coord) 
+                        				sourceId = sourceId + 1;
 
                         				document.getElementById('sourceNode'+is).value = str;
-                        				sources.push(coord) 
+
+                        				var new_source = document.getElementById ( "new_source" ) ;
+                              			new_source.style.display = "inline" ;
+                              			
 
                 				}
-                    			else if(document.getElementById('inputTarget').value == "") {
+    							else if(currentLocation == "target" && document.getElementById('targetNode'+it)) {
+    								var targetNode = document.getElementById('targetNode'+it)
+                                	if (targetNode.value != ""){
+                                		removeMarkerTarget(targetNode)
+                                		removePolygonTarget()
+                                		removeNeighborhoodTarget()
+                                    }
                     				//add marker
                                     // create a HTML element for each feature
                         				var el = document.createElement('div');
                         				el.className = 'marker_target';
                         				el.style.right = '-5px';
                                       	el.style.top = '-12px';
-                                      	el.setAttribute("id", targetId);
+                                      	el.setAttribute("id", "marker_t_"+ targetId);
 
-                                      	el.addEventListener('click', e => {
-                                            e.stopPropagation();
-                                            //functions
-                                            console.log("marker" + el.id + " clicked");
-
-                                            if (map.getLayer("rr_layer")) {
-                                        		if (!map.getLayer("paths"+el.id)) {
-                                        			var path_data = {"location_type": "target", "id": el.id}
-                                        			$.post("path", JSON.stringify(path_data) , function(res){
-                                    					//console.log(marker_id)
-    													var geom = res["path_geom"];
-    													var tt_public = res["tt_public"];
-                                    	                var tt_private = res["tt_private"];
-    													
-                                    	                console.log(tt_public, tt_private);
-
-    													var html = '<font color="blue">' + tt_public + ' min </font><br><font color="red">' + tt_private + ' min </font>'
-                                    	                var popup = new mapboxgl.Popup({closeOnClick: false, anchor: 'top'})
-                                                        .setLngLat({lat:latitude, lng: longitude})
-                                                        .setHTML(html)
-                                                        .addTo(map);
-
-                                    	                addPathLayer(el.id, geom);
-
-                                    	                popup.on('close', function(e) {
-                                                            console.log("popup closed")
-                                                            
-                                                            if (map.getLayer("paths"+el.id)) {
-    				    										map.removeLayer("paths"+el.id);
-    														}
-
-    														if (map.getSource("paths"+el.id)) {
-    				    										map.removeSource("paths"+el.id);
-    														}	
-                                                        })
-
-                                                        popups.push(popup);
-                                            		});
-                                				}
-                            				}
-                                        }, true);
-
-                        				// make a marker for each feature and add to the map
-                        				var marker = new mapboxgl.Marker(el)
-                          				.setLngLat(e.lngLat)
-                          				.addTo(map);
-
-                        				markers.push(marker); 
-                        				targetId = targetId + 1;  
-
-                        				document.getElementById('inputTarget').value = str; 
-
-                        				//if(!document.getElementById('sourceNode1') || (document.getElementById('sourceNode1') && document.getElementById('sourceNode1').value == "")) {
-                        					var new_target = document.getElementById ( "new_target" ) ;
-                            				new_target.style.display = "inline" ;
-                            			//}
-                        				targets.push(coord) 
-
-
-                				}
-    							else if(document.getElementById('targetNode'+it) && document.getElementById('targetNode'+it).value == "") {
-                    				//add marker
-                                    // create a HTML element for each feature
-                        				var el = document.createElement('div');
-                        				el.className = 'marker_target';
-                        				el.style.right = '-5px';
-                                      	el.style.top = '-12px';
-                                      	el.setAttribute("id", targetId);
+                                      	document.getElementById('targetNode'+it).setAttribute("marker", targetId)
 
                                       	el.addEventListener('click', e => {
                                             e.stopPropagation();
@@ -429,8 +338,8 @@
                                             console.log("marker" + el.id + " clicked");
                                             
                                             if (map.getLayer("rr_layer")) {
-                                        		if (!map.getLayer("paths"+el.id)) {
-                                        			var path_data = {"location_type": "target", "id": el.id}
+                                        		if (!map.getLayer("paths_"+el.id)) {
+                                        			var path_data = {"location_type": "target", "id": el.id.split("_")[2]}
                                         			$.post("path", JSON.stringify(path_data) , function(res){
                                     					//console.log(marker_id)
     													var geom = res["path_geom"];
@@ -449,12 +358,12 @@
 
                                     	                popup.on('close', function(e) {
                                                             console.log("popup closed")
-                                                            if (map.getLayer("paths"+el.id)) {
-    				    										map.removeLayer("paths"+el.id);
+                                                            if (map.getLayer("paths_"+el.id)) {
+    				    										map.removeLayer("paths_"+el.id);
     														}
 
-    														if (map.getSource("paths"+el.id)) {
-    				    										map.removeSource("paths"+el.id);
+    														if (map.getSource("paths_"+el.id)) {
+    				    										map.removeSource("paths_"+el.id);
     														}
                                                         })
 
@@ -470,10 +379,13 @@
                           				.addTo(map);
 
                         				markers.push(marker);
+                        				targets.set(targetId, coord) 
                         				targetId = targetId + 1;
 
                         				document.getElementById('targetNode'+it).value = str;
-                        				targets.push(coord)  
+
+                        				var new_target = document.getElementById ( "new_target" ) ;
+                        				new_target.style.display = "inline" ;
 
                 				}
                 				
@@ -492,23 +404,23 @@
 
             var popup_seg = new Map()
             map.on('contextmenu', function(e) {
-            	console.log("right click")
-            	console.log(view)
+            	//console.log("right click")
+            	//console.log(view)
                 if(view == 1){
                     var latitude = e.lngLat.lat;
                     var longitude = e.lngLat.lng;
-                    console.log(latitude, longitude)
+                    //console.log(latitude, longitude)
                     
                     var segment_data = {"latitude": latitude, "longitude": longitude}
             			$.post("segment", JSON.stringify(segment_data) , function(res){
         					//console.log(marker_id)
     						var geom = res["segment"];
     						var seg_id = res["segment_id"];
-    						console.log(geom, seg_id)
+    						//console.log(geom, seg_id)
 
     						
     						if (!map.getLayer("seg_"+ seg_id)) {
-    							console.log("Adding layer:" + seg_id)
+    							//console.log("Adding layer:" + seg_id)
     							map.addLayer({
     						        "id": "seg_"+ seg_id,
     						        "type": "line",
@@ -629,26 +541,30 @@
 
             function addMarker(location){
                 console.log("activating marker")
+                currentLocation = location
             	markerActivated = true;
+            	if (draw){
+            		draw.changeMode('simple_select');
+            		map.getCanvas().style.cursor = ''
+                }
             }
 
             function addPolygon(location){
+            	markerActivated = false;
                 addPolygonLocation(location, map)
             }
 
             function addNeighborhood(location){
-                if(location == "source"){
-                    alert("Source neighborhood not supported!")
-                }else{
-                	var divList = document.getElementById("neig_list_div");
-                	divList.style.display = "block";
-                	document.getElementById('inputTarget').value = "Select neighborhoods"
+            	markerActivated = false;
+            	if (draw){
+            		draw.changeMode('simple_select');
+            		map.getCanvas().style.cursor = ''
                 }
+            	addNeighborhoodLocation(location)
             }
 
 
             function addSource() {
-
             	if(document.getElementById('sourceNode'+is) && document.getElementById('sourceNode'+is).value == ""){
             		alert("Select source before adding a new one."); 
                 }else{
@@ -662,7 +578,6 @@
 
                 	is = is + 1
                 	element.id = "sourceNode" + is
-                	//element.style.display = "block";
                 	element.style.marginRight = "9px";
                 	element.style.marginLeft = "35.3px";
                 	element.style.marginTop = "10px";
@@ -681,13 +596,58 @@
                 	neig.style.marginRight = "5px";
                 	parent.appendChild(neig); 
                 	parent.appendChild(document.getElementById("new_source"));
-                	 
 
-                	//var new_target = document.getElementById ( "new_target" ) ;
-    				//new_target.style.display = "none" ;
+
+                	console.log("creating button")
+                    var inputSource = document.getElementById("sourceNode" + (is-1))
+                    inputSource.style.marginRight = "9px";
+                    console.log(inputSource)
+
+                    var image = document.createElement("img");
+					image.src =  '../../static/images/clear.svg';
+					image.style.cursor = "pointer";
+					image.width="18"
+					//image.style.marginRight = "5px";
+					//image.style.left = "20px";
+					image.style.verticalAlign = "middle";
+					image.setAttribute("id", "source_" + (is-1));
+					image.addEventListener("click", function() { removeSource(this); })	
+                    inputSource.parentNode.insertBefore(image, inputSource.nextSibling);
+
                 }
             	
 
+            }
+
+            function removeSource(image){
+                const id = image.id
+                var source_id = id.split("_")[1];
+                var inputSource = document.getElementById("sourceNode" + source_id);
+                pos = $(inputSource).index()
+            	if (pos == 1){
+                	var parent = document.getElementById("input_source");
+                	var nextInput = parent.children[3];
+                	if (nextInput){
+                		nextInput.style.marginLeft = "0px";
+                    }
+                }
+                inputSource.parentNode.removeChild(inputSource);
+                removeMarkerSource(inputSource)
+            	image.parentNode.removeChild(image);
+            	
+            }
+
+            function removeMarkerSource(inputSource){
+            	var marker = inputSource.getAttribute("marker")
+                if (marker){
+                    console.log("marker found!")
+                	var markerDiv = document.getElementById("marker_s_"+ marker)
+                	console.log(markerDiv)
+                	markerDiv.parentNode.removeChild(markerDiv);
+                    sources.delete(parseInt(marker, 10))
+                    console.log(marker, sources)
+                    inputSource.removeAttribute("marker")
+                }
             }
             
             function addTarget() {
@@ -709,7 +669,6 @@
                 	element.style.marginTop = "10px";
 
 
-                	// 'foobar' is the div id, where new fields are to be added
                 	var parent = document.getElementById("input_target");
                 	
                 	parent.appendChild(element);
@@ -726,12 +685,58 @@
                 	
                 	parent.appendChild(document.getElementById("new_target"));
 
+                	console.log("creating button")
+                    var inputTarget = document.getElementById("targetNode" + (it-1))
+                    inputTarget.style.marginRight = "9px";
+                    console.log(inputTarget)
+
+                    var image = document.createElement("img");
+					image.src =  '../../static/images/clear.svg';
+					image.style.cursor = "pointer";
+					image.width="18"
+					image.style.verticalAlign = "middle";
+					image.setAttribute("id", "target_" + (it-1));
+					image.addEventListener("click", function() { removeTarget(this); })	
+                    inputTarget.parentNode.insertBefore(image, inputTarget.nextSibling);
+
                 	//var new_source = document.getElementById ( "new_source" ) ;
     				//new_source.style.display = "none" ;
                 }
 
             }
 
+            function removeTarget(image){
+                const id = image.id
+                var target_id = id.split("_")[1];
+                console.log(target_id)
+                var inputTarget = document.getElementById("targetNode" + target_id);
+                console.log(inputTarget)
+                pos = $(inputTarget).index()
+            	if (pos == 1){
+                	var parent = document.getElementById("input_target");
+                	var nextInput = parent.children[3];
+                	if (nextInput){
+                		nextInput.style.marginLeft = "0px";
+                    }
+                }
+                inputTarget.parentNode.removeChild(inputTarget);
+                removeMarkerTarget(inputTarget)
+            	image.parentNode.removeChild(image);
+            	
+            }
+
+            function removeMarkerTarget(inputTarget){
+            	var marker = inputTarget.getAttribute("marker")
+                if (marker){
+                    console.log("marker found!")
+                	var markerDiv = document.getElementById("marker_t_"+ marker)
+                	console.log(markerDiv)
+                	markerDiv.parentNode.removeChild(markerDiv);
+                    targets.delete(parseInt(marker, 10))
+                    console.log(marker, targets)
+                    inputTarget.removeAttribute("marker")
+                }
+            }
 
             function departure(selectedValue) {
                 console.log(selectedValue)
@@ -763,26 +768,37 @@
             function clearFields() {
                 console.log("clearing map")
                 clearResults();
-            	document.getElementById('inputSource').value = "";
-            	document.getElementById('inputTarget').value = "";
+                /*var firstSourceInput = document.getElementById("input_source").children[1]
+                firstSourceInput.id = "sourceNode0"
+                firstSourceInput.value = "";
+                firstSourceInput.style.marginRight = "9px"*/
+            	//document.getElementById('inputTarget').value = "";
 
             	var j;
 
-            	for (j = 1; j <= it ; j++) {
-            		var element = document.getElementById("targetNode" + j);
-                	element.parentNode.removeChild(element);
-            	}
-
-            	for (j = 1; j <= is ; j++) {
+            	for (j = 0; j <= is ; j++) {
             		var element = document.getElementById("sourceNode" + j);
-                	element.parentNode.removeChild(element);
+            		if (element){
+            			element.parentNode.removeChild(element);
+                	}
+            		var clear_element = document.getElementById("source_" + j);
+            		if (clear_element){
+            			clear_element.parentNode.removeChild(clear_element);
+                	}
             	}
 
-            	for (j = 0; j < markers.length; j++) {
-                    markers[j].remove()
+            	for (j = 0; j <= it ; j++) {
+            		var element = document.getElementById("targetNode" + j);
+            		if (element){
+            			element.parentNode.removeChild(element);
+                	}
+            		var clear_element = document.getElementById("target_" + j);
+            		if (clear_element){
+            			clear_element.parentNode.removeChild(clear_element);
+                	}
             	}
 
-            	var parent_source = document.getElementById("source_add");
+            	var parent_source = document.getElementById("input_source");
             	var marker_source = document.getElementById ("marker-button-source");
             	marker_source.parentNode.removeChild(marker_source);
             	var polygon_source = document.getElementById ("polygon-button-source");
@@ -791,18 +807,29 @@
             	neig_source.parentNode.removeChild(neig_source);
             	var new_source = document.getElementById ("new_source") ;
             	new_source.parentNode.removeChild(new_source);
-            	
+
+            	//Create an input type dynamically.
+            	var source = document.createElement("input");
+            	//Assign different attributes to the element.
+            	source.setAttribute("type", "text");
+            	source.setAttribute("value", "");
+            	source.setAttribute("class", "input-text");
+            	source.id = "sourceNode0"
+            	source.style.marginRight = "9px";
+            	//element.style.marginLeft = "35.3px";
+            	//element.style.marginTop = "10px";
             	new_source.style.display = "none" ;
             	marker_source.style.marginRight = "5px";
             	polygon_source.style.marginRight = "5px";
             	neig_source.style.marginRight = "5px";
+            	parent_source.appendChild(source);
             	parent_source.appendChild(marker_source);
             	parent_source.appendChild(polygon_source);
             	parent_source.appendChild(neig_source);
             	parent_source.appendChild(new_source);
             	
 
-            	var parent_target = document.getElementById("target_add");
+            	var parent_target = document.getElementById("input_target");
             	var marker_target = document.getElementById ("marker-button-target");
             	marker_target.parentNode.removeChild(marker_target);
             	var polygon_target = document.getElementById ("polygon-button-target");
@@ -811,15 +838,27 @@
             	neig_target.parentNode.removeChild(neig_target);
             	var new_target = document.getElementById ("new_target") ;
             	new_target.parentNode.removeChild(new_target);
-            	
+
+            	var target = document.createElement("input");
+            	target.setAttribute("type", "text");
+            	target.setAttribute("value", "");
+            	target.setAttribute("class", "input-text");
+            	target.id = "targetNode0"
+            	target.style.marginRight = "9px";
             	new_target.style.display = "none" ;
             	marker_target.style.marginRight = "5px";
             	polygon_target.style.marginRight = "5px";
             	neig_target.style.marginRight = "5px";
+            	parent_target.appendChild(target);
             	parent_target.appendChild(marker_target);
             	parent_target.appendChild(polygon_target);
             	parent_target.appendChild(neig_target);
-            	parent_target.appendChild(new_target);            	
+            	parent_target.appendChild(new_target);    
+            	
+
+            	for (j = 0; j < markers.length; j++) {
+                    markers[j].remove()
+            	}        	
 				
 				var picker = document.getElementById ( "dateTimePicker" ) ;
             	picker.style.display = "none" ;
@@ -832,7 +871,7 @@
             		draw = null;
                 }
 
-            	var divList = document.getElementById("neig_list_div");
+            	var divList = document.getElementById("neig_div");
             	divList.style.display = "none";
             	clearSelectedNeighborhoods();
 
@@ -840,9 +879,10 @@
 				is = 0;
 				it = 0;
 				targetId = 0;
+				sourceId = 0;
             	
-            	sources = []
-            	targets = []
+            	sources = new Map()
+            	targets = new Map()
             	markers = []
             	popups = []
 
@@ -905,10 +945,10 @@
             }
 
             function getResults() {
-            	//console.log(sources.length, targets.length) 
+            	//console.log(sources.size, targets.size) 
             	clearResults();
             	checked_neig = getSelectedNeighborhoods()
-            	if((sources.length == 0 && !polygon_source_coords ) || (targets.length == 0 && !polygon_target_coords && checked_neig.length == 0 )) {
+            	if((sources.size == 0 && !polygon_source_coords ) || (targets.size == 0 && !polygon_target_coords && checked_neig.length == 0 )) {
             		alert("Some coordinates are missing."); 
                	}
                	else {
@@ -927,11 +967,6 @@
 
             		// ajax the JSON to the server
             		$.post("receiver", JSON.stringify(data_input) , function(res){
-						//console.log(res)
-						//console.log(res[1])
-						//console.log(res["markers"])
-						//console.log(res.features[0].properties)
-						
 		                map.addLayer({
 		                    "id": "rr_layer",
 		                    "type": "circle",
@@ -957,7 +992,7 @@
 
             function addPathLayer(marker_id, geom){
             	map.addLayer({
-                    "id": "paths"+marker_id,
+                    "id": "paths_"+marker_id,
                     "type": "line",
                     "source": {
 	                    "type": "geojson",

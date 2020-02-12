@@ -1,5 +1,5 @@
 function removeSegment(remove, segment_id) {
-	console.log(remove, segment_id)
+	//console.log(remove, segment_id)
 	popup = popup_seg.get(segment_id)
 	popup.remove()
 	if (!remove) {
@@ -18,6 +18,8 @@ function removeSegment(remove, segment_id) {
 		var checkbox = document.createElement("INPUT");
 		checkbox.setAttribute("type", "checkbox");
 		checkbox.setAttribute("id", "cseg_" + segment_id);
+		checkbox.setAttribute("title", "check to add segment back to network");
+		title="Pepperoni"
 		checkbox.classList.add('checkbox_list_segment');
 		checkbox.checked = false;
 		entry.appendChild(checkbox);

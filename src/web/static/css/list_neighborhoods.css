@@ -41,6 +41,6 @@ ul, #list_neighborhoods {
 
 div.list {
   width: 280px;
-  display: none;
+  display: inline-block;
   overflow:hidden;
 }
