@@ -19,10 +19,14 @@ In order to visualize the suggested routes, as well as the actual arrival time a
 ##### Multiple sources-single destination
 Now consider a user that is moving to a city to work at a certain location and is looking for a place to rent. One criterion to choose where to live may be how convenient it would be for him/her to reach his/her workplace by public transit whenever his/her working shift starts. In this case, it would be useful to see the RRs of different rental units. An important difference of this scenario w.r.t. the previous one, is that in the previous scenario the RRs are computed w.r.t. the destinations (which theatre would be more convenient to reach from home), whereas now the
 RRs are computed w.r.t. the sources (from which potential apartment it would be more convenient to reach the workplace). The figure below illustrates such a scenario.
+
 <kbd><img src="/images/ind-many-to-one.png" /></kbd>
 
 ##### Single source-region destination
+Similar to the example above, one may want to consider living in a neighborhood that offers good transportation options towards a region on weekends. RRAMEN allows users to draw a region or select from a pre-determined set of regions, e.g., municipalities, as illustrated below.
+
 <kbd><img src="/images/ind-one-to-region.png" /></kbd>
+
 <kbd><img src="/images/ind-one-to-neig.png" /></kbd>
 
 #### b. Urban Planners
