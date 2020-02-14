@@ -3,7 +3,8 @@
 
 ---
 
-RRAMEN is an interactive tool that supports different city-scale mobility-related queries by different types of users with different needs. RRAMEN is based on the concept of Relative Reachability, and its main goal is to aid individual users and urban planners in making informed choices and evaluating changes w.r.t. a city's transportation network. 
+RRAMEN is an interactive tool that supports city-scale mobility-related queries by different types of users with different needs. It is based on the concept of Relative Reachability (RR), 
+which determines the mode of transport that minimizes arrival time at a given destination location. RRAMEN's main goal is to aid individual users and urban planners in making informed choices and evaluating changes w.r.t. a city's transportation network. 
 
 ### 1. Examples & Usage
 
@@ -17,8 +18,7 @@ In order to visualize the suggested routes, as well as the actual arrival time a
 <kbd><img src="/images/ind-one-to-many-path.png" /></kbd>
 
 ##### Multiple sources-single destination
-Now consider a user that is moving to a city to work at a certain location and is looking for a place to rent. One criterion to choose where to live may be how convenient it would be for him/her to reach his/her workplace by public transit whenever his/her working shift starts. In this case, it would be useful to see the RRs of different rental units. An important difference of this scenario w.r.t. the previous one, is that in the previous scenario the RRs are computed w.r.t. the destinations (which theatre would be more convenient to reach from home), whereas now the
-RRs are computed w.r.t. the sources (from which potential apartment it would be more convenient to reach the workplace). The figure below illustrates such a scenario.
+Now consider a user who is moving to a city to work at a certain location and is looking for a place to rent. One criterion to choose where to live may be how convenient it would be for him/her to reach his/her workplace by public transit whenever his/her working shift starts. In this case, it would be useful to see the RRs of different rental units. An important difference of this scenario w.r.t. the previous one, is that now the RRs are computed w.r.t. the sources (from which potential apartment it would be more convenient to reach the workplace). The figure below illustrates such a scenario.
 
 <kbd><img src="/images/ind-many-to-one.png" /></kbd>
 
