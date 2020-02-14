@@ -395,7 +395,6 @@ function addRouteLayer(route_name, transp_id, geom, color){
 }
 
 function getRemovedRoutes(routes){
-	console.log(routes)
 	var not_checked = document.querySelectorAll('input[class="checkbox_list"]:not(:checked)');
 	var removed_routes = []               		
 	for(var i = 0; i < not_checked.length; i+=1){
@@ -503,5 +502,5 @@ function clearSelectedRoutes(){
     for (route of selected_routes){
     	clearRoute(route);
     }
-    routes = []
+    selected_routes = []
 }

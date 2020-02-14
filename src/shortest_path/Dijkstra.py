@@ -4,65 +4,131 @@ Created on Oct 2, 2019
 @author: camila
 '''
 
-from util.FibonacciHeap import FibonacciHeap
 from datetime import timedelta
+from multiprocessing import Manager
+import multiprocessing
+from threading import Thread
 import time
+
 import queue as Q
-from threading import Thread, Event
+from util.FibonacciHeap import FibonacciHeap
+from posix import remove
 
 
 class Dijsktra:
     def __init__(self, graph):
         self.graph = graph
-        self.stop_event = Event()
         self.timeout = 10
-        
-    def manyToManyPrivate(self, sources, targets, departure_time):
+
+    def manyToManyPrivate(self, sources, targets, departure_time, removed_segments, travel_times, parents):
         print("Computing travel times by car...")
-        travel_times = {}
-        parents = {}
+        if travel_times is None:
+            travel_times = {}
+        if parents is None:
+            parents = {}
         for s in sources:
             # create another Thread
-            self.stop_event = Event()
-            travel_times_s = {}
-            parents_s = {}
-            action_thread = Thread(target=self.shortestPathToSetPrivate, args=[s, departure_time, targets, travel_times_s, parents_s])
+            manager = Manager()
+            travel_times_s = manager.dict()
+            parents_s = manager.dict()
+            
+            if not removed_segments:
+                action_thread = multiprocessing.Process(target=self.shortestPathToSetPrivate, args=[s, departure_time, targets, travel_times_s, parents_s])
+             
+                # start the thread and we wait 'timeout' seconds before the code continues to execute.
+                action_thread.start()
+                action_thread.join(self.timeout)
+                
+             
+                # If thread is still active
+                if action_thread.is_alive():
+                    print ("Private TIMED OUT")
+                    # Terminate
+                    action_thread.terminate()
+                    action_thread.join()
+        
+                #travel_times_s, parents_s = self.shortestPathToSetPrivate(s, departure_time, targets)
+                #print(travel_times_s)
+            else:
+                action_thread = multiprocessing.Process(target=self.shortestPathToSetPrivateSegmentsRemoved, args=[s, departure_time, targets, 
+                                                                                                    removed_segments, travel_times_s, parents_s])
+             
+                # start the thread and we wait 'timeout' seconds before the code continues to execute.
+                action_thread.start()
+                action_thread.join(self.timeout)
+                
+             
+                # If thread is still active
+                if action_thread.is_alive():
+                    print ("Private TIMED OUT")
+                    # Terminate
+                    action_thread.terminate()
+                    action_thread.join()
+        
+            travel_times[s] = travel_times_s
+            parents[s] = parents_s
+        return travel_times, parents
+    
+    def manyToManyPublic(self, sources, targets, departure_time, removed_routes = None, removed_stops = None, travel_times = None, parents = None):
+        print("Computing travel times by public transit...")
+        if travel_times is None:
+            travel_times = {}
+        if parents is None:
+            parents = {}
+        for s in sources:
+            manager = Manager()
+            travel_times_s = manager.dict()
+            parents_s = manager.dict()
+            
+            if not (removed_routes or removed_stops):
+                action_thread = multiprocessing.Process(target=self.shortestPathToSetPublic, args=[s, departure_time, targets, {self.graph.PEDESTRIAN, self.graph.PUBLIC}, 
+                                                                                   travel_times_s, parents_s])
          
-            # start the thread and we wait 'timeout' seconds before the code continues to execute.
-            action_thread.start()
-            action_thread.join(timeout=self.timeout)
+                # start the thread and we wait 'timeout' seconds before the code continues to execute.
+                action_thread.start()
+                action_thread.join(self.timeout)
             
          
-            # send a signal that the other thread should stop.
-            self.stop_event.set()
-    
-            #travel_times_s, parents_s = self.shortestPathToSetPrivate(s, departure_time, targets)
-            #print(travel_times_s)
-            #print(parents_s)
-            travel_times[s] = travel_times_s
-            parents[s] = parents_s
-        return travel_times, parents
-    
-    def manyToManyPublic(self, sources, targets, departure_time, removed_routes = None, removed_stops = None):
-        print("Computing travel times by public transit...")
-        travel_times = {}
-        parents = {}
-        for s in sources:
-            if not (removed_routes or removed_stops):
-                travel_times_s, parents_s = self.shortestPathToSetPublic(s, departure_time, targets, {self.graph.PEDESTRIAN, self.graph.PUBLIC})
+                # If thread is still active
+                if action_thread.is_alive():
+                    print ("Public TIMED OUT")
+                    # Terminate
+                    action_thread.terminate()
+                    action_thread.join()
+            
+                #travel_times_s, parents_s = self.shortestPathToSetPublic(s, departure_time, targets, {self.graph.PEDESTRIAN, self.graph.PUBLIC})
             else:
-                travel_times_s, parents_s = self.shortestPathToSetPublicRoutesRemoved(s, departure_time, targets, {self.graph.PEDESTRIAN, self.graph.PUBLIC}, 
-                                                                                      removed_routes, removed_stops)
+                action_thread = multiprocessing.Process(target=self.shortestPathToSetPublicRoutesRemoved, args=[s, departure_time, targets, {self.graph.PEDESTRIAN, self.graph.PUBLIC}, 
+                                                                                               removed_routes, removed_stops, travel_times_s, parents_s])
+         
+                # start the thread and we wait 'timeout' seconds before the code continues to execute.
+                action_thread.start()
+                action_thread.join(self.timeout)
+            
+         
+                # If thread is still active
+                if action_thread.is_alive():
+                    print ("Public TIMED OUT")
+                    # Terminate
+                    action_thread.terminate()
+                    action_thread.join()
+                #travel_times_s, parents_s = self.shortestPathToSetPublicRoutesRemoved(s, departure_time, targets, {self.graph.PEDESTRIAN, self.graph.PUBLIC}, 
+                #removed_routes, removed_stops)
+                                                                               
+            #print(travel_times_s)
             travel_times[s] = travel_times_s
             parents[s] = parents_s
         return travel_times, parents
     
-    def shortestPathToSetPrivate(self, s, departure_time, targets, travel_times, parents):
+    def shortestPathToSetPrivate(self, s, departure_time, targets, travel_times=None, parents=None):
+        print("shortestPathToSetPrivate")
+        if travel_times is None:
+            travel_times = {}
+        if parents is None:
+            parents = {}
         q = Q.PriorityQueue()
-        #travel_times = {}
         closed_set = set()
         targets = set(targets)
-        #parents = {}
         
         q.put((0, s, departure_time, -1, []))
         
@@ -70,14 +136,8 @@ class Dijsktra:
         
         while not q.empty():
             
-            if self.stop_event.is_set():
-                print("Timed out!")
-                break
-        
             v_min = q.get()
             
-            #if not v_min:
-            #    print(heap)
                 
             travel_time = v_min[0]
             vid = v_min[1]
@@ -94,20 +154,77 @@ class Dijsktra:
                     targets.remove(vid)
                 
                     if not targets:
-                        #print(time_neig)
-                        print("All targets found!")
+                        #print("All targets found!")
                         return travel_times, parents
                 
                 #for mode in allowed_modes:
                 start = time.time()
                 modes = v_min[4]
                 allowed_modes = self.getAllowedModesPrivate(modes)
-                #print(allowed_modes)
                 travel_times_neighbors = self.graph.getTravelTimeToNeighbors(vid, arrival_time, allowed_modes)
                 time_neig += (time.time()-start)
-                #if mode == self.graph.PUBLIC:
-                #    print(travel_times_neighbors)
                 for to in travel_times_neighbors:
+                    if to not in closed_set:
+                        tt, mode = travel_times_neighbors[to]
+                        total_tt = travel_time + tt
+                        arrival_time_to = arrival_time + timedelta(seconds=tt)
+                        modes_to = modes.copy()
+                        if len(modes_to) == 0 or  modes_to[-1] != mode:
+                            modes_to.append(mode)
+                            
+                        q.put((total_tt, to, arrival_time_to, vid, modes_to))
+        print(time_neig)                        
+        return travel_times, parents
+    
+    
+    def shortestPathToSetPrivateSegmentsRemoved(self, s, departure_time, targets, removed_segments, travel_times=None, parents=None):
+        print("shortestPathToSetPrivateSegmentsRemoved")
+        if travel_times is None:
+            travel_times = {}
+        if parents is None:
+            parents = {}
+        q = Q.PriorityQueue()
+        closed_set = set()
+        targets = set(targets)
+        
+        q.put((0, s, departure_time, -1, []))
+        
+        time_neig = 0
+        
+        while not q.empty():
+            
+            v_min = q.get()
+            
+                
+            travel_time = v_min[0]
+            vid = v_min[1]
+            arrival_time = v_min[2]
+            
+            #print(vid, travel_time)
+            if vid not in closed_set:
+                closed_set.add(vid)
+                parents[vid] = v_min[3]
+            
+                if vid in targets:
+                    #print(str(vid) + ":" + str(travel_time) + " " + str(self.graph.getNode(vid)))
+                    travel_times[vid] = travel_time
+                    targets.remove(vid)
+                
+                    if not targets:
+                        #print("All targets found!")
+                        return travel_times, parents
+                
+                #for mode in allowed_modes:
+                start = time.time()
+                modes = v_min[4]
+                allowed_modes = self.getAllowedModesPrivate(modes)
+                travel_times_neighbors = self.graph.getTravelTimeToNeighbors(vid, arrival_time, allowed_modes)
+                time_neig += (time.time()-start)
+                removed_targets = removed_segments.get(vid)
+                for to in travel_times_neighbors:
+                    if removed_targets and to in removed_targets:
+                        print("Removed segments:", vid, to)
+                        continue
                     if to not in closed_set:
                         tt, mode = travel_times_neighbors[to]
                         total_tt = travel_time + tt
@@ -134,18 +251,22 @@ class Dijsktra:
         
         return allowed_modes
                 
-    def shortestPathToSetPublic(self, s, departure_time, targets, allowed_modes):
+    def shortestPathToSetPublic(self, s, departure_time, targets, allowed_modes, travel_times=None, parents=None):
+        print("shortestPathToSetPublic")
+        if travel_times is None:
+            travel_times = {}
+        if parents is None:
+            parents = {}
         q = Q.PriorityQueue()
-        travel_times = {}
         closed_set = set()
         targets = set(targets)
-        parents = {}
         
         q.put((0, s, departure_time, -1))
         
         time_neig = 0
         
         while not q.empty():
+            
             v_min = q.get()
             
             travel_time = v_min[0]
@@ -198,12 +319,15 @@ class Dijsktra:
         return travel_times, parents
     
     
-    def shortestPathToSetPublicRoutesRemoved(self, s, departure_time, targets, allowed_modes, removed_routes, removed_stops):
+    def shortestPathToSetPublicRoutesRemoved(self, s, departure_time, targets, allowed_modes, removed_routes, removed_stops, travel_times=None, parents=None):
+        print("shortestPathToSetPublicRoutesRemoved")
+        if travel_times is None:
+            travel_times = {}
+        if parents is None:
+            parents = {}
         q = Q.PriorityQueue()
-        travel_times = {}
         closed_set = set()
         targets = set(targets)
-        parents = {}
         
         q.put((0, s, departure_time, -1))
         
@@ -224,7 +348,7 @@ class Dijsktra:
                 parents[vid] = parent
             
                 if vid in targets:
-                    print(str(vid) + ":" + str(travel_time) + " " + str(self.graph.getNode(vid)))
+                    #print(str(vid) + ":" + str(travel_time) + " " + str(self.graph.getNode(vid)))
                     travel_times[vid] = travel_time
                     targets.remove(vid)
                 
@@ -253,24 +377,24 @@ class Dijsktra:
                 if vid_type == self.graph.PUBLIC:
                     stop_id = v_node["stop_id"]
                     route_id = v_node["route_id"]
-                    if stop_id in removed_stops and route_id in removed_stops[stop_id]:
-                        only_routes = True
+                    if removed_stops:
+                        if stop_id in removed_stops and route_id in removed_stops[stop_id]:
+                            print("Removed stop:" + str(stop_id))
+                            only_routes = True
                 
                 for to in travel_times_neighbors:
                     if to not in closed_set:
                         
                         nodeTo = self.graph.getNode(to)
                         if only_routes and nodeTo["type"] == self.graph.SUPER_NODE:
-                            print("Path from " + str(vid) + " to super node pruned!")
+                            #print("Path from " + str(vid) + " to super node pruned!")
                             continue;
                         if "route_id" in nodeTo:
-                            if nodeTo["route_id"] in removed_routes:
-                                #print("Removed route:" + str(nodeTo))
-                                continue;
+                            if removed_routes:
+                                if nodeTo["route_id"] in removed_routes:
+                                    #print("Removed route:" + str(nodeTo["route_id"]))
+                                    continue
                             
-                            stop_id, route_id
-                        
-                        
                         if out_of_station and nodeTo['type'] == self.graph.TRANSPORTATION:
                             continue
                         

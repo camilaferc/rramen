@@ -6,7 +6,9 @@ Created on Oct 29, 2019
 
 from _datetime import datetime
 from builtins import str
+import pathlib
 import sys
+from threading import Thread
 import time
 
 from flask import Flask, request, render_template
@@ -18,7 +20,6 @@ from gtfs import GTFS
 from load.LoadMultimodalNetwork import LoadMultimodalNetwork
 from path.Path import Path
 from shortest_path.Dijkstra import Dijsktra
-import pathlib
 
 
 app = Flask(__name__)
@@ -70,52 +71,6 @@ def rramen():
         network_center = network_center
     )
     
-@app.route('/rr_test')
-def mapbox_gl():
-    
-    polygons = dataManager.getNeighborhoodsPolygons(region)
-    
-    return render_template('rr_test.html', 
-        ACCESS_KEY=MAPBOX_ACCESS_KEY,
-        polygons = polygons,
-    )
-    
-@app.route('/rr_planner_test')
-def rr_planner():
-    global graph, dataManager, region
-    
-    routes, stops, stop_routes = dataManager.getRoutes(region)
-    stop_locations = dataManager.getStopsLocation(region)
-    return render_template('rr_planner_test.html', 
-        ACCESS_KEY=MAPBOX_ACCESS_KEY,
-        routes = routes, 
-        stops = stops,
-        stop_routes = stop_routes,
-        transp_mapping = GTFS.ROUTE_TYPE,
-        stop_locations = stop_locations
-    )
-    
-@app.route('/rr_region_test')
-def rr_region():
-    return render_template('rr_region_test.html', 
-        ACCESS_KEY=MAPBOX_ACCESS_KEY
-    )
-    
-@app.route('/rr_boundaries_test')
-def rr_boundaries():
-    
-    return render_template('rr_boundaries_test.html', 
-        ACCESS_KEY=MAPBOX_ACCESS_KEY
-    )
-    
-@app.route('/rr_neighborhood_test')
-def rr_neighborhood():
-    polygons = dataManager.getNeighborhoodsPolygons(region)
-    return render_template('rr_neighborhood_test.html', 
-        ACCESS_KEY=MAPBOX_ACCESS_KEY,
-        polygons = polygons
-    )
-    
 @app.route('/receiver', methods = ['POST', 'GET'])
 def worker():
     # read json + reply
@@ -141,12 +96,18 @@ def worker():
     
     removed_routes = None
     removed_stops = None
+    removed_segments = None
+    
     if "removed_routes" in data and data["removed_routes"]:
         removed_routes = data["removed_routes"]
         
     if "removed_stops" in data and data["removed_stops"]:
         removed_stops = getRemovedStops(data["removed_stops"])
         #print(removed_stops)
+    
+    if "removed_segments" in data and data["removed_segments"]:
+        removed_segments = {int(old_key): set(val) for old_key, val in data["removed_segments"].items()} 
+        #print(removed_segments)
     
     if sources_coordinates:
         print("Source is a set of markers " + str(len(sources_coordinates)))
@@ -183,7 +144,7 @@ def worker():
     print(timestamp)
     
     tt_public, tt_private, node_colors, colored_type = computeRelativeReachability(sources_public, targets_public, sources_private, targets_private, 
-                                                                                   timestamp, removed_routes, removed_stops)
+                                                                                   timestamp, removed_routes, removed_stops, removed_segments)
     #print(node_colors)
     
     if colored_type == "source":
@@ -193,7 +154,11 @@ def worker():
     
     markers = []
     #print(map_coord)
-    for n in node_colors:
+    allColored = True
+    for n in map_coord:
+        if n not in node_colors:
+            allColored = False
+            continue
         n_coord = map_coord[n]
         point = Point([n_coord[1], n_coord[0]])
         properties = {'marker-color': node_colors[n]}
@@ -201,7 +166,7 @@ def worker():
         markers.append(feature)
     
     gc = FeatureCollection(markers)
-    return gc
+    return {"geom": gc, "allColored": allColored}
     
 
 def getNodesFromMarkersCoordinates(map_coordinates, location_type): 
@@ -380,11 +345,12 @@ def getPathGeometry():
     location_type = data['location_type']
     print(marker_id, location_type)
     
+    res_none = {"path_geom": None, "tt_public": None, "tt_private": None}
+    
     if location_type == "source":
         
         if len(id_map_source_public) <= 1 or len(id_map_target_public) > 1:
-            res = {"path_geom": None, "tt_public": None, "tt_private": None}
-            return res
+            return res_none
             
         print(id_map_source_public)
         print(id_map_source_private)
@@ -404,8 +370,7 @@ def getPathGeometry():
             return res
         
         if len(id_map_source_public) > 1 and len(id_map_target_public) == 1:
-            res = {"path_geom": None, "tt_public": None, "tt_private": None}
-            return res
+            return res_none
         
         source_id = None
         for key in id_map_source_public:
@@ -424,6 +389,8 @@ def getPathGeometry():
     
     pathPublic = Path(parent_tree_public[source_public])
     pathPublicGeom = pathPublic.getPathGeometry(graph, node_id_public, region)
+    if not pathPublicGeom:
+        return res_none
     
     properties = {'line-color': 'b'}
     feature = Feature(geometry = pathPublicGeom, properties = properties)
@@ -431,6 +398,8 @@ def getPathGeometry():
     
     pathPrivate = Path(parent_tree_private[source_private])
     pathPrivateGeom = pathPrivate.getPathGeometry(graph, node_id_private, region)
+    if not pathPrivateGeom:
+        return res_none
     properties = {'line-color': 'r'}
     feature = Feature(geometry = pathPrivateGeom, properties = properties)
     paths.append(feature)
@@ -451,59 +420,69 @@ def getSegmentGeometry():
     lon = data['longitude']
     #print(lat, lon)
     
-    edge_id, osm_id, source, target, geometry = dataManager.getClosestEdgeGeometry(lat, lon, region)
-    #print(edge_id, osm_id, source, target)
+    edge_id, source, target, geometry = dataManager.getClosestEdgeGeometry(lat, lon, region)
+    #print(edge_id, source, target)
     #print(geometry)
     
     #properties = {'line-color': 'r'}
     feature = Feature(geometry = geometry)
     
-    res = {"segment": feature, "segment_id":edge_id}
+    res = {"segment": feature, "segment_id":edge_id, "source":source, "target":target}
     #print(res)
     return res
     
 
-def computeRelativeReachability(sources_public, targets_public, sources_private, targets_private, timestamp, removed_routes=None, removed_stops=None): 
+def computeRelativeReachability(sources_public, targets_public, sources_private, targets_private, timestamp, 
+                                removed_routes=None, removed_stops=None, removed_segments=None): 
     global parent_tree_public, parent_tree_private, id_map_private, id_map_public
     dij = Dijsktra(graph)
     parent_tree_public = {}
     parent_tree_private = {}
     
+    threads = []
+    
     print('Removed routes:' + str(removed_routes))
+    print('Removed segments:' + str(removed_segments))
     
     start = time.time()
-    tt_public, parent_tree_public = dij.manyToManyPublic(sources_public, targets_public, timestamp, removed_routes,removed_stops)
-    #dij.shortestPathToSetPublic(source_public, timestamp, targets_public, {graph.PEDESTRIAN, graph.PUBLIC})
-    #parent_tree_public = dij.getParentTree()
-    total = time.time() - start
-    print ("Process time: " + str(total))
     
-    '''
-    for t in targets:
-        path = dij.reconstructPathToNode(t)
-        
-        previous = -1
-        arrival_time = timestamp
-        for node in path:
-            if previous != -1:
-                edge = graph.getEdge(previous, node)
-                ##print(previous, node, edge)
-                tt1 = sys.maxsize
-                tt2 = sys.maxsize
-                if graph.PEDESTRIAN in edge['travel_time_functions']:
-                    tt1 = edge['travel_time_functions'][graph.PEDESTRIAN].getTravelTime(arrival_time)
-                if graph.PUBLIC in edge['travel_time_functions']:
-                    tt2 = edge['travel_time_functions'][graph.PUBLIC].getTravelTime(arrival_time)
-                min_tt = min(tt1, tt2)
-                arrival_time = arrival_time + timedelta(seconds=min_tt)
-            print(node, arrival_time, graph.getNode(node))
-            previous = node
-    '''
-        
-    start = time.time()
-    tt_private, parent_tree_private = dij.manyToManyPrivate(sources_private, targets_private, timestamp)
+    start_public = time.time()
+    #tt_public, parent_tree_public = dij.manyToManyPublic(sources_public, targets_public, timestamp, removed_routes,removed_stops)
+    #total = time.time() - start
+    #print ("Process time: " + str(total))
+
+    # We start one thread per Dijkstra call.
+    tt_public = {}
+    parent_tree_public = {}
+    process_public = Thread(target=dij.manyToManyPublic, args=[sources_public, targets_public, timestamp, removed_routes,removed_stops,
+                                                               tt_public, parent_tree_public])
+    process_public.start()
+    threads.append(process_public)
+    
+    
+    start_private = time.time()
+    tt_private = {}
+    parent_tree_private = {}
+    process_private = Thread(target=dij.manyToManyPrivate, args=[sources_private, targets_private, timestamp, removed_segments, tt_private, parent_tree_private])
+    process_private.start()
+    threads.append(process_private)
+    #tt_private, parent_tree_private = dij.manyToManyPrivate(sources_private, targets_private, timestamp)
+    #total = time.time() - start
+    #print ("Process time: " + str(total))
+    
+    
+    
+    # We now pause execution on the main thread by 'joining' all of our started threads.
+    process_public.join()
+    total = time.time() - start_public
+    print ("Process time public: " + str(total))
+    
+    process_private.join()
+    total = time.time() - start_private
+    print ("Process time private: " + str(total))
+    
     total = time.time() - start
-    print ("Process time: " + str(total))
+    print ("Total time: " + str(total))
     
     node_colors, colored_type = getNodesColors(tt_public, tt_private)
     
@@ -516,11 +495,14 @@ def getRemovedStops(map_stops):
         print(stop)
         routes = map_stops[stop]
         children = dataManager.getChildrenStops(region, stop)
-        for c in children:
-            if c in map_stops_children:
-                map_stops_children[c].update(routes)
-            else:
-                map_stops_children[c] = set(routes)
+        if not children:
+            map_stops_children[stop] = set(routes)
+        else:
+            for c in children:
+                if c in map_stops_children:
+                    map_stops_children[c].update(routes)
+                else:
+                    map_stops_children[c] = set(routes)
     return map_stops_children
     
 def getNodesColors(tt_public, tt_private):
@@ -543,15 +525,16 @@ def colorSources(tt_public, tt_private):
     for i in id_map_source_private:
         s_public = id_map_source_public[i]
         s_private = id_map_source_private[i]
-        if s_public not in tt_public:
-            print(s_public)
-            print("not found by public transit")
-            node_colors[i] = 0.5
-        elif s_private not in tt_private:
-            print(s_private)
-            print("not found by car")
-            node_colors[i] = 0.5
-        else:
+        '''
+        if s_public not in tt_public or s_private not in tt_private:
+            if s_public not in tt_public:
+                print(s_public)
+                print("not found by public transit")
+            if s_private not in tt_private:
+                print(s_private)
+                print("not found by car")
+        '''
+        if s_public in tt_public and s_private in tt_private:
             tt_public_s = tt_public[s_public]
             tt_private_s = tt_private[s_private]
             num_public = 0
@@ -568,8 +551,8 @@ def colorSources(tt_public, tt_private):
                     print("Node found by both:" +  str(t_public) + "," + str(t_private))
             if num_total > 0:
                 node_colors[i] = float(num_public/num_total)
-            else:
-                node_colors[i] = 0.5
+            #else:
+            #    node_colors[i] = 0.5
     return node_colors
 
 def colorTargets(tt_public, tt_private):
@@ -590,6 +573,7 @@ def colorTargets(tt_public, tt_private):
                 t_private = id_map_target_private[j]
                 #print(t_public, t_private)
                 num_public = 0
+                '''
                 if t_public not in tt_public_s or t_private not in tt_private_s:
                     if t_public not in tt_public_s:
                         print(str(t_public) + " not found by public transit")
@@ -598,7 +582,8 @@ def colorTargets(tt_public, tt_private):
                         print(str(t_private) + " not found by car")
                         print(graph.getNode(t_private))
                     #node_colors[j] = 0.5
-                else: 
+                '''
+                if t_public in tt_public_s and t_private in tt_private_s:
                     if tt_public_s[t_public] <=  tt_private_s[t_private]:
                         num_public += 1
                     if j in targets:
@@ -676,5 +661,5 @@ if __name__ == '__main__':
     region = sys.argv[1]
     print(region)
     # run!
-    loadData()
+    #loadData()
     app.run()

@@ -12,13 +12,12 @@
         <script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.0.9/mapbox-gl-draw.js'></script>
 		<link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.0.9/mapbox-gl-draw.css' type='text/css' />
 		
-		<script type="text/javascript" src="static/js/color_gradient.js?1"></script>
-		<script type="text/javascript" src="static/js/polygon.js?37"></script>
-		<script type="text/javascript" src="static/js/neighborhood.js?132"></script>
+		<script type="text/javascript" src="static/js/polygon.js?39"></script>
+		<script type="text/javascript" src="static/js/neighborhood.js?134"></script>
 		<script type="text/javascript" src="static/js/planner_menu.js?1"></script>
-		<script type="text/javascript" src="static/js/routes.js?352"></script>
-		<script type="text/javascript" src="static/js/stops.js?39"></script>
-		<script type="text/javascript" src="static/js/road_segment.js?2"></script>
+		<script type="text/javascript" src="static/js/routes.js?36"></script>
+		<script type="text/javascript" src="static/js/stops.js?40"></script>
+		<script type="text/javascript" src="static/js/road_segment.js?10"></script>
 		
 		<link rel="stylesheet" type="text/css" href="static/css/rr_test.css?78">
 		<link rel="stylesheet" type="text/css" href="static/css/list_neighborhoods.css?21">
@@ -438,6 +437,8 @@
         					//console.log(marker_id)
     						var geom = res["segment"];
     						var seg_id = res["segment_id"];
+    						var source = res["source"]
+    						var target = res["target"]
     						//console.log(geom, seg_id)
 
     						
@@ -462,17 +463,18 @@
     						        }
     						    });
 
+    							setTimeout(function(){ 
+    								var html = '<p style="width: 110px; padding:-10px"> Remove highlighted road segment? </p>' + 
+        			                '<button style="margin-right: 10px;" onclick="removeSegment(true, '+ seg_id + ','+ source + ','+ target + ')">Yes</button>' +
+        			                '<button onclick="removeSegment(false, '+ seg_id + ','+ source + ','+ target + ')">No</button>';
+        			                
+        			                var popup = new mapboxgl.Popup({closeOnClick: false, offset:10, closeButton: false})
+        			                .setLngLat({lat:latitude, lng: longitude})
+        			                .setHTML(html)
+        			                .addTo(map);
 
-    							var html = '<p style="width: 110px; padding:-10px"> Remove highlighted road segment? </p>' + 
-    			                '<button style="margin-right: 10px;" onclick="removeSegment(true, '+ seg_id + ')">Yes</button>' +
-    			                '<button onclick="removeSegment(false, '+ seg_id + ')">No</button>';
-    			                
-    			                var popup = new mapboxgl.Popup({closeOnClick: false, anchor: 'top', offset:10, closeButton: false})
-    			                .setLngLat({lat:latitude, lng: longitude})
-    			                .setHTML(html)
-    			                .addTo(map);
-
-    			                popup_seg.set(seg_id, popup)
+        			                popup_seg.set(seg_id, popup) 
+        						}, 500);
 
     						}
     						
@@ -483,7 +485,7 @@
             map.on("dblclick", function() {
                 clearTimeout(timer);
                 prevent = true;
-                map.zoomIn();
+                //map.zoomIn();
             });
 
             var popup_stop = null;
@@ -492,6 +494,7 @@
             	var layer_name = "stops-" + level
             	
             	map.on('mouseenter', layer_name, function(e) {
+            		//sleep(500);
               	  	map.getCanvas().style.cursor = 'pointer'
               	  	// Here you can access e.features[0] which is the feature cliked
                         // With that you can do whatever you want with your feature
@@ -968,22 +971,23 @@
 
             function getResults() {
             	//console.log(sources.size, targets.size) 
-            	clearResults();
             	checked_neig = getSelectedNeighborhoods()
+            	removed_segments = getRemovedSegments()
             	if((Object.keys(sources).length == 0 && !polygon_source_coords ) || (Object.keys(targets).length == 0 && !polygon_target_coords && checked_neig.length == 0 )) {
             		alert("Some coordinates are missing."); 
                	}
                	else {
+                	removed_routes = getRemovedRoutes(routes)
+                	removed_stops = getRemovedStops(routes, stops)
             		now = false;
             		if(timestamp==-1){
             			timestamp = new Date().getTime();
             			now = true;
                 	}
             		console.log(timestamp)
-            		console.log(sources)
-            		console.log(targets)
             		var data_input = {"sources": sources, "targets":targets, "timestamp":timestamp, "polygon_source_coords":polygon_source_coords,
-                		"polygon_target_coords": polygon_target_coords, "selected_neighborhoods":checked_neig}
+                		"polygon_target_coords": polygon_target_coords, "selected_neighborhoods":checked_neig, "removed_routes": removed_routes,
+                		"removed_stops": removed_stops, "removed_segments": removed_segments}
             		
 					if(now){
 						timestamp = -1
@@ -991,12 +995,17 @@
 
             		// ajax the JSON to the server
             		$.post("receiver", JSON.stringify(data_input) , function(res){
+            			clearResults();
+            			
+                		var geom = res["geom"]
+                		var allColored = res["allColored"]
+                		console.log(allColored)
 		                map.addLayer({
 		                    "id": "rr_layer",
 		                    "type": "circle",
 		                    "source": {
 			                    "type": "geojson",
-			                    "data": res
+			                    "data": geom
 			                },
 		                    'paint': {
 		                    	'circle-radius': 8,
@@ -1010,6 +1019,10 @@
 		                    	]
 		                    }
 		                });
+
+		                if(Object.keys(targets).length > 0 && !allColored){
+		                	setTimeout(function(){ alert("Not all targets could be reached possibly due to the network not being connected."); }, 1000);
+			            }
             		}); 
                	}        
             }
@@ -1041,7 +1054,13 @@
                 });
             }
 
-
+            function sleep(milliseconds) {
+            	  const date = Date.now();
+            	  let currentDate = null;
+            	  do {
+            	    currentDate = Date.now();
+            	  } while (currentDate - date < milliseconds);
+            }
         </script>
 		
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.2.3/flatpickr.js"></script>

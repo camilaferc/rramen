@@ -13,7 +13,9 @@ class Path(object):
     
     def reconstructPathToNode(self, node_id):
         if node_id not in self.parent_tree:
-            raise Exception('{} has not been expanded'.format(node_id))
+            #raise Exception('{} has not been expanded'.format(node_id))
+            print('{} has not been expanded'.format(node_id))
+            return None
         else:
             path = []
             path.append(node_id)
@@ -28,6 +30,8 @@ class Path(object):
     
     def getPathGeometry(self, graph, node_id, region): 
         path = self.reconstructPathToNode(node_id)
+        if not path:
+            return None
     
         path_geometry = [] 
         for i in range(len(path) -1):

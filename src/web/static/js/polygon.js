@@ -21,7 +21,7 @@ function addPolygonLocation(location, map) {
 		return
 
 	}
-	if (location == "target" && it > 0 && targets.size > 1) {
+	if (location == "target" && it > 0 && Object.keys(targets).length > 0) {
 		alert("Mixed destination types not supported (point already selected).")
 		return
 

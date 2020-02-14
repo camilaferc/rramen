@@ -73,10 +73,10 @@ class PostgisDataManager:
     def getChildrenStops(self, region, parent_id):
         sql = """SELECT stop_id
                 FROM stops_{0}
-                WHERE stop_parent = {1};
+                WHERE stop_parent = %s;
             ;   
             """
-        sql = sql.format(region, parent_id);
+        sql = sql.format(region);
         
         try:
             stops = []
@@ -84,7 +84,7 @@ class PostgisDataManager:
  
             cursor = self.connection.getCursor()
             
-            cursor.execute(sql)
+            cursor.execute(sql, (parent_id, ))
             row = cursor.fetchone()
             
             while row is not None:
@@ -383,26 +383,26 @@ class PostgisDataManager:
             print(error)
             
     def getClosestEdgeGeometry(self, lat, lon, region):
-        sql = """SELECT id, osm_id, source, target, ST_AsGeoJSON(geom_way)
+        sql = """SELECT id, source, target, ST_AsGeoJSON(geom_way)
                 from roadnet_{},
-                (SELECT ST_SetSRID(ST_MakePoint({}, {}),4326) as point) as p
+                (SELECT ST_SetSRID(ST_MakePoint(%s, %s),4326) as point) as p
                 ORDER BY point <-> geom_way
                 LIMIT 1;    
             """
-        sql = sql.format(region, lon, lat)
+        sql = sql.format(region)
         
         try:
             self.connection.connect();
  
             cursor = self.connection.getCursor()
             
-            cursor.execute(sql)
-            (edge_id, osm_id, source, target, geometry) = cursor.fetchone()
+            cursor.execute(sql, (lon, lat))
+            (edge_id, source, target, geometry) = cursor.fetchone()
             
             #print(edge_id, source_ratio)
             
             self.connection.close()
-            return edge_id, osm_id, source, target, json.loads(geometry)
+            return edge_id, source, target, json.loads(geometry)
         
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)
