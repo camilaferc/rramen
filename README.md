@@ -41,11 +41,14 @@ RRAMEN allows urban planners to analyze the impact of removing/adding lines/stop
 
 <kbd><img src="/images/plan-many-to-region-line-removed.png" /></kbd>
 
-Instead of removing/adding a whole route, the user can also enable/disable individual stops from a given route. This can be done by either selecting/unselecting the desired stops on the sidebar menu or by selecting/unselecting routes from a given stop on the map, as shown below.
+Instead of adding/removing a whole route, the user can also enable/disable individual stops from a given route. This can be done by either selecting/unselecting the desired stops on the sidebar menu or by selecting/unselecting routes from a given stop on the map, as shown below (unselected routes are shown in gray).
+
 <kbd><img src="/images/plan-many-to-region-remove-stop.png" /></kbd>
 
 
 ##### Removing/adding road segments
+Finally, RRAMEN also allows planners to remove/add road segments and the analyze the impact of those changes. In order to do so, you must right click the map on the desired road segment. A popup box will be displayed to confirm your selection, as shown below (left side figure). The selected road segments will be removed from the road network and be displayed on the sidebar menu. A selected segment can be added back to the network by checking its corresponding checkbox on the sidebar menu.
+
 <kbd><img src="/images/plan-many-to-region-remove-seg-ex.png" width="200px" /></kbd> <kbd><img src="/images/plan-many-to-region-remove-seg.png" width="650px"/></kbd>
 
 ### 2. Installation & Setup
