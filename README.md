@@ -10,9 +10,15 @@ RRAMEN is an interactive tool that supports different city-scale mobility-relate
 #### a. Individual Users
 Individual users can use RRAMEN to find easily reachable facilities within a city, or to make decisions related to their commute. Next, we show some examples of queries that can be answered by RRAMEN and are of interest to individual users.
 ##### Single source-multiple destinations
+Consider a user who is at home and wishes to watch a movie which is showing in a number of movie theatres. The choice of theatre could be based on how convenient it would be to reach that theatre w.r.t. the means of transportation considered.  The figure below illustrates this type of one-to-many scenario, where the source is denoted by an orange marker and the destinations are denoted by green markers. The locations denoted by blue dots have an arrival time earlier by public transportation than by car. Likewise, the other locations (denoted by red dots) have an earlier arrival time by car.
+
+In order to visualize the suggested routes, as well as the actual arrival time at a given destination (using either means of transportation), the user can simply click on the marker representing the destination.
+
 <kbd><img src="/images/ind-one-to-many-path.png" /></kbd>
 
 ##### Multiple sources-single destination
+Now consider a user that is moving to a city to work at a certain location and is looking for a place to rent. One criterion to choose where to live may be how convenient it would be for him/her to reach his/her workplace by public transit whenever his/her working shift starts. In this case, it would be useful to see the RRs of different rental units. An important difference of this scenario w.r.t. the previous one, is that in the previous scenario the RRs are computed w.r.t. the destinations (which theatre would be more convenient to reach from home), whereas now the
+RRs are computed w.r.t. the sources (from which potential apartment it would be more convenient to reach the workplace). The figure below illustrates such a scenario.
 <kbd><img src="/images/ind-many-to-one.png" /></kbd>
 
 ##### Single source-region destination
