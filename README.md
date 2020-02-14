@@ -38,7 +38,10 @@ Here we envision a scenario where a planner would select a number of representat
 
 ##### Removing/adding lines/stops
 RRAMEN allows urban planners to analyze the impact of removing/adding lines/stops on the RRs of points within a city. The figure below shows the RR of the selected region after removing line S7 (note that S7 is unchecked on the sidebar menu). In order to visualize a line/route on the map, the user can simply click on the <img src="/images/map-blue2-16.png" /> icon for the corresponding route.
+
 <kbd><img src="/images/plan-many-to-region-line-removed.png" /></kbd>
+
+Instead of removing/adding a whole route, the user can also enable/disable individual stops from a given route. This can be done by either selecting/unselecting the desired stops on the sidebar menu or by selecting/unselecting routes from a given stop on the map, as shown below.
 <kbd><img src="/images/plan-many-to-region-remove-stop.png" /></kbd>
 
 
