@@ -661,5 +661,5 @@ if __name__ == '__main__':
     region = sys.argv[1]
     print(region)
     # run!
-    #loadData()
+    loadData()
     app.run()

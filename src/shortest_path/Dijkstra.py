@@ -7,12 +7,12 @@ Created on Oct 2, 2019
 from datetime import timedelta
 from multiprocessing import Manager
 import multiprocessing
-from threading import Thread
+from threading import Thread, Event
 import time
 
 import queue as Q
 from util.FibonacciHeap import FibonacciHeap
-from posix import remove
+from _tracemalloc import stop
 
 
 class Dijsktra:
@@ -28,42 +28,34 @@ class Dijsktra:
             parents = {}
         for s in sources:
             # create another Thread
-            manager = Manager()
-            travel_times_s = manager.dict()
-            parents_s = manager.dict()
+            travel_times_s = {}
+            parents_s = {}
+            stop_event = Event()
             
             if not removed_segments:
-                action_thread = multiprocessing.Process(target=self.shortestPathToSetPrivate, args=[s, departure_time, targets, travel_times_s, parents_s])
+                action_thread = Thread(target=self.shortestPathToSetPrivate, args=[s, departure_time, targets, travel_times_s, parents_s, stop_event])
              
                 # start the thread and we wait 'timeout' seconds before the code continues to execute.
                 action_thread.start()
-                action_thread.join(self.timeout)
+                action_thread.join(timeout=self.timeout)
                 
              
                 # If thread is still active
-                if action_thread.is_alive():
-                    print ("Private TIMED OUT")
-                    # Terminate
-                    action_thread.terminate()
-                    action_thread.join()
+                stop_event.set()
         
                 #travel_times_s, parents_s = self.shortestPathToSetPrivate(s, departure_time, targets)
                 #print(travel_times_s)
             else:
-                action_thread = multiprocessing.Process(target=self.shortestPathToSetPrivateSegmentsRemoved, args=[s, departure_time, targets, 
-                                                                                                    removed_segments, travel_times_s, parents_s])
+                action_thread = Thread(target=self.shortestPathToSetPrivateSegmentsRemoved, args=[s, departure_time, targets, 
+                                                                                                    removed_segments, travel_times_s, parents_s, stop_event])
              
                 # start the thread and we wait 'timeout' seconds before the code continues to execute.
                 action_thread.start()
-                action_thread.join(self.timeout)
+                action_thread.join(timeout=self.timeout)
                 
              
                 # If thread is still active
-                if action_thread.is_alive():
-                    print ("Private TIMED OUT")
-                    # Terminate
-                    action_thread.terminate()
-                    action_thread.join()
+                stop_event.set()
         
             travel_times[s] = travel_times_s
             parents[s] = parents_s
@@ -76,13 +68,13 @@ class Dijsktra:
         if parents is None:
             parents = {}
         for s in sources:
-            manager = Manager()
-            travel_times_s = manager.dict()
-            parents_s = manager.dict()
+            travel_times_s = {}
+            parents_s = {}
+            stop_event = Event()
             
             if not (removed_routes or removed_stops):
-                action_thread = multiprocessing.Process(target=self.shortestPathToSetPublic, args=[s, departure_time, targets, {self.graph.PEDESTRIAN, self.graph.PUBLIC}, 
-                                                                                   travel_times_s, parents_s])
+                action_thread = Thread(target=self.shortestPathToSetPublic, args=[s, departure_time, targets, {self.graph.PEDESTRIAN, self.graph.PUBLIC}, 
+                                                                                   travel_times_s, parents_s, stop_event])
          
                 # start the thread and we wait 'timeout' seconds before the code continues to execute.
                 action_thread.start()
@@ -90,16 +82,12 @@ class Dijsktra:
             
          
                 # If thread is still active
-                if action_thread.is_alive():
-                    print ("Public TIMED OUT")
-                    # Terminate
-                    action_thread.terminate()
-                    action_thread.join()
+                stop_event.set()
             
                 #travel_times_s, parents_s = self.shortestPathToSetPublic(s, departure_time, targets, {self.graph.PEDESTRIAN, self.graph.PUBLIC})
             else:
-                action_thread = multiprocessing.Process(target=self.shortestPathToSetPublicRoutesRemoved, args=[s, departure_time, targets, {self.graph.PEDESTRIAN, self.graph.PUBLIC}, 
-                                                                                               removed_routes, removed_stops, travel_times_s, parents_s])
+                action_thread = Thread(target=self.shortestPathToSetPublicRoutesRemoved, args=[s, departure_time, targets, {self.graph.PEDESTRIAN, self.graph.PUBLIC}, 
+                                                                                               removed_routes, removed_stops, travel_times_s, parents_s, stop_event])
          
                 # start the thread and we wait 'timeout' seconds before the code continues to execute.
                 action_thread.start()
@@ -107,11 +95,7 @@ class Dijsktra:
             
          
                 # If thread is still active
-                if action_thread.is_alive():
-                    print ("Public TIMED OUT")
-                    # Terminate
-                    action_thread.terminate()
-                    action_thread.join()
+                stop_event.set()
                 #travel_times_s, parents_s = self.shortestPathToSetPublicRoutesRemoved(s, departure_time, targets, {self.graph.PEDESTRIAN, self.graph.PUBLIC}, 
                 #removed_routes, removed_stops)
                                                                                
@@ -120,7 +104,7 @@ class Dijsktra:
             parents[s] = parents_s
         return travel_times, parents
     
-    def shortestPathToSetPrivate(self, s, departure_time, targets, travel_times=None, parents=None):
+    def shortestPathToSetPrivate(self, s, departure_time, targets, travel_times=None, parents=None, stop_event = None):
         print("shortestPathToSetPrivate")
         if travel_times is None:
             travel_times = {}
@@ -135,6 +119,8 @@ class Dijsktra:
         time_neig = 0
         
         while not q.empty():
+            if stop_event is not None and stop_event.is_set():
+                break
             
             v_min = q.get()
             
@@ -177,7 +163,7 @@ class Dijsktra:
         return travel_times, parents
     
     
-    def shortestPathToSetPrivateSegmentsRemoved(self, s, departure_time, targets, removed_segments, travel_times=None, parents=None):
+    def shortestPathToSetPrivateSegmentsRemoved(self, s, departure_time, targets, removed_segments, travel_times=None, parents=None, stop_event = None):
         print("shortestPathToSetPrivateSegmentsRemoved")
         if travel_times is None:
             travel_times = {}
@@ -192,6 +178,8 @@ class Dijsktra:
         time_neig = 0
         
         while not q.empty():
+            if stop_event is not None and stop_event.is_set():
+                break
             
             v_min = q.get()
             
@@ -251,7 +239,7 @@ class Dijsktra:
         
         return allowed_modes
                 
-    def shortestPathToSetPublic(self, s, departure_time, targets, allowed_modes, travel_times=None, parents=None):
+    def shortestPathToSetPublic(self, s, departure_time, targets, allowed_modes, travel_times=None, parents=None, stop_event = None):
         print("shortestPathToSetPublic")
         if travel_times is None:
             travel_times = {}
@@ -266,6 +254,8 @@ class Dijsktra:
         time_neig = 0
         
         while not q.empty():
+            if stop_event is not None and stop_event.is_set():
+                break
             
             v_min = q.get()
             
@@ -319,7 +309,8 @@ class Dijsktra:
         return travel_times, parents
     
     
-    def shortestPathToSetPublicRoutesRemoved(self, s, departure_time, targets, allowed_modes, removed_routes, removed_stops, travel_times=None, parents=None):
+    def shortestPathToSetPublicRoutesRemoved(self, s, departure_time, targets, allowed_modes, removed_routes, removed_stops, 
+                                             travel_times=None, parents=None, stop_event = None):
         print("shortestPathToSetPublicRoutesRemoved")
         if travel_times is None:
             travel_times = {}
@@ -332,6 +323,9 @@ class Dijsktra:
         q.put((0, s, departure_time, -1))
         
         while not q.empty():
+            if stop_event is not None and stop_event.is_set():
+                break
+            
             v_min = q.get()
             
             #if not v_min:
