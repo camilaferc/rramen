@@ -10,7 +10,6 @@ RRAMEN is an interactive tool that supports different city-scale mobility-relate
 #### a. Individual Users
 Individual users can use RRAMEN to find easily reachable facilities within a city, or to make decisions related to their commute. Next, we show some examples of queries that can be answered by RRAMEN and are of interest to individual users.
 ##### Single source-multiple destinations
-[//]: # <kbd><img src="/images/ind-one-to-many.png" /></kbd>
 <kbd><img src="/images/ind-one-to-many-path.png" /></kbd>
 
 ##### Multiple sources-single destination
@@ -23,10 +22,16 @@ Individual users can use RRAMEN to find easily reachable facilities within a cit
 #### b. Urban Planners
 Urban Planners can use RRAMEN to study transportation systems and the impact of changes on them.
 ##### Multiple sources-region destination
+<kbd><img src="/images/plan-many-to-region.png" /></kbd>
 
 ##### Removing/adding lines/stops
+<kbd><img src="/images/plan-many-to-region-line-removed.png" /></kbd>
+<kbd><img src="/images/plan-many-to-region-remove-stop.png" /></kbd>
+
 
 ##### Removing/adding road segments
+<kbd><img src="plan-many-to-region-remove-seg-ex.png" /></kbd>
+<kbd><img src="/images/plan-many-to-region-remove-seg.png" /></kbd>
 
 ### 2. Installation & Setup
 #### a. Database
