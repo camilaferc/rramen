@@ -32,9 +32,12 @@ Similar to the example above, one may want to consider living in a neighborhood 
 #### b. Urban Planners
 Urban Planners can use RRAMEN to study transportation systems and the impact of changes on them.
 ##### Multiple sources-region destination
+Here we envision a scenario where a planner would select a number of representative points in the city, e.g., shopping malls, and identify their RR w.r.t. a region, e.g., downtown. In this case, as illustrated below, the RR for each one of the potential destination locations within the target region reflects an average over the RRs computed from all different source locations. The colors of each point reflect how much more likely it is for a transportation mode to be the most efficient w.r.t. the source locations. That is, the closer to red (or blue) the more likely it is, over the set of source locations, that private cars (or public transit) reach that point earlier.
+
 <kbd><img src="/images/plan-many-to-region.png" /></kbd>
 
 ##### Removing/adding lines/stops
+RRAMEN allows urban planners to analyze the impact of removing/adding lines/stops on the RRs of points within a city. The figure below shows the RR of the selected region after removing line S7 (note that S7 is unchecked on the sidebar menu). In order to visualize a line/route on the map, the user can simply click on the <img src="/images/map-blue2-16.png" /> icon for the corresponding route.
 <kbd><img src="/images/plan-many-to-region-line-removed.png" /></kbd>
 <kbd><img src="/images/plan-many-to-region-remove-stop.png" /></kbd>
 
