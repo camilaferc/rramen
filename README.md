@@ -30,7 +30,7 @@ Urban Planners can use RRAMEN to study transportation systems and the impact of 
 
 
 ##### Removing/adding road segments
-<kbd><img src="/images/plan-many-to-region-remove-seg-ex.png" width="150px" /></kbd> <kbd><img src="/images/plan-many-to-region-remove-seg.png" width="450px"/></kbd>
+<kbd><img src="/images/plan-many-to-region-remove-seg-ex.png" width="200px" /></kbd> <kbd><img src="/images/plan-many-to-region-remove-seg.png" width="600px"/></kbd>
 
 ### 2. Installation & Setup
 #### a. Database
