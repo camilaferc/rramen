@@ -41,7 +41,7 @@ RRAMEN allows urban planners to analyze the impact of removing/adding lines/stop
 
 <kbd><img src="/images/plan-many-to-region-line-removed.png" /></kbd>
 
-Instead of adding/removing a whole route, users can also enable/disable individual stops from a given route. This can be done by either selecting/unselecting the desired stops on the sidebar menu or by selecting/unselecting routes from a given stop on the map, as illustrated below (unselected routes are shown in gray).
+Instead of adding/removing a whole route, users can also enable/disable individual stops from a given route. This can be done by either selecting/unselecting the desired stops on the sidebar menu or by selecting/unselecting routes from a given stop on the map, as illustrated below. Unselected routes are shown in gray in the popup box.
 
 <kbd><img src="/images/plan-many-to-region-remove-stop.png" /></kbd>
 
