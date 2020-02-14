@@ -14,8 +14,11 @@ Individual users can use RRAMEN to find easily reachable facilities within a cit
 <kbd><img src="/images/ind-one-to-many-path.png" /></kbd>
 
 ##### Multiple sources-single destination
+<kbd><img src="/images/ind-many-to-one.png" /></kbd>
 
 ##### Single source-region destination
+<kbd><img src="/images/ind-many-to-region.png" /></kbd>
+<kbd><img src="/images/ind-many-to-neig.png" /></kbd>
 
 #### b. Urban Planners
 Urban Planners can use RRAMEN to study transportation systems and the impact of changes on them.
