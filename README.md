@@ -107,4 +107,4 @@ Next, browse to [http://127.0.0.1:5000/rramen](http://127.0.0.1:5000/rramen) to 
 
 ### 3. Background and Research
 * Theodoros Chondrogiannis, Mario A. Nascimento, Panagiotis Bouros: *Relative Reachability Analysis as a Tool for Urban Mobility Planning: Position Paper*. IWCTS@SIGSPATIAL 2019: 1:1-1:4
-* Camila F. Costa, Theodoros Chondrogiannis, Mario A. Nascimento, Panagiotis Bouros: *RRAMEN: An Interactive Tool for Evaluating Choices and Changes in Transportation Networks*. To appear in EDBT/ICDT 2020 Joint Conference.
+* Camila F. Costa, Theodoros Chondrogiannis, Mario A. Nascimento, Panagiotis Bouros: *RRAMEN: An Interactive Tool for Evaluating Choices and Changes in Transportation Networks*. To appear in the EDBT/ICDT 2020 Joint Conference.
