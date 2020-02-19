@@ -21,7 +21,6 @@ class Path(object):
             path.append(node_id)
             parent = self.parent_tree[node_id]
             while parent != -1:
-                #print(parent)
                 path.append(parent)
                 parent = self.parent_tree[parent]
             path.reverse()
@@ -64,7 +63,6 @@ class Path(object):
                     #print("TRANSFER")
                     '''
                     geometry = dataManager.getLinkGeometry(original_edge, edge["edge_position"], region)
-                    #print(original_edge)
                     if not geometry:
                         path_geometry.append([node_from['lon'], node_from['lat']])
                         if i == len(path) - 2:

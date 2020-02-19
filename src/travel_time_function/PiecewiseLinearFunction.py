@@ -6,7 +6,6 @@ Created on Oct 2, 2019
 table contains (departure_time, travel_time) pairs for a given edge
 '''
 from travel_time_function.TravelTimeFunction import TravelTimeFunction
-import numpy as np
 from util import TimeUtil
 from copy import copy
 
@@ -54,7 +53,6 @@ class PiecewiseLinearFunction(TravelTimeFunction):
         
         for i in range(len(self.list_functions)):
             linear_function = copy(self.list_functions[i])
-            #print(linear_function)
             
             y1_left = round(linear_function.y1*ratio)
             y2_left = round(linear_function.y2*ratio)
@@ -64,25 +62,6 @@ class PiecewiseLinearFunction(TravelTimeFunction):
             leftFunction.list_functions.append(left_function)
             rightFunction.list_functions.append(right_function)
             
-            
-            #print(leftFunction.list_functions[i].y1, linear_function.y1, linear_function.y1*ratio )
-            #print(rightFunction.list_functions[i].y1, linear_function.y1, linear_function.y1*(1 - ratio) )
-            
-            '''
-            leftFunction.list_functions[i] = copy(linear_function)
-            print(linear_function)
-            leftFunction.list_functions[i].y1 =  linear_function.y1*ratio
-            
-            leftFunction.list_functions[i].y2 =  linear_function.y2*ratio
-            
-            rightFunction.list_functions[i] = copy(linear_function)
-            rightFunction.list_functions[i].y1 =  linear_function.y1*(1 - ratio)
-            
-            print(leftFunction.list_functions[i].y1, linear_function.y1, linear_function.y1*ratio )
-            print(rightFunction.list_functions[i].y1, linear_function.y1, linear_function.y1*(1 - ratio) )
-            
-            rightFunction.list_functions[i].y2 =  linear_function.y2*(1 - ratio)
-            '''
         return leftFunction, rightFunction        
     
     def getTravelTime(self, arrival_time):
@@ -92,14 +71,6 @@ class PiecewiseLinearFunction(TravelTimeFunction):
             pos = (pos % len(self.list_functions))
         linear_function = self.list_functions[pos]
         return linear_function.getValue(total_sec)
-        
-        #total_sec = TimeUtil.getTotalSeconds(arrival_time)
-        #return np.interp(total_sec, self.x, self.y)
-    
-    def getTravelTime2(self, arrival_time):
-        total_sec = TimeUtil.getTotalSeconds(arrival_time)
-        pos = int(total_sec/self.interval_length)
-        return self.table[pos][1]
         
         
     def getInterval(self, arrival_time):

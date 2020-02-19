@@ -6,7 +6,7 @@ Created on Oct 20, 2019
 
 from load.LoadRoadNetwork import LoadRoadNetwork
 from network.MultimodalNetwork import MultimodalNetwork
-from transit.LoadTransportationNetwork import LoadTransportationNetwork
+from load.LoadTransportationNetwork import LoadTransportationNetwork
 
 
 class LoadMultimodalNetwork:
@@ -19,8 +19,6 @@ class LoadMultimodalNetwork:
         
         loadRoad = LoadRoadNetwork(self.region, graph)
         loadRoad.load()
-        print("#nodes:" + str(graph.getNumNodes()))
-        print("#edges:"+ str(graph.getNumEdges()))
         loadTransportation = LoadTransportationNetwork(self.region, graph)
         loadTransportation.load()
         print("#nodes:" + str(graph.getNumNodes()))

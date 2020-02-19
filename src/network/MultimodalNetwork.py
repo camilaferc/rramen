@@ -52,12 +52,10 @@ class MultimodalNetwork:
     
     def getTravelTimeToNeighbors(self, node_id, arrival_time, modes):
         neig_travel_times = {}
-        #start = time.time()
         neigs = self.graph[node_id]
         for node_to in neigs:
             edge = neigs[node_to]
             for mode in edge["modes"]:
-                #print(edge)
                 if mode in modes:
                     if node_to in neig_travel_times:
                         cur_travel_time = neig_travel_times[node_to][0]
@@ -66,22 +64,7 @@ class MultimodalNetwork:
                             neig_travel_times[node_to] = [new_travel_time, mode]
                     else:
                         neig_travel_times[node_to] = [edge['travel_time_functions'][mode].getTravelTime(arrival_time), mode]
-        #self.time_neighbors += (time.time()- start)    
         return neig_travel_times
-    
-    '''
-    def getTravelTimeToNeighbors(self, node_id, arrival_time, mode):
-        neig_travel_times = {}
-        #start = time.time()
-        neigs = self.graph[node_id]
-        for node_to in neigs:
-            edge = neigs[node_to]
-            if mode in edge["modes"]:
-                #print(edge)
-                neig_travel_times[node_to] = edge['travel_time_functions'][mode].getTravelTime(arrival_time)
-        #self.time_neighbors += (time.time()- start)    
-        return neig_travel_times
-    '''
     
     def getEdge(self, node_from, node_to):
         if node_from in self.graph:
@@ -105,111 +88,4 @@ class MultimodalNetwork:
     
     def getVertices(self):
         return self.graph.vertices
-    
-    def isConnected(self):
-        visited = {}
-        visited_rev = {}
-        for n in self.graph.nodes:
-            visited[n] = False
-            visited_rev[n] = False
-            v = n
-        self.DFSUtil(v, visited)
-        g_rev = self.getTranspose()
-        g_rev.DFSUtil(v, visited_rev)
-        
-        for n in self.graph.nodes:
-            if not visited[n] and not visited_rev[n]:
-                #print(n)
-                return False
-        return True;
-    
-    def getConnectedComponents(self):
-        components = []
-        remaining_nodes = self.graph.nodes
-        
-        while remaining_nodes:
-            visited = {}
-            visited_rev = {}
-            for n in remaining_nodes:
-                visited[n] = False
-                visited_rev[n] = False
-                v = n
-                
-            #print("Forward search...")    
-            self.DFSUtil(v, visited)
-            g_rev = self.getTranspose()
-            #print("Backward search...")  
-            g_rev.DFSUtil(v, visited_rev)
-    
-            connected = set()
-            not_connected = set()
-        
-            for n in remaining_nodes:
-                if not visited[n] and not visited_rev[n]:
-                    #print(n)
-                    not_connected.add(n)
-                else:
-                    connected.add(n)
-        
-            print(len(connected))
-            #if 103747443 in connected:
-            #    print("103747443 is here!" )
-            #if 760840186 in connected:
-            #    print("760840186 is here!" )
-            if len(connected) <= 10:
-                print(connected)
-            components.append(connected)
-            remaining_nodes = not_connected
-            
-        return components
-    
-        
-    # A function used by DFS 
-    def DFSUtil(self,v,visited): 
-        # Create a stack for DFS  
-        stack = [] 
-  
-        # Push the current source node.  
-        stack.append(v)  
-  
-        while (len(stack)):  
-            # Pop a vertex from stack and print it  
-            v = stack[-1]  
-            stack.pop() 
-  
-            # Stack may contain same vertex twice. So  
-            # we need to print the popped item only  
-            # if it is not visited.  
-            if (not visited[v]):  
-                #print(v,end=' ') 
-                visited[v] = True 
-  
-            # Get all adjacent vertices of the popped vertex s  
-            # If a adjacent has not been visited, then push it  
-            # to the stack.  
-            for node in self.graph[v]:  
-                #if node == 103747443:
-                #    print("103747443 is expanded from:" + str(v))
-                if node in visited:
-                    if (not visited[node]):  
-                        stack.append(node)  
-                    
-        '''            
-        # Mark the current node as visited and print it 
-        visited[v]= True
-        print(v)
-        #Recur for all the vertices adjacent to this vertex 
-        for i in self.graph[v]: 
-            if visited[i]==False: 
-                self.DFSUtil(i,visited)
-        '''        
-    
-    # Function that returns reverse (or transpose) of this graph 
-    def getTranspose(self): 
-        g = MultimodalNetwork()
-        # Recur for all the vertices adjacent to this vertex 
-        for i in self.graph: 
-            for j in self.graph[i]: 
-                g.addEdge(j,i) 
-        return g 
     

@@ -40,11 +40,6 @@ if __name__ == '__main__':
     # We send a signal that the other thread should stop.
     stop_event.set()
     
-    #print("print1")
-    #res = do_actions()
-    #print(res)
-    #print("print2")
-    
     print(res)
  
     print("Hey there! I timed out! You can do things after me!")

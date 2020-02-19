@@ -35,7 +35,6 @@ function stopRouteSelection(button){
 		route_name_split = button.id.split("_")
 	    route_name = route_name_split[1] + "_" + route_name_split[2] + "_" + route_name_split[3]
 	    var list_checkbox = document.getElementById(route_name);
-	    //console.log(list_checkbox)
 	    if (button.classList.contains("button_unselected")){
 	    	button.className = button.className.replace(" button_unselected", "");
 	    	list_checkbox.checked = true;
@@ -43,17 +42,6 @@ function stopRouteSelection(button){
 	    	button.className += " button_unselected";
 	    	list_checkbox.checked = false;
 	    }
-		/*console.log(checkbox.checked)
-	    console.log(checkbox)
-	    console.log(checkbox.id)
-	    route_name_split = checkbox.id.split("_")
-	    route_name = route_name_split[1] + "_" + route_name_split[2] + "_" + route_name_split[3]
-	    console.log(route_name)
-	    var list_checkbox = document.getElementById(route_name);
-	    console.log(list_checkbox)
-	    list_checkbox.checked = checkbox.checked;*/
-	}else{
-		console.log("Individual user!")
 	}
     
 }

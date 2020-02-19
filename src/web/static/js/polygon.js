@@ -22,9 +22,12 @@ function addPolygonLocation(location, map) {
 
 	}
 	if (location == "target" && it > 0 && Object.keys(targets).length > 0) {
-		alert("Mixed destination types not supported (point already selected).")
-		return
-
+		var parent = document.getElementById("input_target");
+		var textbox = parent.getElementsByTagName('input');
+		if(textbox.length > 1){
+			alert("Mixed destination types not supported (point already selected).")
+			return
+		}
 	}
 	if (!draw) {
 		draw = new MapboxDraw({
@@ -57,7 +60,7 @@ function removePolygonTarget(){
 		if (data.features[0]){
 			var first_id = data.features[0].id
 			draw.delete(first_id)
-		}
+		}	
     }
 }
 
@@ -66,15 +69,14 @@ function updateRegion(currentPolygon) {
 	var len = data.features.length;
 	if (currentPolygon == "source") {
 		polygon_source_coords = data.features[len - 1].geometry.coordinates;
-		//console.log(polygon_source_coords);
 		if (document.getElementById('sourceNode' + is).value == "") {
 			document.getElementById('sourceNode' + is).value = "Polygon drawn"
 		}
 	} else {
-		if (polygon_target_coords != null){
+		var targetNode = document.getElementById('targetNode'+it)
+		if (polygon_target_coords != null && draw.getAll().features.length > 1){
 			removePolygonTarget()
 		}
-		var targetNode = document.getElementById('targetNode'+it)
 		removeMarkerTarget(targetNode)
 		removeNeighborhoodTarget()
 		var new_target = document.getElementById ("new_target") ;
@@ -90,19 +92,16 @@ function deleteRegion(){
 }
 
 function updateArea(type, polygon_source_coords, polygon_target_coords, currentPolygon, draw) {
-	//console.log(type)
 	if (type == 'draw.create' || type == 'draw.update') {
 		var data = draw.getAll();
 		var len = data.features.length;
 		if (currentPolygon == "source") {
 			polygon_source_coords = data.features[len - 1].geometry.coordinates;
-			//console.log(polygon_source_coords);
 			if (document.getElementById('inputSource').value == "") {
 				document.getElementById('inputSource').value = "Polygon drawn"
 			}
 		} else {
 			polygon_target_coords = data.features[len - 1].geometry.coordinates;
-			//console.log(polygon_target_coords);
 			if (document.getElementById('inputTarget').value == "") {
 				document.getElementById('inputTarget').value = "Polygon drawn"
 			}
@@ -117,14 +116,20 @@ function updateArea(type, polygon_source_coords, polygon_target_coords, currentP
 
 function updateAreaTarget(e) {
 	if (e.type == 'draw.create' || e.type == 'draw.update') {
-		//console.log("Updating target")
 		var data = draw_target.getAll();
-		console.log(data);
-		console.log(data.features);
 		polygon_target_coords = data.features[0].geometry.coordinates;
-		//console.log(polygon_target_coords);
 	} else if (e.type == 'draw.delete') {
 		polygon_target_coords = null;
 	}
+}
 
+function clearPolygon(){
+	if (draw){
+		draw.changeMode('simple_select');
+		map.getContainer().classList.remove("mouse-add");
+		draw.deleteAll();
+		map.removeControl(draw);
+		draw = null;
+    }
+	deleteRegion()
 }

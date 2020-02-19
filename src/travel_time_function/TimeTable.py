@@ -26,7 +26,6 @@ class TimeTable(TravelTimeFunction):
     
     def getTravelTime(self, arrival_time):
         next_departure = self.getNextDeparture(arrival_time)
-        #print(arrival_time, next_departure)
         waiting_time = next_departure[0] - arrival_time
         travel_time = next_departure[1] - next_departure[0]
         return (waiting_time + travel_time).total_seconds()
@@ -34,7 +33,6 @@ class TimeTable(TravelTimeFunction):
     def getNextDeparture(self, arrival_time):
         day = TimeUtil.getDayOfTheWeekNumber(arrival_time)
         time = [arrival_time.time()]
-        #print(time)
         timetable = self.table.get(day)
         pos = sys.maxsize
         if timetable:

@@ -40,9 +40,6 @@ class LoadTransportationNetwork:
         del self.routes_id
         del self.edges_timetable
         
-        #print(self.graph.getNumNodes())
-        #print(self.graph.getNumEdges())
-        
         #creating links within stations and to the road network
         self.loadLinks()
         self.loadTransferTimes()
@@ -196,8 +193,6 @@ class LoadTransportationNetwork:
                             self.route_transfers[from_route_id] = {to_route_id : {from_stop_id: {to_stop_id:min_transfer_time}}}
                 row = cursor.fetchone()
             
-            #for stop in self.transfer_times:
-            #    print(self.transfer_times[stop])    
         except IOError as e:
             print("I/O error({0}): {1}".format(e.errno, e.strerror))
         except (Exception, psycopg2.DatabaseError) as error:
@@ -256,9 +251,6 @@ class LoadTransportationNetwork:
             cursor = conn.conn.cursor()
             
             for route in self.routes_id:
-                #print(route)
-                #if route == "19046_100":
-                #    print("ROUTE FOUND!")
                 self.edges_timetable = {}
                 node_mapping = {}
                 
@@ -280,13 +272,9 @@ class LoadTransportationNetwork:
                         node_id = node_mapping[stop_id]
                     else:
                         if stop_id not in self.stops:
-                            #print(str(stop_id) + " not valid")
                             previous_node = -1
                             row = cursor.fetchone()
                             continue
-                        
-                        #if route == "19046_100":
-                        #    print(str(stop_id) + " is in the mbr")
                         
                         node_id = self.current_node_id
                         node_mapping[stop_id] = node_id
@@ -294,7 +282,6 @@ class LoadTransportationNetwork:
                         stop = self.stops[stop_id]
                         self.graph.addNode(node_id, stop['lat'], stop['lon'], self.graph.TRANSPORTATION, stop_id, route)
                         
-                        #print(node_id)
                         if self.stops[stop_id]['parent']:
                             parent = self.stops[stop_id]['parent']
                             if parent in self.parent_stops:
@@ -306,18 +293,12 @@ class LoadTransportationNetwork:
                     row = cursor.fetchone()
                     
                     if previous_node != -1:
-                        #create edge from previous_node to node_id
-                        #if route == "19046_100":
-                        #   print(previous_node, node_id, previous_departure_time, arrival_time, service_id)
                         self.createTransportationEdge(previous_node, node_id, previous_departure_time, arrival_time, service_id)
                     
                     previous_node = node_id
                     previous_trip_id = trip_id
                     previous_departure_time = departure_time
                     
-                #count += 1
-                #if count == 1:
-                #    break;
                 self.addTransportationEdges()
                     
                 
@@ -336,10 +317,8 @@ class LoadTransportationNetwork:
             for node_to in self.edges_timetable[node_from]:
                 timetable = self.edges_timetable[node_from][node_to] 
                 self.graph.addEdge(node_from, node_to, self.graph.TRANSPORTATION, {self.graph.PUBLIC}, {self.graph.PUBLIC:TimeTable(timetable)})
-                #print(self.graph.getEdge(node_from, node_to))
                     
     def createTransportationEdge(self, from_node, to_node, departure_time, arrival_time, service_id):
-        #print(str(from_node) + "," + str(to_node))
         service = self.calendar[service_id]
         if from_node in self.edges_timetable:
             if to_node in self.edges_timetable[from_node]:
@@ -395,7 +374,6 @@ class LoadTransportationNetwork:
             parent_id = self.addLinkSuperNodeToRoadNetwork(parent)
             
             list_nodes = self.parent_stops[parent]
-            #print(parent, len(list_nodes))
             for node_from in list_nodes:
                 self.addLinkToSuperNode(node_from, parent_id)
                 for node_to in list_nodes:

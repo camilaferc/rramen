@@ -44,36 +44,7 @@ TRIPS_FILE = "trips.txt";
 STOP_TIMES_FILE = "stop_times.txt";
 
 '''
-* OPTIONAL. Exceptions for the service IDs defined in the calendar.txt file. If calendar_dates.txt includes ALL dates of service, this file may be specified instead of calendar.txt.
-'''
-CALENDAR_DATES_FILE = "calendar_dates.txt"; 
-
-'''
-* OPTIONAL. Fare information for a transit organization's routes.
-'''
-FARE_ATTRIBUTES_FILE = "fare_attributes.txt";
-
-'''
-* OPTIONAL. Rules for applying fare information for a transit organization's routes.
-'''
-FARE_RULES_FILE = "fare_rules.txt";
-
-'''
-* OPTIONAL. Rules for drawing lines on a map to represent a transit organization's routes.
-'''
-SHAPES_FILE = "shapes.txt";
-
-'''
-* OPTIONAL. Headway (time between trips) for routes with variable frequency of service.
-'''
-FREQUENCIES_FILE = "frequencies.txt";
-
-'''
 * OPTIONAL. Rules for making connections at transfer points between routes.
 '''
 TRANSFERS_FILE = "transfers.txt";
 
-'''
-* OPTIONAL. Additional information about the feed itself, including publisher, version, and expiration information.    
-'''
-FEED_INFO_FILE = "feed_info.txt";

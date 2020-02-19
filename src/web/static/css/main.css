@@ -16,6 +16,37 @@ body {
 	width: 80%;
 }
 
+.container {
+	height: calc(95vh - 8px);
+	height: -moz-calc(95vh - 8px);
+    height: -webkit-calc(95vh - 8px);
+	display: -webkit-flex;
+	display: flex;
+	-webkit-flex-direction: row;
+	flex-direction: row;
+	 position: relative;
+}
+
+
+.top-item {
+ 	z-index: 0;
+    flex: 0 64px;
+    display: flex;
+    height:5%; 
+    background-color:white;
+  }
+
+.fixed {
+	width: 20%;
+	min-width: 360px;
+	height: 100%;
+	overflow: auto;
+}
+
+.flex-item {
+	flex-grow: 1;
+}
+
 .marker {
 	border: none;
 	cursor: pointer;
@@ -44,36 +75,6 @@ body {
 	background-image: url(../images/marker-green.png);
 	background-color: rgba(0, 0, 0, 0);
 	transform: translate(28px, 56px, 0);
-}
-
-.container {
-	height: calc(95vh - 8px);
-	height: -moz-calc(95vh - 8px);
-    height: -webkit-calc(95vh - 8px);
-	display: -webkit-flex;
-	display: flex;
-	-webkit-flex-direction: row;
-	flex-direction: row;
-	 position: relative;
-}
-
- .top-item {
- 	z-index: 0;
-    flex: 0 64px;
-    display: flex;
-    height:5%; 
-    background-color:white;
-  }
-
-.fixed {
-	width: 20%;
-	min-width: 360px;
-	height: 100%;
-	overflow: auto;
-}
-
-.flex-item {
-	flex-grow: 1;
 }
 
 .flatpickr-calendar {

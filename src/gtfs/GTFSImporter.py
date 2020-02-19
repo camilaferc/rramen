@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 '''
 Created on Oct 16, 2019
 
@@ -144,7 +143,6 @@ class GTFSImporter:
                         if sunday:
                             calendar_service[6] = True   
                         calendar[service_id] = calendar_service
-                        #print(service_id, monday, tuesday, wednesday, thursday, friday, saturday, sunday, start_date, end_date)
                         line = f.readline()
             fName = self.gtfs_dir + GTFS.CALENDAR_DATE_FILE
             if os.path.isfile(fName):
@@ -291,7 +289,6 @@ class GTFSImporter:
                     for i in row:
                         if row[i] == '':
                             row[i] = None
-                    #print(self.region, row['route_id'], row['route_short_name'], row['route_long_name'], row['route_type'], row['agency_id'])
                     cursor.execute(sql, (row.get('route_id'), row.get('route_short_name'), row.get('route_long_name'), 
                                          row.get('route_type'), row.get('agency_id')))
             self.conn.commit()
@@ -348,7 +345,6 @@ class GTFSImporter:
                                               Identifier("stops_"+str(self.region)),
                                               Identifier("trips_"+str(self.region)))
             for route in routes:
-                #print(route)
                 cursor.execute(sql_stops, (route, ))
                 
                 row = cursor.fetchone()
@@ -446,81 +442,6 @@ class GTFSImporter:
             return -1   
                     
         
-    '''
-    def populateTableRoutesGeometry(self):
-        sql_insert = """INSERT INTO routes_geometry_{0}(route_id, route_short_name, stops, route_geom) 
-                 VALUES ('{1}', '{2}', '{3}', {4});
-            """
-        try:
-            sql_routes = """
-                    SELECT route_id, route_short_name FROM routes_{0};
-            """
-            
-            sql_geometry = """
-                    SELECT ST_Intersects({1}, 
-                    (SELECT polygon from neighborhoods_{0} where level = (SELECT min(level) FROM neighborhoods_{0})));
-            """
-            sql_routes = sql_routes.format(self.region)
-            cursor = self.conn.getCursor()
-            cursor.execute(sql_routes)
-            routes = {}
-            
-            row = cursor.fetchone()
-            
-            while row is not None:
-                (route_id, route_short_name) = row
-                routes[route_id] = route_short_name
-                row = cursor.fetchone()
-            
-                        
-            sql_stops = """select st.stop_id, s.stop_lat, s.stop_lon from stop_times_{0} st, stops_{0} s
-                            where trip_id = (select trip_id
-                            from stop_times_{0} where trip_id in 
-                            (select trip_id from trips_{0} where route_id = '{1}')
-                            group by trip_id
-                            order by count(*) DESC LIMIT 1) and
-                            st.stop_id = s.stop_id
-                            ORDER BY stop_sequence;
-                        """
-            for route in routes:
-                print(route)
-                stops = []
-                sql_stops_route = sql_stops.format(self.region, route)
-                cursor.execute(sql_stops_route)
-                row = cursor.fetchone()
-                
-                geometry = "ST_GeomFromText('LINESTRING("
-                while row is not None:
-                    (stop_id, lat, lon) = row
-                    stops.append(stop_id)
-                    geometry += str(lon) + " " + str(lat) + ","
-                    row = cursor.fetchone()
-                geometry = geometry[:-1]
-                geometry += ")', 4326)"
-                
-                sql_geometry_id = sql_geometry.format(self.region, geometry)
-                cursor.execute(sql_geometry_id)
-                (intersects, ) = cursor.fetchone()
-                if intersects:
-                    str_stops = str(stops)
-                    str_stops = str_stops[1:-1]
-                    str_stops = "{" + str_stops + "}"
-                    
-                    sql_insert_route = sql_insert.format(self.region, route, routes[route], str_stops, geometry)
-                    self.conn.executeCommand(sql_insert_route)
-                    print("INSERTED!")
-                else:
-                    print(str(route) + "does not intersect the region")
-                
-   
-        except IOError as e:
-            print("I/O error({0}): {1}".format(e.errno, e.strerror))
-        except (Exception, psycopg2.DatabaseError) as error:
-            print(error)
-        except: 
-            print("Unexpected error:", sys.exc_info()[0])
-    '''
-        
     def createTableTrips(self):
         sql = """
         CREATE TABLE IF NOT EXISTS {0} (
@@ -563,7 +484,6 @@ class GTFSImporter:
             with open(fName, 'r') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    #print(self.region, row['route_id'], row['trip_id'], row['service_id'])
                     cursor.execute(sql, (row['route_id'], row['trip_id'], row['service_id']))
             self.conn.commit()
             cursor.close()
@@ -630,7 +550,6 @@ class GTFSImporter:
                                 row['stop_id'], row['stop_sequence']))
                     count += 1
                     if count%10000 == 0:
-                        #print("COMMIT", count)
                         cursor.executemany(sql, records)
                         self.conn.commit()
                         records = []
@@ -778,8 +697,8 @@ class GTFSImporter:
             row = cursor.fetchone()
             
             while row is not None:
-                (id,) = row
-                ids.append(id)
+                (parent_id,) = row
+                ids.append(parent_id)
                 row = cursor.fetchone()
             cursor.close()
             return ids
@@ -805,8 +724,8 @@ class GTFSImporter:
             row = cursor.fetchone()
             
             while row is not None:
-                (id, stop_parent_id) = row
-                stop_parent[id] = stop_parent_id
+                (stop_id, stop_parent_id) = row
+                stop_parent[stop_id] = stop_parent_id
                 row = cursor.fetchone()
             cursor.close()
             return stop_parent
@@ -870,13 +789,11 @@ class GTFSImporter:
                     cursor.execute(sql_select, (list_pedestrian_ways, stop, stop))
                     (edge_id, source, target, edge_dist, source_ratio, edge_length, point_location, 
                      source_point_geom, point_target_geom) = cursor.fetchone()
-                    #print(stop, edge_id)
                     records.append((link_id, stop, edge_id, source, target, edge_dist, source_ratio, edge_length, 
                                              point_location, source_point_geom, point_target_geom))
                     link_id += 1
                     
                     if link_id%100 == 0:
-                        #print("Committing...")
                         cursor.executemany(sql, records)
                         self.conn.commit()
                         records = []

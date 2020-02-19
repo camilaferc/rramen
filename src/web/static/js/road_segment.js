@@ -1,5 +1,4 @@
 function removeSegment(remove, segment_id, source, target) {
-	//console.log(remove, segment_id)
 	popup = popup_seg.get(segment_id)
 	popup.remove()
 	if (!remove) {
@@ -33,17 +32,13 @@ function getRemovedSegments(){
 	var removed_segments = {}             		
 	for(var i = 0; i < not_checked.length; i+=1){
    		var segment = not_checked[i].id
-   		//console.log(segment)
-   		//var sid = segment.split("_")[1];
    		var source = parseInt(not_checked[i].getAttribute("source"), 10)
    		var target = parseInt(not_checked[i].getAttribute("target"), 10)
-   		//console.log(source, target)
    		if(source in removed_segments){
    			removed_segments[source].push(target)
    		}else{
    			removed_segments[source] = [target]
    		}
    	}
-   	console.log(removed_segments)
    	return removed_segments
 }

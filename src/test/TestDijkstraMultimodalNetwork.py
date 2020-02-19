@@ -13,7 +13,7 @@ from database.PostgisDataManager import PostgisDataManager
 from load.LoadMultimodalNetwork import LoadMultimodalNetwork
 from path.Path import Path
 from shortest_path.Dijkstra import Dijsktra
-from web.server_rr_test import createVirtualNodeEdge
+from web.server_rramen import createVirtualNodeEdge
 
 
 def test():

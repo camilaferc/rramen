@@ -83,7 +83,6 @@ class ImportBoundariesFromGeoJSON:
                 level = feature['properties']['admin_level']
                 parentStr = feature['properties']['rpath']
                 parent = parentStr.split(",")[1]
-                #print(nid, name, level, parent)
                 geometry = json.dumps(feature['geometry'])
                 
                 cursor.execute(sql, (nid, name, level, parent, geometry))
@@ -139,9 +138,9 @@ class ImportBoundariesFromGeoJSON:
             cursor = self.connection.getCursor()
                 
             cursor.execute(sql, (nid, ))
-            (id, name, level, parent) = cursor.fetchone()
+            (neig_id, name, level, parent) = cursor.fetchone()
             cursor.close()
-            return (id, name, level, parent)
+            return (neig_id, name, level, parent)
         
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)
@@ -154,7 +153,6 @@ class ImportBoundariesFromGeoJSON:
         
         while not q.empty():
             nid = q.get()
-            #print(nid)
             children = self.getChildren(nid)
             if children:
                 for c in children:
@@ -187,12 +185,12 @@ class ImportBoundariesFromGeoJSON:
                 ids.append(node_id)
                 row = cursor.fetchone()
             
-            (id, name, level, parent) = self.getNeighborhood(nid)
+            (neig_id, name, level, parent) = self.getNeighborhood(nid)
             sql_insert = """INSERT INTO {}(id, name, level, parent, nodes) 
                      VALUES (%s, %s, %s, %s, %s);
                 """
             sql_insert = SQL(sql_insert).format(Identifier("neighborhood_nodes_"+str(self.region)))
-            cursor.execute(sql_insert, (nid, name, level, parent, ids))
+            cursor.execute(sql_insert, (neig_id, name, level, parent, ids))
             self.connection.commit()
             cursor.close()
         except (Exception, psycopg2.DatabaseError) as error:

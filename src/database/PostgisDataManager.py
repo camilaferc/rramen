@@ -4,7 +4,6 @@ Created on Oct 31, 2019
 @author: camila
 '''
 import json
-import time
 
 from geojson import Feature, FeatureCollection
 from geojson import loads
@@ -13,15 +12,11 @@ import psycopg2
 
 from .PostGISConnection import PostGISConnection
 from gtfs import GTFS
-from gtfs.GTFS import ROUTE_LEVEL
-from network.MultimodalNetwork import MultimodalNetwork
-
 
 class PostgisDataManager:
     
     def __init__(self):
         self.connection = PostGISConnection()
-        self.timeGeom = 0
         
     def getNetworkMBR(self, region):
         sql = """SELECT ST_Extent(polygon) from neighborhoods_{0} WHERE level = 
@@ -119,11 +114,8 @@ class PostgisDataManager:
             while row is not None:
                 (nid, name, level, parent, polygon) = row
                 properties = {'name': name, 'level':level, 'parent': parent}
-                #print(nid, name, level, parent)
-                #print(polygon)
                 geometry = json.loads(polygon)
                 feature = Feature(geometry = geometry, properties = properties, id = nid)
-                #print(feature)
                 features.append(feature)
     
                 row = cursor.fetchone()
@@ -157,10 +149,7 @@ class PostgisDataManager:
                 (stop_id, name, location) = row
                 if stop_id in stops_level:
                     stop_level = stops_level[stop_id]
-                    #print(stop_level)
                     properties = {'name': name}
-                    #print(nid, name, level, parent)
-                    #print(polygon)
                     geometry = json.loads(location)
                     feature = Feature(geometry = geometry, properties = properties, id = stop_id)
                     
@@ -168,7 +157,6 @@ class PostgisDataManager:
                         features[stop_level].append(feature)
                     else:
                         features[stop_level] = [feature]
-                    #print(feature)
                 row = cursor.fetchone()
                 
             for level in features:
@@ -182,46 +170,13 @@ class PostgisDataManager:
             print(error) 
             
     def getRoutes(self, region):
-        #sql = """SELECT route_id, route_short_name, route_type
-        #        FROM routes_{}
-        #        WHERE ;
-        #    ;   
-        #    """
-        '''
-        sql = """
-                SELECT r.route_id, r.route_short_name, r.route_type
-                FROM routes_{0} r, routes_geometry_{0} rg
-                WHERE r.route_id = rg.route_id and
-                ST_Intersects(rg.route_geom, 
-                (SELECT polygon from neighborhoods_{0} where level = (SELECT min(level) FROM neighborhoods_{0}))
-            );
-            """
-        
-            
-        sql = """ SELECT r.route_id, r.route_short_name, r.route_type
-            FROM routes_{0} r
-            WHERE r.route_id in (SELECT route_id from routes_geometry_{0});
-            """
-        sql = sql.format(region);
-        '''
-        
         try:
-            '''
-            sql_stops = """ select stop_id, stop_name from stops_{0}, 
-                        (select unnest(stops) as stop, generate_subscripts(stops, 1) as idx
-                        from routes_geometry_{0} 
-                        where route_id='{1}' 
-                        ORDER BY idx) as stop_sequence
-                        where stop_id = stop_sequence.stop;
-                    """
-            '''
             sql_stops = """ select r.route_id, r.route_short_name, stops, stop_names, r.route_type 
                             from routes_geometry_{0} rg, routes_{0} r
                             where rg.route_id = r.route_id;
                     """
             sql_stops = sql_stops.format(region)
                     
-            print("Loading routes...")
             routes = {}
             route_stops = {}
             stop_routes = {}
@@ -239,7 +194,6 @@ class PostgisDataManager:
                     row = cursor.fetchone()
                     continue
                 route_level = GTFS.ROUTE_LEVEL[route_type]
-                #print(route_id, route_level)
                 list_stop_names = []
                 for i in range(0,len(stop_ids)):
                     stop_id = stop_ids[i]
@@ -266,7 +220,6 @@ class PostgisDataManager:
                     if route_type in routes:
                         list_routes = routes[route_type]
                         if route_name in list_routes:
-                            #print("duplicated route:" + str(name))
                             list_routes[route_name].append(route_id)
                             list_stops = route_stops[route_stop_name]
                             for stop in list_stop_names:
@@ -329,8 +282,8 @@ class PostgisDataManager:
     
     
     def getPointsWithinNeighborhoods(self, region, selected_neig):
-        sql = """SELECT nodes from neighborhood_nodes_{0} where id = {1};   
-            """
+        sql = """SELECT nodes from neighborhood_nodes_{0} where id = %s;   
+            """.format(region)
         points = []
         try:
             self.connection.connect();
@@ -338,13 +291,9 @@ class PostgisDataManager:
             cursor = self.connection.getCursor()
             
             for n in selected_neig:
-                #print(n)
-                sql_neig = sql.format(region, n)
-                cursor.execute(sql_neig)
+                cursor.execute(sql, (n,))
                 (nodes, ) = cursor.fetchone()
-                #print(nodes)
                 points.extend(nodes)
-                #print(len(points))
             
             
             self.connection.close()
@@ -360,21 +309,18 @@ class PostgisDataManager:
                 ST_X(ST_LineInterpolatePoint(geom_way, ST_LineLocatePoint(geom_way, point))) as lon,
                 ST_Y(ST_LineInterpolatePoint(geom_way, ST_LineLocatePoint(geom_way, point))) as lat
                 from roadnet_{},
-                (SELECT ST_SetSRID(ST_MakePoint({}, {}),4326) as point) as p
+                (SELECT ST_SetSRID(ST_MakePoint(%s, %s),4326) as point) as p
                 ORDER BY point <-> geom_way
                 LIMIT 1;    
-            """
-        sql = sql.format(region, lon, lat)
+            """.format(region)
         
         try:
             self.connection.connect();
  
             cursor = self.connection.getCursor()
             
-            cursor.execute(sql)
+            cursor.execute(sql, (lon, lat))
             (edge_id, source, target, source_ratio, node_lon, node_lat) = cursor.fetchone()
-            
-            #print(edge_id, source_ratio)
             
             self.connection.close()
             return (edge_id, source, target, source_ratio, node_lon, node_lat)
@@ -399,8 +345,6 @@ class PostgisDataManager:
             cursor.execute(sql, (lon, lat))
             (edge_id, source, target, geometry) = cursor.fetchone()
             
-            #print(edge_id, source_ratio)
-            
             self.connection.close()
             return edge_id, source, target, json.loads(geometry)
         
@@ -413,22 +357,20 @@ class PostgisDataManager:
                 ST_X(ST_LineInterpolatePoint(geom_way, ST_LineLocatePoint(geom_way, point))) as lon,
                 ST_Y(ST_LineInterpolatePoint(geom_way, ST_LineLocatePoint(geom_way, point))) as lat
                 from roadnet_{}, 
-                (SELECT ST_SetSRID(ST_MakePoint({}, {}),4326) as point) as p
-                WHERE clazz = ANY('{}'::int[])
+                (SELECT ST_SetSRID(ST_MakePoint(%s, %s),4326) as point) as p
+                WHERE clazz = ANY(%s::int[])
                 ORDER BY point <-> geom_way
                 LIMIT 1;    
             """
-        sql = sql.format(region, lon, lat, class_list)
+        sql = sql.format(region)
         
         try:
             self.connection.connect();
  
             cursor = self.connection.getCursor()
             
-            cursor.execute(sql)
+            cursor.execute(sql, (lon, lat, list(class_list)))
             (edge_id, source, target, source_ratio, node_lon, node_lat) = cursor.fetchone()
-            
-            #print(edge_id, source_ratio)
             
             self.connection.close()
             return (edge_id, source, target, source_ratio, node_lon, node_lat)
@@ -438,24 +380,19 @@ class PostgisDataManager:
             
     def getRoadGeometry(self, edge_id, region):
         sql = """SELECT ST_AsGeoJSON(geom_way) from roadnet_{}
-            WHERE id = {} ;    
+            WHERE id = %s ;    
             """
-        sql = sql.format(region, edge_id)
+        sql = sql.format(region)
         
         try:
-            start = time.time()
             self.connection.connect();
  
             cursor = self.connection.getCursor()
             
-            cursor.execute(sql)
+            cursor.execute(sql, (edge_id, ))
             (geometry, ) = cursor.fetchone()
             
-            #print(geometry)
-            
             self.connection.close()
-            total = time.time() - start
-            self.timeGeom += total
             return geometry
         
         except (Exception, psycopg2.DatabaseError) as error:
@@ -464,9 +401,9 @@ class PostgisDataManager:
     def getRouteGeometry(self, route_name, transp_id, region):
         sql = """SELECT ST_AsGeoJSON(route_geom) from routes_geometry_{0}
             WHERE route_id in 
-            (SELECT route_id from routes_{0} where route_short_name = '{1}' and route_type = {2});    
+            (SELECT route_id from routes_{0} where route_short_name = %s and route_type = %s);    
             """
-        sql = sql.format(region, route_name, transp_id)
+        sql = sql.format(region)
         
         try:
             self.connection.connect();
@@ -474,7 +411,7 @@ class PostgisDataManager:
  
             cursor = self.connection.getCursor()
             
-            cursor.execute(sql)
+            cursor.execute(sql, (route_name, transp_id))
             row = cursor.fetchone()
             while row is not None:
                 (geometry, ) = row
@@ -484,11 +421,8 @@ class PostgisDataManager:
                 geometries.append(feature)
                 row = cursor.fetchone()
             
-            #print(geometry)
             
             self.connection.close()
-            #line = loads(geometry)
-            #return LineString(line.coordinates)
             return geometries
         
         except (Exception, psycopg2.DatabaseError) as error:
@@ -497,25 +431,23 @@ class PostgisDataManager:
     def getLinkGeometry(self, edge_id, edge_pos, region):
         if edge_pos == 1:
             sql = """SELECT ST_AsGeoJSON(source_point_geom) from links_{}
-                WHERE link_id = {} ;    
+                WHERE link_id = %s ;    
                 """
                 
         if edge_pos == 2:
             sql = """SELECT ST_AsGeoJSON(point_target_geom) from links_{}
-                WHERE link_id = {} ;    
+                WHERE link_id = %s ;    
                 """
                 
-        sql = sql.format(region, edge_id)
+        sql = sql.format(region)
         
         try:
             self.connection.connect();
  
             cursor = self.connection.getCursor()
             
-            cursor.execute(sql)
+            cursor.execute(sql, (edge_id,))
             (geometry, ) = cursor.fetchone()
-            
-            #print(geometry)
             
             self.connection.close()
             return geometry

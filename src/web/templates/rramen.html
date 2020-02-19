@@ -12,14 +12,14 @@
         <script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.0.9/mapbox-gl-draw.js'></script>
 		<link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.0.9/mapbox-gl-draw.css' type='text/css' />
 		
-		<script type="text/javascript" src="static/js/polygon.js?39"></script>
-		<script type="text/javascript" src="static/js/neighborhood.js?134"></script>
+		<script type="text/javascript" src="static/js/polygon.js?61"></script>
+		<script type="text/javascript" src="static/js/neighborhood.js?136"></script>
 		<script type="text/javascript" src="static/js/planner_menu.js?1"></script>
-		<script type="text/javascript" src="static/js/routes.js?36"></script>
-		<script type="text/javascript" src="static/js/stops.js?40"></script>
-		<script type="text/javascript" src="static/js/road_segment.js?10"></script>
+		<script type="text/javascript" src="static/js/routes.js?37"></script>
+		<script type="text/javascript" src="static/js/stops.js?41"></script>
+		<script type="text/javascript" src="static/js/road_segment.js?11"></script>
 		
-		<link rel="stylesheet" type="text/css" href="static/css/rr_test.css?78">
+		<link rel="stylesheet" type="text/css" href="static/css/main.css?82">
 		<link rel="stylesheet" type="text/css" href="static/css/list_neighborhoods.css?21">
 		<link rel="stylesheet" type="text/css" href="static/css/planner.css?10">
         
@@ -119,7 +119,6 @@
 	        var LEVEL_IMAGE = {1:"rail-icon.png?1", 2:"rail-icon.png?1", 3:"urban-rail-icon.png?1", 4:"light-rail-icon.png?1", 5:"bus-icon.png?1"}
 	        
         	$( document ).ready(function() {
-            	//console.log( "document loaded" );
           		createNeighborhoodList(polygons);
     	        buildRouteList(routes, stops, transp_mapping)
         	});
@@ -188,7 +187,6 @@
             var view = 0;
 
 			function openTabIndividual(button){
-				console.log("Individual User Selected");
 				view = 0;
 				button_planner = document.getElementById("button_planner");
 				button_planner.className = button_planner.className.replace(" active", "");
@@ -198,7 +196,6 @@
 			}  
 
 			function openTabPlanner(button){
-				console.log("Planner Selected");
 				view = 1;
 				button_individual = document.getElementById("button_individual");
 				button_individual.className = button_individual.className.replace(" active", "");
@@ -233,15 +230,11 @@
                         if (!prevent) {
                         	var latitude = e.lngLat.lat;
                             var longitude = e.lngLat.lng;
-                            //doWork()
                             
     						var str = Number((latitude).toFixed(6)) + "," + Number((longitude).toFixed(6));
 
     						var coord = { lat:latitude, lon:longitude }
-    						console.log(coord.lat)
     			
-                            console.log(str)
-                            
                             	if(currentLocation == "source" && document.getElementById('sourceNode'+is)) {
                                 	var sourceNode = document.getElementById('sourceNode'+is)
                                 	if (sourceNode.value != ""){
@@ -260,13 +253,11 @@
                                       	el.addEventListener('click', e => {
                                             e.stopPropagation();
                                             //functions
-                                            console.log("marker" + el.id + " clicked");
                                             
                                             if (map.getLayer("rr_layer")) {
                                         		if (!map.getLayer("paths_"+el.id)) {
                                             		var path_data = {"location_type": "source", "id": el.id.split("_")[2]}
                                         			$.post("path", JSON.stringify(path_data) , function(res){
-                                    					//console.log(marker_id)
     													var geom = res["path_geom"];
     													var tt_public = res["tt_public"];
                                     	                var tt_private = res["tt_private"];
@@ -278,8 +269,6 @@
                                                             .setHTML(html)
                                                             .addTo(map);
                                         	            }else{
-                                        	            	console.log(tt_public, tt_private);
-
         													var html = '<font color="blue">' + tt_public + ' min </font><br><font color="red">' + tt_private + ' min </font>'
                                         	                var popup = new mapboxgl.Popup({closeOnClick: false, anchor: 'top'})
                                                             .setLngLat({lat:latitude, lng: longitude})
@@ -290,7 +279,6 @@
                                             	        }
 
                                     	                popup.on('close', function(e) {
-                                                            console.log("popup closed")
                                                             if (map.getLayer("paths_"+el.id)) {
     				    										map.removeLayer("paths_"+el.id);
     														}
@@ -342,13 +330,10 @@
                                       	el.addEventListener('click', e => {
                                             e.stopPropagation();
                                             //functions
-                                            console.log("marker " + el.id + " clicked");
-                                            
                                             if (map.getLayer("rr_layer")) {
                                         		if (!map.getLayer("paths_"+el.id)) {
                                         			var path_data = {"location_type": "target", "id": el.id.split("_")[2]}
                                         			$.post("path", JSON.stringify(path_data) , function(res){
-                                    					//console.log(marker_id)
     													var geom = res["path_geom"];
     													var tt_public = res["tt_public"];
                                     	                var tt_private = res["tt_private"];
@@ -366,8 +351,6 @@
                                                             .setHTML(html)
                                                             .addTo(map);
                                             	        }else{
-                                            	        	console.log(tt_public, tt_private);
-
         													var html = '<font color="blue">' + tt_public + ' min </font><br><font color="red">' + tt_private + ' min </font>'
                                         	                var popup = new mapboxgl.Popup({closeOnClick: false, anchor: 'top'})
                                                             .setLngLat({lat:latitude, lng: longitude})
@@ -378,7 +361,6 @@
                                                 	    }
                                         	            
                                     	                popup.on('close', function(e) {
-                                                            console.log("popup closed")
                                                             if (map.getLayer("paths_"+el.id)) {
     				    										map.removeLayer("paths_"+el.id);
     														}
@@ -409,10 +391,6 @@
                         				new_target.style.display = "inline" ;
 
                 				}
-                				
-                			//}else{
-                			//	console.log("True")
-                    		//}
                         }
                         prevent = false;
                     }, delay);
@@ -425,25 +403,18 @@
 
             var popup_seg = new Map()
             map.on('contextmenu', function(e) {
-            	//console.log("right click")
-            	//console.log(view)
                 if(view == 1){
                     var latitude = e.lngLat.lat;
                     var longitude = e.lngLat.lng;
-                    //console.log(latitude, longitude)
                     
                     var segment_data = {"latitude": latitude, "longitude": longitude}
             			$.post("segment", JSON.stringify(segment_data) , function(res){
-        					//console.log(marker_id)
     						var geom = res["segment"];
     						var seg_id = res["segment_id"];
     						var source = res["source"]
     						var target = res["target"]
-    						//console.log(geom, seg_id)
-
     						
     						if (!map.getLayer("seg_"+ seg_id)) {
-    							//console.log("Adding layer:" + seg_id)
     							map.addLayer({
     						        "id": "seg_"+ seg_id,
     						        "type": "line",
@@ -526,7 +497,6 @@
                             }
                             html += "<br>"
                         }
-                        //console.log(html)
                 
                    	if(!popup_stop || (popup_stop && !popup_stop.isOpen())){
                    		popup_stop = new mapboxgl.Popup({closeOnClick: true, offset:'3px'})
@@ -565,7 +535,6 @@
 
 
             function addMarker(location){
-                console.log("activating marker")
                 currentLocation = location
             	markerActivated = true;
             	if (draw){
@@ -622,26 +591,19 @@
                 	parent.appendChild(neig); 
                 	parent.appendChild(document.getElementById("new_source"));
 
-
-                	console.log("creating button")
                     var inputSource = document.getElementById("sourceNode" + (is-1))
                     inputSource.style.marginRight = "9px";
-                    console.log(inputSource)
 
                     var image = document.createElement("img");
 					image.src =  '../../static/images/clear.svg';
 					image.style.cursor = "pointer";
 					image.width="18"
-					//image.style.marginRight = "5px";
-					//image.style.left = "20px";
 					image.style.verticalAlign = "middle";
 					image.setAttribute("id", "source_" + (is-1));
 					image.addEventListener("click", function() { removeSource(this); })	
                     inputSource.parentNode.insertBefore(image, inputSource.nextSibling);
 
                 }
-            	
-
             }
 
             function removeSource(image){
@@ -665,12 +627,9 @@
             function removeMarkerSource(inputSource){
             	var marker = inputSource.getAttribute("marker")
                 if (marker){
-                    console.log("marker found!")
                 	var markerDiv = document.getElementById("marker_s_"+ marker)
-                	console.log(markerDiv)
                 	markerDiv.parentNode.removeChild(markerDiv);
                     delete sources[parseInt(marker, 10)]
-                    console.log(marker, sources)
                     inputSource.removeAttribute("marker")
                 }
             }
@@ -710,10 +669,8 @@
                 	
                 	parent.appendChild(document.getElementById("new_target"));
 
-                	console.log("creating button")
                     var inputTarget = document.getElementById("targetNode" + (it-1))
                     inputTarget.style.marginRight = "9px";
-                    console.log(inputTarget)
 
                     var image = document.createElement("img");
 					image.src =  '../../static/images/clear.svg';
@@ -723,9 +680,6 @@
 					image.setAttribute("id", "target_" + (it-1));
 					image.addEventListener("click", function() { removeTarget(this); })	
                     inputTarget.parentNode.insertBefore(image, inputTarget.nextSibling);
-
-                	//var new_source = document.getElementById ( "new_source" ) ;
-    				//new_source.style.display = "none" ;
                 }
 
             }
@@ -733,9 +687,7 @@
             function removeTarget(image){
                 const id = image.id
                 var target_id = id.split("_")[1];
-                console.log(target_id)
                 var inputTarget = document.getElementById("targetNode" + target_id);
-                console.log(inputTarget)
                 pos = $(inputTarget).index()
             	if (pos == 1){
                 	var parent = document.getElementById("input_target");
@@ -753,18 +705,14 @@
             function removeMarkerTarget(inputTarget){
             	var marker = inputTarget.getAttribute("marker")
                 if (marker){
-                    console.log("marker found!")
                 	var markerDiv = document.getElementById("marker_t_"+ marker)
-                	console.log(markerDiv)
                 	markerDiv.parentNode.removeChild(markerDiv);
                     delete targets[parseInt(marker, 10)]
-                    console.log(marker, targets)
                     inputTarget.removeAttribute("marker")
                 }
             }
 
             function departure(selectedValue) {
-                console.log(selectedValue)
                 if(selectedValue == "later"){
                 	var picker = document.getElementById ( "dateTimePicker" ) ;
                 	picker.style.display = "inline" ;
@@ -775,10 +723,7 @@
                 		defaultDate: new Date().getTime(),
                 		onChange: function(selectedDates, dateStr, instance) {
                             selectedDates.forEach(function (date){
-            					//console.log(date)
-                                //console.log(date.getFullYear(), date.getDate(), date.getMonth(), date.getTime());
                                 timestamp = date.getTime()
-                                //console.log(timestamp)
                             })
                         }
             		});
@@ -791,16 +736,9 @@
             }
 
             function clearFields() {
-                console.log("clearing map")
                 clearResults();
-                /*var firstSourceInput = document.getElementById("input_source").children[1]
-                firstSourceInput.id = "sourceNode0"
-                firstSourceInput.value = "";
-                firstSourceInput.style.marginRight = "9px"*/
-            	//document.getElementById('inputTarget').value = "";
 
             	var j;
-
             	for (j = 0; j <= is ; j++) {
             		var element = document.getElementById("sourceNode" + j);
             		if (element){
@@ -890,11 +828,7 @@
 
             	$("#select_departure").val('now');
 
-            	if (draw){
-            		draw.deleteAll();
-            		map.removeControl(draw);
-            		draw = null;
-                }
+            	clearPolygon()
 
             	var divList = document.getElementById("neig_div");
             	divList.style.display = "none";
@@ -939,24 +873,18 @@
             }
 
             function clearResults() {
-                console.log("clearing results")
-
             	var j;
-                console.log(popups.length)
             	for (j = 0; j < popups.length; j++) {
             		if (map.getLayer("paths"+j)) {
             			map.removeLayer("paths"+ j);
                     	map.removeSource("paths"+ j);
             		}
-            		console.log(popups[j])
             		if (popups[j]){
             			if (popups[j].isOpen()){
             				popups[j].remove();
-            				console.log("removing popup:" + j)
                 		}
                 	}
             	}
-
 
 				if (map.getLayer("rr_layer")) {
 				    map.removeLayer("rr_layer");
@@ -970,7 +898,6 @@
             }
 
             function getResults() {
-            	//console.log(sources.size, targets.size) 
             	checked_neig = getSelectedNeighborhoods()
             	removed_segments = getRemovedSegments()
             	if((Object.keys(sources).length == 0 && !polygon_source_coords ) || (Object.keys(targets).length == 0 && !polygon_target_coords && checked_neig.length == 0 )) {
@@ -984,7 +911,6 @@
             			timestamp = new Date().getTime();
             			now = true;
                 	}
-            		console.log(timestamp)
             		var data_input = {"sources": sources, "targets":targets, "timestamp":timestamp, "polygon_source_coords":polygon_source_coords,
                 		"polygon_target_coords": polygon_target_coords, "selected_neighborhoods":checked_neig, "removed_routes": removed_routes,
                 		"removed_stops": removed_stops, "removed_segments": removed_segments}
@@ -999,7 +925,6 @@
             			
                 		var geom = res["geom"]
                 		var allColored = res["allColored"]
-                		console.log(allColored)
 		                map.addLayer({
 		                    "id": "rr_layer",
 		                    "type": "circle",

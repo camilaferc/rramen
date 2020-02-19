@@ -12,7 +12,6 @@ function createNeighborhoodList(polygon){
 		var name = feature.properties.name;
 		var level = feature.properties.level;
 		var parent = feature.properties.parent;
-		//console.log(id, name, level, parent);
 		childrenMap.set(id, parent);
 
 		if (level < minLevel) {
@@ -40,13 +39,10 @@ function createNeighborhoodList(polygon){
 		}
 
 	});
-	//console.log(parentMap)
-	//console.log(minLevel)
 	
 	var list = document.getElementById('list_neighborhoods');
 	parentMap.get(minLevelNeig).forEach(
 			function(child) {
-				//console.log(child);
 				childrenFirstLevel.add(child["id"])
 				buildNeighborhoodList(child["id"], child["name"], child["level"],
 						child["parent"], list);
@@ -60,22 +56,13 @@ function addEventsNeighborhood(){
 	var i;
 
 	for (i = 0; i < toggler.length; i++) {
-		//console.log(toggler[i])
 		toggler[i].addEventListener("click", function() {
-			console.log("clicking!")
-			console.log(this)
 			this.parentElement.querySelector(".nested_neig").classList.toggle("active");
 			this.classList.toggle("caret_neig-down");
 		});
 	}
 	
-	//addEventsParents()
-	//addEventsChildren()
-	//console.log(parentSet)
-	//console.log(childrenSet)
-	
 	for (let parent of parentSet) {
-		  //console.log(parent);
 		  if(childrenSet.has(parent)){
 			  addEventsParentChildNeig(parent)
 		  }else{
@@ -85,14 +72,12 @@ function addEventsNeighborhood(){
 	
 	
 	for (let child of childrenSet) {
-		  //console.log(child);
 		  if(!parentSet.has(child)){
 			  addEventsChildNeig(child)
 		  }
 	}
 	
 	for (let child of childrenFirstLevel) {
-		  //console.log(child);
 		  if(!parentSet.has(child)){
 			  addEventsChildNeig(child)
 		  }
@@ -102,14 +87,10 @@ function addEventsNeighborhood(){
 function addEventsChildNeig(id){
 	checkbox = document.getElementById(id)
 	checkbox.addEventListener("change", function() {
-		//console.log(this.id)
 		parent = childrenMap.get(parseInt(this.id, 10))
-		//console.log(parent)
 		parent_checkbox = document.getElementById(parent)
 		if (this.checked){
-			//console.log(this.id + " checked")
 			if(!parent_checkbox || !parent_checkbox.checked) {
-				//console.log(parent + " parent checked")
 				document.getElementById('targetNode'+it).value = "Neighborhood selected"
 				map.setFeatureState({
 					source : 'polygons',
@@ -123,7 +104,6 @@ function addEventsChildNeig(id){
 			}
 		} else {
 			// Checkbox is not checked..
-			//console.log(this.id + " NOT checked")
 			map.setFeatureState({
 				source : 'polygons',
 				id : this.id
@@ -141,7 +121,6 @@ function addEventsChildNeig(id){
 
 function updateParentColor(child_id, parent_id, parent_checkbox){
 	if (parent_checkbox.checked) {
-		//console.log(parent + " parent checked")
 		parent_checkbox.checked = false;
 		map.setFeatureState({
 			source : 'polygons',
@@ -153,7 +132,6 @@ function updateParentColor(child_id, parent_id, parent_checkbox){
 		
 		if(childrenMap.has(parent_id)){
 			parent = childrenMap.get(parent_id)
-			//console.log(parent)
 			parent_checkbox = document.getElementById(parent)
 			if(parent_checkbox){
 				updateParentColor(parent_id, parent, parent_checkbox)
@@ -162,42 +140,18 @@ function updateParentColor(child_id, parent_id, parent_checkbox){
 	}
 }
 
-/*
- * function addEventsChildren(){ const checkboxes =
- * document.getElementsByClassName("checkbox_list_neig"); //console.log(checkboxes);
- * //console.log(childrenMap) for (i = 0; i < checkboxes.length; i++) {
- * //console.log(checkboxes[i]) //console.log(checkboxes[i].id)
- * checkboxes[i].addEventListener("change", function() { console.log(this.id)
- * parent = childrenMap.get(parseInt(this.id, 10)) console.log(parent)
- * parent_checkbox = document.getElementById(parent) if (this.checked &&
- * !parent_checkbox.checked) { console.log(this.id + " checked")
- * map.setFeatureState({ source : 'polygons', id : this.id }, { hover : true }); }
- * else { // Checkbox is not checked.. map.setFeatureState({ source :
- * 'polygons', id : this.id }, { hover : false });
- * 
- * if(parent_checkbox.checked){ parent_checkbox.checked = false;
- * map.setFeatureState({ source : 'polygons', id : parent }, { hover : false });
- * colorSiblings(this.id, parent) }
- *  } }); } }
- */
-
 function colorSiblings(id, parent){
 	parentMap.get(parent).forEach(function(child) {
 		const child_id = child['id']
 		if(child_id != id){
-			//console.log(child_id + " colored, parent:" + parent)
 			map.setFeatureState({
 				source : 'polygons',
 				id : child_id
 			}, {
 				hover : true
 			});
-			/*if(parentMap.has(child_id)){
-				colorSiblings(-1, child_id)
-			}*/
-		}/*else{
-			console.log(child_id + " will not be colored")
-		}*/
+			
+		}
 		
 	});
 }
@@ -207,7 +161,6 @@ function addEventsParentNeig(id){
 	checkbox.addEventListener("change", function() {
 		if (this.checked) {
 			document.getElementById('targetNode'+it).value = "Neighborhood selected"
-			//console.log(this.id + " checked")
 			map.setFeatureState({
 				source : 'polygons',
 				id : this.id
@@ -231,12 +184,9 @@ function addEventsParentNeig(id){
 function addEventsParentChildNeig(id) {
 	checkbox = document.getElementById(id)
 	checkbox.addEventListener("change", function() {
-		//console.log(this.id)
 		parent = childrenMap.get(parseInt(this.id, 10))
-		//console.log(parent)
 		parent_checkbox = document.getElementById(parent)
 		if (this.checked) {
-			//console.log(this.id + " checked")
 			if (!parent_checkbox.checked) {
 				document.getElementById('targetNode'+it).value = "Neighborhood selected"
 				map.setFeatureState({
@@ -263,24 +213,11 @@ function addEventsParentChildNeig(id) {
 	});
 }
 
-/*
- * function addEventsParents(){ const checkboxes =
- * document.getElementsByClassName("checkbox_list_neig_parent");
- * //console.log(checkboxes); for (i = 0; i < checkboxes.length; i++) {
- * //console.log(checkboxes[i].id) checkboxes[i].addEventListener("change",
- * function() { if (this.checked) { console.log(this.id + " checked")
- * map.setFeatureState({ source : 'polygons', id : this.id }, { hover : true });
- * markNeigChildren(this.id, true) } else { // Checkbox is not checked..
- * map.setFeatureState({ source : 'polygons', id : this.id }, { hover : false
- * }); markNeigChildren(this.id, false) } }); } }
- */
-
 function markNeigChildren(parent_id, marked){
 	parent_id = parseInt(parent_id, 10)
 	if(parentMap.has(parent_id)){
 		parentMap.get(parent_id).forEach(function (child) {
 			const child_id = child['id']
-			//console.log(child_id)
 			const child_checkbox = document.getElementById(child_id);
 			child_checkbox.checked = marked;
 			map.setFeatureState({
@@ -290,7 +227,6 @@ function markNeigChildren(parent_id, marked){
 				hover : false
 			});
 			if(parentMap.has(child_id)){
-				//console.log(child_id + " has children");
 				markNeigChildren(child_id, marked);
 			}
     	});
@@ -300,11 +236,9 @@ function markNeigChildren(parent_id, marked){
 
 function markNeigParent(parent_id, parent_checkbox){
 	parent_id = parseInt(parent_id, 10)
-	//console.log(parent_id)
 	if(parent_checkbox && parentMap.has(parent_id)){
 		allMarked = checkChildrenMarkedNeig(parent_id);
 		if(allMarked){
-			//console.log("all children are marked:" + parent_id)
 			map.setFeatureState({
 				source : 'polygons',
 				id : parent_id
@@ -316,7 +250,6 @@ function markNeigParent(parent_id, parent_checkbox){
 			
 			parentMap.get(parent_id).forEach(function (child) {
 				const child_id = child['id']
-				//console.log(child_id)
 				const child_checkbox = document.getElementById(child_id);
 				map.setFeatureState({
 					source : 'polygons',
@@ -327,7 +260,6 @@ function markNeigParent(parent_id, parent_checkbox){
 	    	});
 			if(childrenMap.has(parent_id)){
 				parent_parent = childrenMap.get(parent_id);
-				//console.log("parent_parent:" + parent_parent)
 				const parent_parent_checkbox = document.getElementById(parent_parent);
 				markNeigParent(parent_parent, parent_parent_checkbox);
 			}
@@ -338,10 +270,8 @@ function markNeigParent(parent_id, parent_checkbox){
 function checkChildrenMarkedNeig(parent_id){
 	for (const child of parentMap.get(parent_id)) {
 		const child_id = child['id']
-		//console.log(child_id)
 		const child_checkbox = document.getElementById(child_id);
 		if(!child_checkbox || !child_checkbox.checked){
-			//console.log(child_id + " NOT marked")
 			return false;
 		}
 	}
@@ -350,20 +280,13 @@ function checkChildrenMarkedNeig(parent_id){
 
 
 function buildNeighborhoodList(nid, name, level, parent, list){
-	//console.log(nid, name);
-	
 	if(!parentMap.get(nid)){
-    	//console.log("leaf reached:" + nid);
 		var entry = document.createElement('li');
-		//console.log(name.length)
 		if (name.length > 20) {
-			//console.log(name)
 			name = trunc(name, 20);
-			//console.log(name)
 		}
 	    entry.appendChild(document.createTextNode(name));
 	    entry.style.overflow="hidden"
-	    //entry.style.width="80%"
 	    var checkbox = document.createElement("INPUT");
 	    checkbox.setAttribute("type", "checkbox");
 	    checkbox.setAttribute("id", nid);
@@ -374,7 +297,6 @@ function buildNeighborhoodList(nid, name, level, parent, list){
 	    entry.setAttribute("id", "n"+nid);
 	    list.appendChild(entry);
     }else{
-    	//console.log("node has children:" + nid);
     	var entry = document.createElement('li');
 	    var span = document.createElement('span');
 	    span.classList.add('caret_neig');
@@ -446,11 +368,8 @@ function clearSelectedNeighborhoods(){
 	
 	var toggler = document.getElementsByClassName("caret_neig-down");
 	for (var i = 0; i < toggler.length; i++) {
-		console.log(toggler[i])
 		toggler[i].parentElement.querySelector(".nested_neig").classList.toggle("active");
 		toggler[i].classList.toggle("caret_neig-down");
-		//toggler[i].parentElement.querySelector("active").classList.toggle(".nested");
-		//toggler[i].classList.remove('caret-down');
 	}
 }
 
@@ -464,8 +383,12 @@ function addNeighborhoodLocation(location){
     	return
     }
     if (location == "target" && it > 0 && Object.keys(targets).length > 0) {
-		alert("Mixed destination types not supported (point already selected).")
-		return
+    	var parent = document.getElementById("input_target");
+		var textbox = parent.getElementsByTagName('input');
+		if(textbox.length > 1){
+			alert("Mixed destination types not supported (point already selected).")
+			return
+		}
 
 	}
     else{

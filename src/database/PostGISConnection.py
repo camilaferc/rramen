@@ -17,7 +17,6 @@ class PostGISConnection:
             params = config()
  
             # connect to the PostgreSQL server
-            #print('Connecting to the PostgreSQL database...')
             self.conn = psycopg2.connect(**params)
        
         except (Exception, psycopg2.DatabaseError) as error:
@@ -35,7 +34,6 @@ class PostGISConnection:
             raise Exception('Connection not established!')
         try:
             # executing command
-            #print('Executing command...')
             cur = self.conn.cursor()
         
             cur.execute(sql)
@@ -51,7 +49,6 @@ class PostGISConnection:
             raise Exception('Connection not established!')
         try:
             # executing command
-            #print('Closing connection...')
             self.conn.close()
        
         except (Exception, psycopg2.DatabaseError) as error:
