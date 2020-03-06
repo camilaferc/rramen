@@ -6,8 +6,6 @@
 RRAMEN <sup id="a1">[1](#f1)</sup> is an interactive tool that supports city-scale mobility-related queries by different types of users with different needs. It is based on the concept of Relative Reachability (RR), 
 which determines the mode of transport that minimizes arrival time at a given destination location. RRAMEN's main goal is to aid individual users and urban planners in making informed choices and evaluating changes w.r.t. a city's transportation network. 
 
-<b id="f1">1</b> The bowl icon used in our demo was obtained from: https://www.fourjay.org/maxpic/ioiiwbw/. [↩](#a1)
-
 ### 1. Examples & Usage
 
 #### a. Individual Users
@@ -110,4 +108,7 @@ Next, browse to [http://127.0.0.1:5000/rramen](http://127.0.0.1:5000/rramen) to 
 ### 3. Background and Research
 * Theodoros Chondrogiannis, Mario A. Nascimento, Panagiotis Bouros: *Relative Reachability Analysis as a Tool for Urban Mobility Planning: Position Paper*. IWCTS@SIGSPATIAL 2019: 1:1-1:4
 * Camila F. Costa, Theodoros Chondrogiannis, Mario A. Nascimento, Panagiotis Bouros: *RRAMEN: An Interactive Tool for Evaluating Choices and Changes in Transportation Networks*. To appear in the EDBT/ICDT 2020 Joint Conference.
+
+---
+<b id="f1">1</b> The bowl icon used in our demo was obtained from: https://www.fourjay.org/maxpic/ioiiwbw/. [↩](#a1)
 
