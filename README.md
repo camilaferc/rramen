@@ -3,10 +3,10 @@
 
 ---
 
-RRAMEN [^1] is an interactive tool that supports city-scale mobility-related queries by different types of users with different needs. It is based on the concept of Relative Reachability (RR), 
+RRAMEN <sup id="a1">[1](#f1)</sup> is an interactive tool that supports city-scale mobility-related queries by different types of users with different needs. It is based on the concept of Relative Reachability (RR), 
 which determines the mode of transport that minimizes arrival time at a given destination location. RRAMEN's main goal is to aid individual users and urban planners in making informed choices and evaluating changes w.r.t. a city's transportation network. 
 
-[^1]: The bowl icon used in our demo was obtained from: https://www.fourjay.org/maxpic/ioiiwbw/.
+<b id="f1">1</b> The bowl icon used in our demo was obtained from: https://www.fourjay.org/maxpic/ioiiwbw/. [↩](#a1)
 
 ### 1. Examples & Usage
 
