@@ -40,14 +40,14 @@ class GTFSImporter:
         self.createTableRoutesGeometry()
         
     def populateTables(self):
-        #self.populateTableAgency()
-        #self.populateTableCalendar()
-        #self.populateTableStops()
-        #self.populateTableRoutes()
-        #self.populateTableTrips()
-        #self.populateTableStopTimes()
-        #self.populateTableLinks()
-        #self.populateTableTransfers()
+        self.populateTableAgency()
+        self.populateTableCalendar()
+        self.populateTableStops()
+        self.populateTableRoutes()
+        self.populateTableTrips()
+        self.populateTableStopTimes()
+        self.populateTableLinks()
+        self.populateTableTransfers()
         self.populateTableRoutesGeometry()
     
     
