@@ -10,4 +10,4 @@ region=$1
 ./scripts/import_osm/import_osm.sh $region
 
 cd src/
-#python -m run.dataImporter $region
+python -m run.dataImporter $region
