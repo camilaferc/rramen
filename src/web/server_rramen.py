@@ -11,7 +11,7 @@ import sys
 from threading import Thread
 import time
 
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, session
 from flask_iniconfig import INIConfig
 from geojson import Feature, Point, FeatureCollection
 
@@ -23,6 +23,7 @@ from shortest_path.Dijkstra import Dijsktra
 
 
 app = Flask(__name__)
+app.secret_key = SP_Nq;6.@]2L-C,E1w3T9=2u3losa6
 INIConfig(app)
 app.config.from_inifile(str(pathlib.Path(__file__).resolve().parents[2]) + '/config.ini')
 
