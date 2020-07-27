@@ -23,7 +23,7 @@ from shortest_path.Dijkstra import Dijsktra
 
 
 app = Flask(__name__)
-app.secret_key = SP_Nq;6.@]2L-C,E1w3T9=2u3losa6
+app.secret_key = 'SP_Nq;6.@2L-C],E1w3T9=2u3losa6'
 INIConfig(app)
 app.config.from_inifile(str(pathlib.Path(__file__).resolve().parents[2]) + '/config.ini')
 
@@ -33,16 +33,16 @@ if not MAPBOX_ACCESS_KEY:
     raise SystemExit("No mapbox token provided.")
 
 dataManager = PostgisDataManager()
-id_map_source_public = {}
-id_map_target_public = {}
-id_map_source_private = {}
-id_map_target_private = {}
-parent_tree_public = {}
-parent_tree_private = {}
+id_map_source_public = {} #
+id_map_target_public = {} #
+id_map_source_private = {} #
+id_map_target_private = {} #
+parent_tree_public = {} #
+parent_tree_private = {} #
 tt_public = {}
 tt_private = {}
-map_source_coord = {}
-map_target_coord = {}
+map_source_coord = {}#
+map_target_coord = {}#
 
 
 def loadData():
@@ -85,6 +85,14 @@ def worker():
     id_map_source_private = {}
     id_map_target_private = {}
 
+    session["map_source_coord"] = map_source_coord
+    session["map_target_coord"] = map_target_coord
+
+    session["id_map_source_public"] = id_map_source_public
+    session["id_map_source_private"] = id_map_source_private
+    session["id_map_target_public"] = id_map_target_public
+    session["id_map_target_private"] = id_map_target_private
+
     sources_coordinates = data['sources']
     targets_coordinates = data['targets']
     polygon_source_coords = data['polygon_source_coords']
@@ -124,12 +132,14 @@ def worker():
     time = data['timestamp']
     timestamp = datetime.fromtimestamp(time/1000)
 
-    tt_public, tt_private, node_colors, colored_type = computeRelativeReachability(sources_public, targets_public, sources_private, targets_private,
+    session['tt_public'], session['tt_private'], node_colors, colored_type = computeRelativeReachability(sources_public, targets_public, sources_private, targets_private,
                                                                                    timestamp, removed_routes, removed_stops, removed_segments)
     if colored_type == "source":
-        map_coord = map_source_coord
+        # map_coord = map_source_coord
+        map_coord = session["map_source_coord"]
     else:
-        map_coord = map_target_coord
+        # map_coord = map_target_coord
+        map_coord = session["map_target_coord"]
 
     markers = []
     allColored = True
@@ -160,22 +170,32 @@ def getNodesFromMarkersCoordinates(map_coordinates, location_type):
         # node_id_private = createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, source, target, source_ratio)
         nodes_private.add(node_id_private)
         if location_type == "source":
-            id_map_source_private[i] = node_id_private
-            map_source_coord[i] = (c['lat'], c['lon'])
+            # id_map_source_private[i] = node_id_private
+            session["id_map_source_private"][i] = node_id_private
+            # map_source_coord[i] = (c['lat'], c['lon'])
+            session["map_source_coord"][i] = (c['lat'], c['lon'])
         else:
-            id_map_target_private[i] = node_id_private
-            map_target_coord[i] = (c['lat'], c['lon'])
+            # id_map_target_private[i] = node_id_private
+            session["id_map_target_private"][i] = node_id_private
+            # map_target_coord[i] = (c['lat'], c['lon'])
+            session["map_target_coord"][i] = (c['lat'], c['lon'])
 
 
         node_id_public  = dataManager.getClosestVertex_CLASSDEPENDANT(c['lat'], c['lon'], region, graph.PEDESTRIAN_WAYS)
         # node_id_public = createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, source, target, source_ratio)
         nodes_public.add(node_id_public)
         if location_type == "source":
-            id_map_source_public[i] = node_id_public
-            map_source_coord[i] = (c['lat'], c['lon'])
+            # id_map_source_public[i] = node_id_public
+            session['id_map_source_public'][i] = node_id_public
+            # map_source_coord[i] = (c['lat'], c['lon'])
+            session["map_source_coord"][i] = (c['lat'], c['lon'])
+
         else:
-            id_map_target_public[i] = node_id_public
-            map_target_coord[i] = (c['lat'], c['lon'])
+            # id_map_target_public[i] = node_id_public
+            session["id_map_target_public"][i] = node_id_public
+            # map_target_coord[i] = (c['lat'], c['lon'])
+            session["map_target_coord"][i] = (c['lat'], c['lon'])
+
 
     return nodes_private, nodes_public
 
@@ -185,13 +205,18 @@ def getNodesWithinPolygon(polygon_coordinates, location_type):
     polygon_points = dataManager.getPointsWithinPolygon(region, polygon_coordinates)
 
     if location_type == "source":
-        map_coord = map_source_coord
-        id_map_public = id_map_source_public
+        # map_coord = map_source_coord
+        map_coord = session["map_source_coord"]
+        # id_map_public = id_map_source_public
+        id_map_public = session['id_map_source_public']
         id_map_private = id_map_source_private
     else:
-        map_coord = map_target_coord
-        id_map_public = id_map_target_public
-        id_map_private = id_map_target_private
+        # map_coord = map_target_coord
+        map_coord = session["map_target_coord"]
+        # id_map_public = id_map_target_public
+        id_map_public = session["id_map_target_public"]
+        # id_map_private = id_map_target_private
+        id_map_private = session["id_map_target_private"]
 
     nodes = set()
     i = 0
@@ -214,13 +239,19 @@ def getNodesWithinNeighborhoods(selected_neighborhoods, location_type):
     neig_points = dataManager.getPointsWithinNeighborhoods(region, selected_neighborhoods)
 
     if location_type == "source":
-        map_coord = map_source_coord
-        id_map_public = id_map_source_public
-        id_map_private = id_map_source_private
+        # map_coord = map_source_coord
+        map_coord = session["map_source_coord"]
+        # id_map_public = id_map_source_public
+        id_map_public = session['id_map_source_public']
+        # id_map_private = id_map_source_private
+        id_map_private = session["id_map_source_private"]
     else:
-        map_coord = map_target_coord
-        id_map_public = id_map_target_public
-        id_map_private = id_map_target_private
+        # map_coord = map_target_coord
+        map_coord = session["map_target_coord"]
+        # id_map_public = id_map_target_public
+        id_map_public = session["id_map_target_public"]
+        # id_map_private = id_map_target_private
+        id_map_private = session["id_map_target_private"]
 
     nodes = set()
     i = 0
@@ -262,12 +293,14 @@ def worker_region():
     time = data['timestamp']
     timestamp = datetime.fromtimestamp(time/1000)
 
-    tt_public, tt_private, node_colors, colored_type = computeRelativeReachability(source, targets, timestamp)
+    session['tt_public'], session['tt_private'], node_colors, colored_type = computeRelativeReachability(source, targets, timestamp)
 
     if colored_type == "source":
-        map_coord = map_source_coord
+        # map_coord = map_source_coord
+        map_coord = session["map_source_coord"]
     else:
-        map_coord = map_target_coord
+        # map_coord = map_target_coord
+        map_coord = session["map_target_coord"]
 
     target_markers = []
     for n in node_colors:
@@ -308,40 +341,56 @@ def getPathGeometry():
     res_none = {"path_geom": None, "tt_public": None, "tt_private": None}
 
     if location_type == "source":
+        # if len(id_map_source_public) <= 1 or len(id_map_target_public) > 1:
+        if len(session['id_map_source_public']) <= 1 or len(session["id_map_target_public"]) > 1:
 
-        if len(id_map_source_public) <= 1 or len(id_map_target_public) > 1:
             return res_none
 
-        source_public = id_map_source_public[marker_id]
-        source_private = id_map_source_private[marker_id]
+        # source_public = id_map_source_public[marker_id]
+        source_public = session['id_map_source_public'][marker_id]
+        # source_private = id_map_source_private[marker_id]
+        source_private = session["id_map_source_private"][marker_id]
 
         target_id = None
-        for key in id_map_target_public:
+        # for key in id_map_target_public:
+        for key in session["id_map_target_public"]:
             target_id = key
 
-        node_id_public = id_map_target_public[target_id]
-        node_id_private = id_map_target_private[target_id]
+        # node_id_public = id_map_target_public[target_id]
+        node_id_public = session["id_map_target_public"][target_id]
+        # node_id_private = id_map_target_private[target_id]
+        node_id_private = session["id_map_target_private"][target_id]
     else:
-        if len(id_map_source_public) > 1:
+        # if len(id_map_source_public) > 1:
+        if len(session['id_map_source_public']) > 1:
             res = {"path_geom": -1, "tt_public": -1, "tt_private": -1}
             return res
 
-        if len(id_map_source_public) > 1 and len(id_map_target_public) == 1:
+        # if len(id_map_source_public) > 1 and len(id_map_target_public) == 1:
+        if len(session['id_map_source_public']) > 1 and len(session["id_map_target_public"]) == 1:
             return res_none
 
         source_id = None
-        for key in id_map_source_public:
+        # for key in id_map_source_public:
+        for key in session['id_map_source_public']:
             source_id = key
 
-        source_public = id_map_source_public[source_id]
-        source_private = id_map_source_private[source_id]
+        # source_public = id_map_source_public[source_id]
+        source_public = session['id_map_source_public'][source_id]
+        # source_private = id_map_source_private[source_id]
+        source_private = session["id_map_source_private"][source_id]
 
-        node_id_public = id_map_target_public[marker_id]
-        node_id_private = id_map_target_private[marker_id]
+        # node_id_public = id_map_target_public[marker_id]
+        print(session["id_map_target_public"])
+        print(marker_id)
+        node_id_public = session["id_map_target_public"][marker_id]
+        # node_id_private = id_map_target_private[marker_id]
+        node_id_private =  session["id_map_target_private"][marker_id]
 
     paths = []
 
-    pathPublic = Path(parent_tree_public[source_public])
+    # pathPublic = Path(parent_tree_public[source_public])
+    pathPublic = Path(session["parent_tree_public"][source_public])
     pathPublicGeom = pathPublic.getPathGeometry(graph, node_id_public, region)
     if not pathPublicGeom:
         return res_none
@@ -350,7 +399,9 @@ def getPathGeometry():
     feature = Feature(geometry = pathPublicGeom, properties = properties)
     paths.append(feature)
 
-    pathPrivate = Path(parent_tree_private[source_private])
+    # pathPrivate = Path(parent_tree_private[source_private])
+    pathPrivate = Path(session["parent_tree_private"][source_private])
+
     pathPrivateGeom = pathPrivate.getPathGeometry(graph, node_id_private, region)
     if not pathPrivateGeom:
         return res_none
@@ -386,22 +437,27 @@ def computeRelativeReachability(sources_public, targets_public, sources_private,
     dij = Dijsktra(graph)
     parent_tree_public = {}
     parent_tree_private = {}
-
+    session["parent_tree_public"] = parent_tree_public
+    session["parent_tree_private"] = parent_tree_private
     threads = []
 
 
     # We start one thread per Dijkstra call.
     tt_public = {}
+    session["tt_public"] = tt_public
     parent_tree_public = {}
+    session["parent_tree_public"] = parent_tree_public
     process_public = Thread(target=dij.manyToManyPublic, args=[sources_public, targets_public, timestamp, removed_routes,removed_stops,
-                                                               tt_public, parent_tree_public])
+                                                               session['tt_public'], session["parent_tree_public"]])
     process_public.start()
     threads.append(process_public)
 
 
     tt_private = {}
+    session["tt_private"] = tt_private
     parent_tree_private = {}
-    process_private = Thread(target=dij.manyToManyPrivate, args=[sources_private, targets_private, timestamp, removed_segments, tt_private, parent_tree_private])
+    session["parent_tree_private"] = parent_tree_private
+    process_private = Thread(target=dij.manyToManyPrivate, args=[sources_private, targets_private, timestamp, removed_segments,session['tt_private'],session["parent_tree_private"]])
     process_private.start()
     threads.append(process_private)
 
@@ -410,9 +466,9 @@ def computeRelativeReachability(sources_public, targets_public, sources_private,
     process_private.join()
 
 
-    node_colors, colored_type = getNodesColors(tt_public, tt_private)
+    node_colors, colored_type = getNodesColors()
 
-    return tt_public, tt_private, node_colors, colored_type
+    return session["tt_public"], session["tt_private"], node_colors, colored_type
 
 
 def getRemovedStops(map_stops):
@@ -430,35 +486,41 @@ def getRemovedStops(map_stops):
                     map_stops_children[c] = set(routes)
     return map_stops_children
 
-def getNodesColors(tt_public, tt_private):
+def getNodesColors():
     global id_map_source_public, id_map_source_private, id_map_target_private, id_map_target_public
     colored_type = "target"
-
-    if len(id_map_source_public) > 1 and len(id_map_target_public) == 1:
+    # if len(id_map_source_public) > 1 and len(id_map_target_public) == 1:
+    if len(session['id_map_source_public']) > 1 and len(session["id_map_target_public"]) == 1:
         colored_type = "source"
 
     if colored_type == "source":
-        node_colors = colorSources(tt_public, tt_private)
+        node_colors = colorSources()
         return node_colors, colored_type
     else:
-        node_colors = colorTargets(tt_public, tt_private)
+        node_colors = colorTargets()
         return node_colors, colored_type
 
-def colorSources(tt_public, tt_private):
+def colorSources():
     global id_map_source_public, id_map_source_private, id_map_target_private, id_map_target_public
     node_colors = {}
-    for i in id_map_source_private:
-        s_public = id_map_source_public[i]
-        s_private = id_map_source_private[i]
+    # for i in id_map_source_private:
+    for i in session["id_map_source_private"]:
+        # s_public = id_map_source_public[i]
+        s_public = session['id_map_source_public']
+        # s_private = id_map_source_private[i]
+        s_private = session["id_map_source_private"][i]
 
-        if s_public in tt_public and s_private in tt_private:
-            tt_public_s = tt_public[s_public]
-            tt_private_s = tt_private[s_private]
+        if s_public in session['tt_public'] and s_private in session['tt_private']:
+            tt_public_s = session['tt_public'][s_public]
+            tt_private_s = session['tt_private'][s_private]
             num_public = 0
             num_total = 0
-            for j in id_map_target_private:
-                t_public = id_map_target_public[j]
-                t_private = id_map_target_private[j]
+            # for j in id_map_target_private:
+            for j in session["id_map_target_private"]:
+                # t_public = id_map_target_public[j]
+                t_public = session["id_map_target_public"][i]
+                # t_private = id_map_target_private[j]
+                t_private = session["id_map_target_private"]
 
                 if t_public in tt_public_s and t_private in tt_private_s:
                     if tt_public_s[t_public] <=  tt_private_s[t_private]:
@@ -468,19 +530,25 @@ def colorSources(tt_public, tt_private):
                 node_colors[i] = float(num_public/num_total)
     return node_colors
 
-def colorTargets(tt_public, tt_private):
+def colorTargets():
     global id_map_source_public, id_map_source_private, id_map_target_private, id_map_target_public
     node_colors = {}
     targets = {}
-    for i in id_map_source_private:
-        s_public = id_map_source_public[i]
-        s_private = id_map_source_private[i]
-        if s_public in tt_public and s_private in tt_private:
-            tt_public_s = tt_public[s_public]
-            tt_private_s = tt_private[s_private]
-            for j in id_map_target_private:
-                t_public = id_map_target_public[j]
-                t_private = id_map_target_private[j]
+    # for i in id_map_source_private:
+    for i in session["id_map_source_private"]:
+        # s_public = id_map_source_public[i]
+        s_public = session['id_map_source_public'][i]
+        # s_private = id_map_source_private[i]
+        s_private = session["id_map_source_private"][i]
+        if s_public in session['tt_public'] and s_private in session['tt_private']:
+            tt_public_s = session['tt_public'][s_public]
+            tt_private_s =session['tt_private'][s_private]
+            # for j in id_map_target_private:
+            for j in session["id_map_target_private"]:
+                # t_public = id_map_target_public[j]
+                t_public = session["id_map_target_public"][j]
+                # t_private = id_map_target_private[j]
+                t_private = session["id_map_target_private"][j]
                 num_public = 0
                 if t_public in tt_public_s and t_private in tt_private_s:
                     if tt_public_s[t_public] <=  tt_private_s[t_private]:
