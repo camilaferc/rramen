@@ -77,21 +77,21 @@ def worker():
     global map_source_coord, map_target_coord
     data = request.get_json(force=True)
 
-    map_source_coord = {}
-    map_target_coord = {}
+    # map_source_coord = {}
+    # map_target_coord = {}
+    #
+    # id_map_source_public = {}
+    # id_map_target_public = {}
+    # id_map_source_private = {}
+    # id_map_target_private = {}
 
-    id_map_source_public = {}
-    id_map_target_public = {}
-    id_map_source_private = {}
-    id_map_target_private = {}
+    session["map_source_coord"] = {}
+    session["map_target_coord"] = {}
 
-    session["map_source_coord"] = map_source_coord
-    session["map_target_coord"] = map_target_coord
-
-    session["id_map_source_public"] = id_map_source_public
-    session["id_map_source_private"] = id_map_source_private
-    session["id_map_target_public"] = id_map_target_public
-    session["id_map_target_private"] = id_map_target_private
+    session["id_map_source_public"] = {}
+    session["id_map_source_private"] = {}
+    session["id_map_target_public"] = {}
+    session["id_map_target_private"] = {}
 
     sources_coordinates = data['sources']
     targets_coordinates = data['targets']
@@ -114,6 +114,7 @@ def worker():
 
     if sources_coordinates:
         #Source is a set of markers
+        print(sources_coordinates)
         sources_private, sources_public = getNodesFromMarkersCoordinates(sources_coordinates, "source")
     elif polygon_source_coords:
         #Source is a polygon"
@@ -196,7 +197,11 @@ def getNodesFromMarkersCoordinates(map_coordinates, location_type):
             # map_target_coord[i] = (c['lat'], c['lon'])
             session["map_target_coord"][i] = (c['lat'], c['lon'])
 
-
+        print(i)
+    print(session['id_map_source_public'])
+    print(session["map_source_coord"])
+    print(session["id_map_target_public"])
+    print(session["map_target_coord"])
     return nodes_private, nodes_public
 
 def getNodesWithinPolygon(polygon_coordinates, location_type):
