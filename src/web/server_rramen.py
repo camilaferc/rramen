@@ -33,16 +33,16 @@ if not MAPBOX_ACCESS_KEY:
     raise SystemExit("No mapbox token provided.")
 
 dataManager = PostgisDataManager()
-id_map_source_public = {} #
-id_map_target_public = {} #
-id_map_source_private = {} #
-id_map_target_private = {} #
+#id_map_source_public = {} #
+#id_map_target_public = {} #
+#id_map_source_private = {} #
+#id_map_target_private = {} #
 parent_tree_public = {} #
 parent_tree_private = {} #
-tt_public = {}
-tt_private = {}
-map_source_coord = {}#
-map_target_coord = {}#
+#tt_public = {}
+#tt_private = {}
+#map_source_coord = {}#
+#map_target_coord = {}#
 
 
 def loadData():
@@ -73,7 +73,8 @@ def rramen():
 @app.route('/receiver', methods = ['POST', 'GET'])
 def worker():
     # read json + reply
-    global graph, dataManager, region, id_map_source_public, id_map_source_private, id_map_target_private, id_map_target_public, tt_public, tt_private
+    global graph, dataManager, region
+    #global id_map_source_public, id_map_source_private, id_map_target_private, id_map_target_public, tt_public, tt_private
     global map_source_coord, map_target_coord
     data = request.get_json(force=True)
 
@@ -85,13 +86,13 @@ def worker():
     # id_map_source_private = {}
     # id_map_target_private = {}
 
-    session["map_source_coord"] = {}
-    session["map_target_coord"] = {}
+    session['map_source_coord'] = {}
+    session['map_target_coord'] = {}
 
-    session["id_map_source_public"] = {}
-    session["id_map_source_private"] = {}
-    session["id_map_target_public"] = {}
-    session["id_map_target_private"] = {}
+    session['id_map_source_public'] = {}
+    session['id_map_source_private'] = {}
+    session['id_map_target_public'] = {}
+    session['id_map_target_private'] = {}
 
     sources_coordinates = data['sources']
     targets_coordinates = data['targets']
@@ -114,7 +115,6 @@ def worker():
 
     if sources_coordinates:
         #Source is a set of markers
-        print(sources_coordinates)
         sources_private, sources_public = getNodesFromMarkersCoordinates(sources_coordinates, "source")
     elif polygon_source_coords:
         #Source is a polygon"
@@ -155,6 +155,7 @@ def worker():
         markers.append(feature)
 
     gc = FeatureCollection(markers)
+    
     return {"geom": gc, "allColored": allColored}
 
 
@@ -197,11 +198,6 @@ def getNodesFromMarkersCoordinates(map_coordinates, location_type):
             # map_target_coord[i] = (c['lat'], c['lon'])
             session["map_target_coord"][i] = (c['lat'], c['lon'])
 
-        print(i)
-    print(session['id_map_source_public'])
-    print(session["map_source_coord"])
-    print(session["id_map_target_public"])
-    print(session["map_target_coord"])
     return nodes_private, nodes_public
 
 def getNodesWithinPolygon(polygon_coordinates, location_type):
@@ -336,7 +332,8 @@ def getRouteGeometry():
 
 @app.route('/path', methods = ['POST', 'GET'])
 def getPathGeometry():
-    global id_map_source_public, id_map_source_private, id_map_target_private, id_map_target_public, tt_public, tt_private
+    #global id_map_source_public, id_map_source_private, id_map_target_private, id_map_target_public, tt_public, tt_private
+    global parent_tree_public, parent_tree_private
 
     data = request.get_json(force=True)
 
@@ -386,16 +383,14 @@ def getPathGeometry():
         source_private = session["id_map_source_private"][source_id]
 
         # node_id_public = id_map_target_public[marker_id]
-        print(session["id_map_target_public"])
-        print(marker_id)
-        node_id_public = session["id_map_target_public"][marker_id]
+        node_id_public = session['id_map_target_public'][str(marker_id)]
         # node_id_private = id_map_target_private[marker_id]
-        node_id_private =  session["id_map_target_private"][marker_id]
+        node_id_private =  session['id_map_target_private'][str(marker_id)]
 
     paths = []
-
-    # pathPublic = Path(parent_tree_public[source_public])
-    pathPublic = Path(session["parent_tree_public"][source_public])
+    
+    pathPublic = Path(parent_tree_public[source_public])
+    #pathPublic = Path(session["parent_tree_public"][str(source_public)])
     pathPublicGeom = pathPublic.getPathGeometry(graph, node_id_public, region)
     if not pathPublicGeom:
         return res_none
@@ -404,8 +399,8 @@ def getPathGeometry():
     feature = Feature(geometry = pathPublicGeom, properties = properties)
     paths.append(feature)
 
-    # pathPrivate = Path(parent_tree_private[source_private])
-    pathPrivate = Path(session["parent_tree_private"][source_private])
+    pathPrivate = Path(parent_tree_private[source_private])
+    #pathPrivate = Path(session["parent_tree_private"][source_private])
 
     pathPrivateGeom = pathPrivate.getPathGeometry(graph, node_id_private, region)
     if not pathPrivateGeom:
@@ -414,8 +409,8 @@ def getPathGeometry():
     feature = Feature(geometry = pathPrivateGeom, properties = properties)
     paths.append(feature)
 
-    tt_node_public = round(tt_public[source_public][node_id_public]/60)
-    tt_node_private = round(tt_private[source_private][node_id_private]/60)
+    tt_node_public = round(session['tt_public'][str(source_public)][str(node_id_public)]/60)
+    tt_node_private = round(session['tt_private'][str(source_private)][str(node_id_private)]/60)
 
     fc = FeatureCollection(paths)
     res = {"path_geom": fc, "tt_public": tt_node_public, "tt_private": tt_node_private}
@@ -438,39 +433,36 @@ def getSegmentGeometry():
 
 def computeRelativeReachability(sources_public, targets_public, sources_private, targets_private, timestamp,
                                 removed_routes=None, removed_stops=None, removed_segments=None):
-    global parent_tree_public, parent_tree_private, id_map_private, id_map_public
+    global id_map_private, id_map_public, parent_tree_public, parent_tree_private
     dij = Dijsktra(graph)
     parent_tree_public = {}
     parent_tree_private = {}
-    session["parent_tree_public"] = parent_tree_public
-    session["parent_tree_private"] = parent_tree_private
+    #session["parent_tree_public"] = {}
+    #session["parent_tree_private"] = {}
     threads = []
 
 
     # We start one thread per Dijkstra call.
-    tt_public = {}
-    session["tt_public"] = tt_public
-    parent_tree_public = {}
-    session["parent_tree_public"] = parent_tree_public
+    #tt_public = {}
+    session["tt_public"] = {}
     process_public = Thread(target=dij.manyToManyPublic, args=[sources_public, targets_public, timestamp, removed_routes,removed_stops,
-                                                               session['tt_public'], session["parent_tree_public"]])
+                                                               session['tt_public'], parent_tree_public])
     process_public.start()
     threads.append(process_public)
 
 
-    tt_private = {}
-    session["tt_private"] = tt_private
+    #tt_private = {}
+    session["tt_private"] = {}
     parent_tree_private = {}
-    session["parent_tree_private"] = parent_tree_private
-    process_private = Thread(target=dij.manyToManyPrivate, args=[sources_private, targets_private, timestamp, removed_segments,session['tt_private'],session["parent_tree_private"]])
+    #session["parent_tree_private"] = {}
+    process_private = Thread(target=dij.manyToManyPrivate, args=[sources_private, targets_private, timestamp, removed_segments,session['tt_private'], parent_tree_private])
     process_private.start()
     threads.append(process_private)
 
     # We now pause execution on the main thread by 'joining' all of our started threads.
     process_public.join()
     process_private.join()
-
-
+    
     node_colors, colored_type = getNodesColors()
 
     return session["tt_public"], session["tt_private"], node_colors, colored_type
