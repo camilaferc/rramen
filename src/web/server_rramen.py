@@ -41,8 +41,6 @@ parent_tree_public = {} #
 parent_tree_private = {} #
 #tt_public = {}
 #tt_private = {}
-#map_source_coord = {}#
-#map_target_coord = {}#
 
 
 def loadData():
@@ -78,16 +76,11 @@ def worker():
     global map_source_coord, map_target_coord
     data = request.get_json(force=True)
 
-    # map_source_coord = {}
-    # map_target_coord = {}
     #
     # id_map_source_public = {}
     # id_map_target_public = {}
     # id_map_source_private = {}
     # id_map_target_private = {}
-
-    session['map_source_coord'] = {}
-    session['map_target_coord'] = {}
 
     session['id_map_source_public'] = {}
     session['id_map_source_private'] = {}
@@ -115,20 +108,20 @@ def worker():
 
     if sources_coordinates:
         #Source is a set of markers
-        sources_private, sources_public = getNodesFromMarkersCoordinates(sources_coordinates, "source")
+        sources_private, sources_public, map_source_coord, _ = getNodesFromMarkersCoordinates(sources_coordinates, "source")
     elif polygon_source_coords:
         #Source is a polygon"
-        sources_private, sources_public = getNodesWithinPolygon(polygon_source_coords, "source")
+        sources_private, sources_public, map_source_coord, _ = getNodesWithinPolygon(polygon_source_coords, "source")
 
     if targets_coordinates:
         #Target is a set of markers
-        targets_private, targets_public = getNodesFromMarkersCoordinates(targets_coordinates, "target")
+        targets_private, targets_public, _, map_target_coord = getNodesFromMarkersCoordinates(targets_coordinates, "target")
     elif polygon_target_coords:
         #Target is a polygon
-        targets_private, targets_public = getNodesWithinPolygon(polygon_target_coords, "target")
+        targets_private, targets_public, _, map_target_coord = getNodesWithinPolygon(polygon_target_coords, "target")
     elif selected_neighborhoods:
         #Target is a neighborhood
-        targets_private, targets_public = getNodesWithinNeighborhoods(selected_neighborhoods, "target")
+        targets_private, targets_public, _, map_target_coord = getNodesWithinNeighborhoods(selected_neighborhoods, "target")
 
     time = data['timestamp']
     timestamp = datetime.fromtimestamp(time/1000)
@@ -137,10 +130,10 @@ def worker():
                                                                                    timestamp, removed_routes, removed_stops, removed_segments)
     if colored_type == "source":
         # map_coord = map_source_coord
-        map_coord = session["map_source_coord"]
+        map_coord = map_source_coord
     else:
         # map_coord = map_target_coord
-        map_coord = session["map_target_coord"]
+        map_coord = map_target_coord
 
     markers = []
     allColored = True
@@ -163,6 +156,8 @@ def getNodesFromMarkersCoordinates(map_coordinates, location_type):
     global id_map_source_private, id_map_target_private, id_map_target_public
     nodes_private = set()
     nodes_public = set()
+    map_source_coord = {}
+    map_target_coord = {}
     for i in map_coordinates:
         c = map_coordinates[i]
 
@@ -175,12 +170,12 @@ def getNodesFromMarkersCoordinates(map_coordinates, location_type):
             # id_map_source_private[i] = node_id_private
             session["id_map_source_private"][i] = node_id_private
             # map_source_coord[i] = (c['lat'], c['lon'])
-            session["map_source_coord"][i] = (c['lat'], c['lon'])
+            map_source_coord[i] = (c['lat'], c['lon'])
         else:
             # id_map_target_private[i] = node_id_private
             session["id_map_target_private"][i] = node_id_private
             # map_target_coord[i] = (c['lat'], c['lon'])
-            session["map_target_coord"][i] = (c['lat'], c['lon'])
+            map_target_coord[i] = (c['lat'], c['lon'])
 
 
         node_id_public  = dataManager.getClosestVertex_CLASSDEPENDANT(c['lat'], c['lon'], region, graph.PEDESTRIAN_WAYS)
@@ -190,30 +185,31 @@ def getNodesFromMarkersCoordinates(map_coordinates, location_type):
             # id_map_source_public[i] = node_id_public
             session['id_map_source_public'][i] = node_id_public
             # map_source_coord[i] = (c['lat'], c['lon'])
-            session["map_source_coord"][i] = (c['lat'], c['lon'])
+            map_source_coord[i] = (c['lat'], c['lon'])
 
         else:
             # id_map_target_public[i] = node_id_public
             session["id_map_target_public"][i] = node_id_public
             # map_target_coord[i] = (c['lat'], c['lon'])
-            session["map_target_coord"][i] = (c['lat'], c['lon'])
+            map_target_coord[i] = (c['lat'], c['lon'])
 
-    return nodes_private, nodes_public
+    return nodes_private, nodes_public, map_source_coord, map_target_coord
 
 def getNodesWithinPolygon(polygon_coordinates, location_type):
-    global map_source_coord, map_target_coord
     global id_map_source_public, id_map_source_private, id_map_target_private, id_map_target_public
     polygon_points = dataManager.getPointsWithinPolygon(region, polygon_coordinates)
-
+    map_source_coord = {}
+    map_target_coord = {}
+    
     if location_type == "source":
         # map_coord = map_source_coord
-        map_coord = session["map_source_coord"]
+        map_coord = map_source_coord
         # id_map_public = id_map_source_public
         id_map_public = session['id_map_source_public']
         id_map_private = id_map_source_private
     else:
         # map_coord = map_target_coord
-        map_coord = session["map_target_coord"]
+        map_coord = map_target_coord
         # id_map_public = id_map_target_public
         id_map_public = session["id_map_target_public"]
         # id_map_private = id_map_target_private
@@ -231,24 +227,26 @@ def getNodesWithinPolygon(polygon_coordinates, location_type):
         id_map_private[i] = node_id
         i+=1
 
-    return nodes, nodes
+    return nodes, nodes, map_source_coord, map_target_coord
 
 
 def getNodesWithinNeighborhoods(selected_neighborhoods, location_type):
-    global map_source_coord, map_target_coord
     global id_map_source_public, id_map_source_private, id_map_target_private, id_map_target_public
     neig_points = dataManager.getPointsWithinNeighborhoods(region, selected_neighborhoods)
+    
+    map_source_coord = {}
+    map_target_coord = {}
 
     if location_type == "source":
         # map_coord = map_source_coord
-        map_coord = session["map_source_coord"]
+        map_coord = map_source_coord
         # id_map_public = id_map_source_public
         id_map_public = session['id_map_source_public']
         # id_map_private = id_map_source_private
         id_map_private = session["id_map_source_private"]
     else:
         # map_coord = map_target_coord
-        map_coord = session["map_target_coord"]
+        map_coord = map_target_coord
         # id_map_public = id_map_target_public
         id_map_public = session["id_map_target_public"]
         # id_map_private = id_map_target_private
@@ -266,7 +264,7 @@ def getNodesWithinNeighborhoods(selected_neighborhoods, location_type):
         id_map_private[i] = node_id
         i+=1
 
-    return nodes, nodes
+    return nodes, nodes, map_source_coord, map_target_coord
 
 
 @app.route('/receiver_region', methods = ['POST', 'GET'])
