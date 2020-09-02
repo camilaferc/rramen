@@ -52,18 +52,22 @@ class MultimodalNetwork:
     
     def getTravelTimeToNeighbors(self, node_id, arrival_time, modes):
         neig_travel_times = {}
-        neigs = self.graph[node_id]
-        for node_to in neigs:
-            edge = neigs[node_to]
-            for mode in edge["modes"]:
-                if mode in modes:
-                    if node_to in neig_travel_times:
-                        cur_travel_time = neig_travel_times[node_to][0]
-                        new_travel_time = edge['travel_time_functions'][mode].getTravelTime(arrival_time)
-                        if new_travel_time < cur_travel_time:
-                            neig_travel_times[node_to] = [new_travel_time, mode]
-                    else:
-                        neig_travel_times[node_to] = [edge['travel_time_functions'][mode].getTravelTime(arrival_time), mode]
+        try:
+            neigs = self.graph[node_id]
+            for node_to in neigs:
+                edge = neigs[node_to]
+                for mode in edge["modes"]:
+                    if mode in modes:
+                        if node_to in neig_travel_times:
+                            cur_travel_time = neig_travel_times[node_to][0]
+                            new_travel_time = edge['travel_time_functions'][mode].getTravelTime(arrival_time)
+                            if new_travel_time < cur_travel_time:
+                                neig_travel_times[node_to] = [new_travel_time, mode]
+                        else:
+                            neig_travel_times[node_to] = [edge['travel_time_functions'][mode].getTravelTime(arrival_time), mode]
+        except (Exception) as error:
+            print(error)
+        
         return neig_travel_times
     
     def getEdge(self, node_from, node_to):

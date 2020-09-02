@@ -224,6 +224,8 @@
             var markerActivated = false;
             var currentLocation = null;
 
+            var pathGeom = {};
+
             map.on('click', function(e) {
                 if (markerActivated){
                 	timer = setTimeout(function() {
@@ -256,7 +258,44 @@
                                             
                                             if (map.getLayer("rr_layer")) {
                                         		if (!map.getLayer("paths_"+el.id)) {
-                                            		var path_data = {"location_type": "source", "id": el.id.split("_")[2]}
+                                        			var source_id = el.id.split("_")[2];
+                                            		if(Object.keys(pathGeom).length <= 1 || Object.keys(pathGeom[source_id]).length > 1){
+                                            			var html = 'node not colored'
+                                        	                var popup = new mapboxgl.Popup({closeOnClick: false, anchor: 'top'})
+                                                            .setLngLat({lat:latitude, lng: longitude})
+                                                            .setHTML(html)
+                                                            .addTo(map);
+                                                	}else{
+                                                    	var target_id;
+                                                    	Object.keys(pathGeom[source_id]).forEach(function(key) {
+                                                        	target_id = key
+                                                    	});
+                                                        var res = pathGeom[source_id][target_id];
+                                                        var geom = res["path_geom"];
+    													var tt_public = res["tt_public"];
+                                    	                var tt_private = res["tt_private"];
+
+                                    	                var html = '<font color="blue">' + tt_public + ' min </font><br><font color="red">' + tt_private + ' min </font>'
+                                    	                var popup = new mapboxgl.Popup({closeOnClick: false, anchor: 'top'})
+                                                        .setLngLat({lat:latitude, lng: longitude})
+                                                        .setHTML(html)
+                                                        .addTo(map);
+
+                                    	                addPathLayer(el.id, geom);
+                                                    }
+                                            		popup._closeButton.id = "popup_"+ el.id;
+                                            		popup.on('close', function(e) {
+                                                        if (map.getLayer("paths_"+el.id)) {
+				    										map.removeLayer("paths_"+el.id);
+														}
+
+														if (map.getSource("paths_"+el.id)) {
+				    										map.removeSource("paths_"+el.id);
+														}
+                                                    })
+
+                                                    popups.push(popup);
+                                            		/*var path_data = {"location_type": "source", "id": el.id.split("_")[2]}
                                         			$.post("path", JSON.stringify(path_data) , function(res){
     													var geom = res["path_geom"];
     													var tt_public = res["tt_public"];
@@ -289,7 +328,7 @@
                                                         })
 
                                                         popups.push(popup);
-                                            		});
+                                            		});*/
                                 				}
                             				}
                                         }, true);
@@ -308,7 +347,7 @@
                         				var new_source = document.getElementById ( "new_source" ) ;
                               			new_source.style.display = "inline" ;
                               			
-
+                              			//console.log(markers)
                 				}
     							else if(currentLocation == "target" && document.getElementById('targetNode'+it)) {
     								var targetNode = document.getElementById('targetNode'+it)
@@ -332,7 +371,53 @@
                                             //functions
                                             if (map.getLayer("rr_layer")) {
                                         		if (!map.getLayer("paths_"+el.id)) {
-                                        			var path_data = {"location_type": "target", "id": el.id.split("_")[2]}
+                                        			var target_id = el.id.split("_")[2];
+                                            		if(Object.keys(pathGeom).length > 1){
+                                            			var html = 'more than one source selected'
+                                            	        var popup = new mapboxgl.Popup({closeOnClick: false, anchor: 'top'})
+                                                            .setLngLat({lat:latitude, lng: longitude})
+                                                            .setHTML(html)
+                                                            .addTo(map);
+                                            		}else{
+                                                		var source_id;
+                                                		Object.keys(pathGeom).forEach(function(key) {
+                                                        	source_id = key
+                                                    	});
+                                                    	var res = pathGeom[source_id][target_id];
+                                                    	var geom = res["path_geom"];
+    													var tt_public = res["tt_public"];
+                                    	                var tt_private = res["tt_private"];
+
+                                    	                if(!geom){
+                                    	                	var html = 'node not colored'
+                                        	                var popup = new mapboxgl.Popup({closeOnClick: false, anchor: 'top'})
+                                                            .setLngLat({lat:latitude, lng: longitude})
+                                                            .setHTML(html)
+                                                            .addTo(map);
+                                        	            }else{
+                                        	            	var html = '<font color="blue">' + tt_public + ' min </font><br><font color="red">' + tt_private + ' min </font>'
+                                        	                var popup = new mapboxgl.Popup({closeOnClick: false, anchor: 'top'})
+                                                            .setLngLat({lat:latitude, lng: longitude})
+                                                            .setHTML(html)
+                                                            .addTo(map);
+
+                                        	                addPathLayer(el.id, geom);
+                                            	        }
+                                                	}
+                                                	popup._closeButton.id = "popup_"+ el.id;
+                                            		popup.on('close', function(e) {
+                                                        if (map.getLayer("paths_"+el.id)) {
+				    										map.removeLayer("paths_"+el.id);
+														}
+
+														if (map.getSource("paths_"+el.id)) {
+				    										map.removeSource("paths_"+el.id);
+														}
+                                                    })
+
+                                                    popups.push(popup);
+                                                    
+                                        			/*var path_data = {"location_type": "target", "id": el.id.split("_")[2]}
                                         			$.post("path", JSON.stringify(path_data) , function(res){
     													var geom = res["path_geom"];
     													var tt_public = res["tt_public"];
@@ -371,7 +456,7 @@
                                                         })
 
                                                         popups.push(popup);
-                                            		});
+                                            		});*/
                                 				}
                             				}
                                         }, true);
@@ -389,6 +474,8 @@
 
                         				var new_target = document.getElementById ( "new_target" ) ;
                         				new_target.style.display = "inline" ;
+
+                        				//console.log(markers)
 
                 				}
                         }
@@ -621,6 +708,17 @@
                 inputSource.parentNode.removeChild(inputSource);
                 removeMarkerSource(inputSource)
             	image.parentNode.removeChild(image);
+
+				var j;
+				for (j = 0; j < popups.length; j++) {
+            		if (popups[j] && popups[j]._closeButton.id == "popup_marker_s_" + source_id){
+            			if (popups[j].isOpen()){
+            				popups[j].remove();
+                		}
+                	}
+					popups.splice(j, 1);
+					break;
+            	}
             	
             }
 
@@ -632,6 +730,7 @@
                     delete sources[parseInt(marker, 10)]
                     inputSource.removeAttribute("marker")
                 }
+
             }
             
             function addTarget() {
@@ -699,7 +798,17 @@
                 inputTarget.parentNode.removeChild(inputTarget);
                 removeMarkerTarget(inputTarget)
             	image.parentNode.removeChild(image);
-            	
+
+				var j;
+				for (j = 0; j < popups.length; j++) {
+            		if (popups[j] && popups[j]._closeButton.id == "popup_marker_t_" + target_id){
+            			if (popups[j].isOpen()){
+            				popups[j].remove();
+                		}
+            			popups.splice(j, 1);
+                		break;
+                	}
+            	}
             }
 
             function removeMarkerTarget(inputTarget){
@@ -875,10 +984,10 @@
             function clearResults() {
             	var j;
             	for (j = 0; j < popups.length; j++) {
-            		if (map.getLayer("paths"+j)) {
+            		/*if (map.getLayer("paths"+j)) {
             			map.removeLayer("paths"+ j);
                     	map.removeSource("paths"+ j);
-            		}
+            		}*/
             		if (popups[j]){
             			if (popups[j].isOpen()){
             				popups[j].remove();
@@ -895,6 +1004,7 @@
 				}
 
             	popups = []
+            	pathGeom = {}
             }
 
             function getResults() {
@@ -925,6 +1035,8 @@
             			
                 		var geom = res["geom"]
                 		var allColored = res["allColored"]
+                		pathGeom = res["pathGeom"]
+                		//console.log(pathGeom)
 		                map.addLayer({
 		                    "id": "rr_layer",
 		                    "type": "circle",

@@ -340,20 +340,21 @@ class PostgisDataManager:
                     LIMIT 1;
             """.format(region)
         try:
-             self.connection.connect()
-             cursor = self.connection.getCursor()
-             cursor.execute(sql_source, (lon, lat))
-             (source_dist, source_id) = cursor.fetchone()
-             cursor.execute(sql_target, (lon, lat))
-             (target_dist, target_id) = cursor.fetchone()
-             self.connection.close()
-             if source_dist <= target_dist:
-                 return source_id
-             else:
-                 return target_id
+            conn = self.connection.connect()
+            with self.connection.getCursor() as cursor:
+                #cursor = self.connection.getCursor()
+                cursor.execute(sql_source, (lon, lat))
+                (source_dist, source_id) = cursor.fetchone()
+                cursor.execute(sql_target, (lon, lat))
+                (target_dist, target_id) = cursor.fetchone()
+                self.connection.close(conn)
+                if source_dist <= target_dist:
+                    return source_id
+                else:
+                    return target_id
 
         except (Exception, psycopg2.DatabaseError) as error:
-             print(error)
+            print(error)
 
     def getClosestVertex_CLASSDEPENDANT(self, lat, lon,region, class_list):
         sql_source = """SELECT ST_Distance(point, source_location), source
@@ -370,20 +371,20 @@ class PostgisDataManager:
                     LIMIT 1;
             """.format(region)
         try:
-             self.connection.connect()
-             cursor = self.connection.getCursor()
-             cursor.execute(sql_source, (lon, lat, list(class_list)))
-             (source_dist, source_id) = cursor.fetchone()
-             cursor.execute(sql_target, (lon, lat, list(class_list)))
-             (target_dist, target_id) = cursor.fetchone()
-             self.connection.close()
-             if source_dist <= target_dist:
-                 return source_id
-             else:
-                 return target_id
+            conn = self.connection.connect()
+            cursor = self.connection.getCursor()
+            cursor.execute(sql_source, (lon, lat, list(class_list)))
+            (source_dist, source_id) = cursor.fetchone()
+            cursor.execute(sql_target, (lon, lat, list(class_list)))
+            (target_dist, target_id) = cursor.fetchone()
+            self.connection.close(conn)
+            if source_dist <= target_dist:
+                return source_id
+            else:
+                return target_id
 
         except (Exception, psycopg2.DatabaseError) as error:
-             print(error)
+            print(error)
 
     def getClosestEdgeGeometry(self, lat, lon, region):
         sql = """SELECT id, source, target, ST_AsGeoJSON(geom_way)

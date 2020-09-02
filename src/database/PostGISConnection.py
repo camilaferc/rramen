@@ -5,19 +5,35 @@ Created on Oct 16, 2019
 '''
 import psycopg2
 from conf.config import config
+from psycopg2 import pool
+
+class PostGISConnectionPool:
+    def __init__(self):
+        params = config()
+        self.pool = pool.ThreadedConnectionPool(**params)
+        
+    def getConnection(self):
+        return self.pool.getconn()
+    
+    def closeConnection(self, conn):
+        self.pool.putconn(conn)
+        
 
 class PostGISConnection:
     def __init__(self):
         self.conn = None
+        self.pool = PostGISConnectionPool()
         
     def connect(self):
         """ Connect to the PostgreSQL database server """
         try:
             # read connection parameters
-            params = config()
+            #params = config()
  
             # connect to the PostgreSQL server
-            self.conn = psycopg2.connect(**params)
+            #self.conn = psycopg2.connect(**params)
+            self.conn = self.pool.getConnection()
+            return self.conn
        
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)
@@ -43,13 +59,17 @@ class PostGISConnection:
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)
             
-    def close(self):
+    def close(self, conn = None):
         """ Closing connection to the PostgreSQL database server """
         if not self.conn:
             raise Exception('Connection not established!')
         try:
             # executing command
-            self.conn.close()
+            if conn is None:
+                self.pool.closeConnection(self.conn)
+            else:
+                self.pool.closeConnection(conn)
+            #self.conn.close()
        
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)
