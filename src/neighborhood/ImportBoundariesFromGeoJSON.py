@@ -11,7 +11,7 @@ import queue
 import psycopg2
 from psycopg2.sql import SQL, Identifier
 
-from database.PostGISConnection import PostGISConnection
+from ..database.PostGISConnection import PostGISConnection
 
 
 class ImportBoundariesFromGeoJSON:

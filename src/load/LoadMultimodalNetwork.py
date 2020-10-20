@@ -4,9 +4,9 @@ Created on Oct 20, 2019
 @author: camila
 '''
 
-from load.LoadRoadNetwork import LoadRoadNetwork
-from network.MultimodalNetwork import MultimodalNetwork
-from load.LoadTransportationNetwork import LoadTransportationNetwork
+from .LoadRoadNetwork import LoadRoadNetwork
+from ..network.MultimodalNetwork import MultimodalNetwork
+from .LoadTransportationNetwork import LoadTransportationNetwork
 
 
 class LoadMultimodalNetwork:

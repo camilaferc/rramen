@@ -5,9 +5,9 @@ Created on Oct 2, 2019
 
 table contains (departure_time, travel_time) pairs for a given edge
 '''
-from travel_time_function.TravelTimeFunction import TravelTimeFunction
-from util import TimeUtil
+from ..util import TimeUtil
 from copy import copy
+from ..travel_time_function.TravelTimeFunction import TravelTimeFunction
 
 class PiecewiseLinearFunction(TravelTimeFunction):
     

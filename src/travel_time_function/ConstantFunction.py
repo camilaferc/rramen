@@ -3,7 +3,7 @@ Created on Oct 2, 2019
 
 @author: camila
 '''
-from travel_time_function.TravelTimeFunction import TravelTimeFunction
+from ..travel_time_function.TravelTimeFunction import TravelTimeFunction
 
 class ConstantFunction(TravelTimeFunction):
     def __init__(self, travel_time):

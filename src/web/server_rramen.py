@@ -14,20 +14,23 @@ from flask import Flask, request, render_template
 from flask_iniconfig import INIConfig
 from geojson import Feature, Point, FeatureCollection
 
-from database.PostgisDataManager import PostgisDataManager
-from gtfs import GTFS
-from load.LoadMultimodalNetwork import LoadMultimodalNetwork
-from path.Path import Path
-from shortest_path.Dijkstra import Dijsktra
+from ..database.PostgisDataManager import PostgisDataManager
+from ..gtfs import GTFS
+from ..load.LoadMultimodalNetwork import LoadMultimodalNetwork
+from ..path.Path import Path
+from ..shortest_path.Dijkstra import Dijsktra
 
 app = Flask(__name__)
 INIConfig(app)
 app.config.from_inifile(str(pathlib.Path(__file__).resolve().parents[2]) + '/config.ini')
 
 MAPBOX_ACCESS_KEY = (app.config.get('mapbox') or {}).get('MAPBOX_ACCESS_KEY')
-
 if not MAPBOX_ACCESS_KEY:
     raise SystemExit("No mapbox token provided.")
+
+region = (app.config.get('map') or {}).get('region')
+if not region:
+    raise SystemExit("No region provided.")
 
 dataManager = PostgisDataManager()
 
@@ -36,7 +39,9 @@ def loadData():
     load = LoadMultimodalNetwork(region)
     graph = load.load()
 
-@app.route('/rramen')
+loadData()
+
+@app.route('/')
 def rramen():
 
     polygons = dataManager.getNeighborhoodsPolygons(region)
@@ -93,7 +98,6 @@ def worker():
 
     if sources_coordinates:
         #Source is a set of markers
-        #print(sources_coordinates)
         sources_private, sources_public = getNodesFromMarkersCoordinates(sources_coordinates, "source", id_map_source_public, id_map_source_private, id_map_target_private, id_map_target_public , map_source_coord, map_target_coord)
     elif polygon_source_coords:
         #Source is a polygon"
@@ -290,12 +294,12 @@ def getPathGeometry(id_map_source_public, id_map_source_private, id_map_target_p
             paths = []
             pathPublic = Path(parent_tree_public[source_public])
             pathPublicGeom = pathPublic.getPathGeometry(graph, target_public, region)
-            if not pathPublicGeom:
-
+            if pathPublicGeom is None:
                 if marker_id in markers:
                     markers[marker_id][target_id] = res_none
                 else:
                     markers[marker_id] = {target_id: res_none}
+                continue
 
             properties = {'line-color': 'b'}
             feature = Feature(geometry = pathPublicGeom, properties = properties)
@@ -304,11 +308,12 @@ def getPathGeometry(id_map_source_public, id_map_source_private, id_map_target_p
             pathPrivate = Path(parent_tree_private[source_private])
 
             pathPrivateGeom = pathPrivate.getPathGeometry(graph, target_private, region)
-            if not pathPrivateGeom:
+            if pathPrivateGeom is None:
                 if marker_id in markers:
                     markers[marker_id][target_id] = res_none
                 else:
                     markers[marker_id] = {target_id: res_none}
+                continue
             properties = {'line-color': 'r'}
             feature = Feature(geometry = pathPrivateGeom, properties = properties)
             paths.append(feature)
@@ -509,8 +514,4 @@ def createVirtualNodeEdge(graph, node_lat, node_lon, edge_id, source, target, so
 
 
 if __name__ == '__main__':
-    global region
-    region = sys.argv[1]
-    # run!
-    loadData()
     app.run(threaded=True)

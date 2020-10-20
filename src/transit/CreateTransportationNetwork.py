@@ -9,11 +9,11 @@ import sys
 import psycopg2
 from psycopg2.sql import Identifier, SQL
 
-from database.PostGISConnection import PostGISConnection
-from database.PostgisDataManager import PostgisDataManager
-from network.MultimodalNetwork import MultimodalNetwork
-from travel_time_function.ConstantFunction import ConstantFunction
-from travel_time_function.TimeTable import TimeTable
+from ..database.PostGISConnection import PostGISConnection
+from ..database.PostgisDataManager import PostgisDataManager
+from ..network.MultimodalNetwork import MultimodalNetwork
+from ..travel_time_function.ConstantFunction import ConstantFunction
+from ..travel_time_function.TimeTable import TimeTable
 
 
 class CreateTransportationNetwork:

@@ -4,8 +4,9 @@ Created on Oct 16, 2019
 @author: camila
 '''
 import psycopg2
-from conf.config import config
 from psycopg2 import pool
+
+from ..conf.config import config
 
 class PostGISConnectionPool:
     def __init__(self):
@@ -21,8 +22,8 @@ class PostGISConnectionPool:
 
 class PostGISConnection:
     def __init__(self):
-        self.conn = None
         self.pool = PostGISConnectionPool()
+        self.conn = self.pool.getConnection()
         
     def connect(self):
         """ Connect to the PostgreSQL database server """

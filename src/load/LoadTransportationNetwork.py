@@ -4,13 +4,12 @@ Created on Oct 20, 2019
 @author: camila
 '''
 import sys
-
 import psycopg2
 
-from database.PostGISConnection import PostGISConnection
-from network.MultimodalNetwork import MultimodalNetwork
-from travel_time_function.ConstantFunction import ConstantFunction
-from travel_time_function.TimeTable import TimeTable
+from ..database.PostGISConnection import PostGISConnection
+from ..network.MultimodalNetwork import MultimodalNetwork
+from ..travel_time_function.ConstantFunction import ConstantFunction
+from ..travel_time_function.TimeTable import TimeTable
 
 
 class LoadTransportationNetwork:

@@ -3,12 +3,12 @@ Created on Oct 20, 2019
 
 @author: camila
 '''
-
-from database.PostGISConnection import PostGISConnection
 import psycopg2
 import sys
-from travel_time_function.PiecewiseLinearFunction import PiecewiseLinearFunction
-from travel_time_function.ConstantFunction import ConstantFunction
+
+from ..database.PostGISConnection import PostGISConnection
+from ..travel_time_function.PiecewiseLinearFunction import PiecewiseLinearFunction
+from ..travel_time_function.ConstantFunction import ConstantFunction
 
 class LoadRoadNetwork:
     def __init__(self, region, graph):

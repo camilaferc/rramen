@@ -6,7 +6,7 @@ Flask==1.1.1
 Flask-INIConfig==0.1.0
 Flask-Script==2.0.6
 geojson==2.5.0
-get==2019.4.13
+gunicorn==20.0.4
 idna==2.8
 itsdangerous==1.1.0
 Jinja2==2.10.3
@@ -14,15 +14,13 @@ MarkupSafe==1.1.1
 networkx==2.4
 numpy==1.17.3
 osmapi==1.2.2
-pkg-resources==0.0.0
-post==2019.4.13
 psycopg2==2.8.4
 public==2019.4.13
 python-dateutil==2.8.1
 pytz==2019.3
 query-string==2019.4.13
-request==2019.4.13
 requests==2.22.0
 six==1.14.0
 urllib3==1.25.6
+waitress==1.4.4
 Werkzeug==0.16.0

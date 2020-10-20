@@ -1,13 +1,9 @@
 #!/bin/bash
 
-if [ -z "$1" ]; then
-	echo "Error: Region not defined!"
-	exit 1
-fi
+region=$(awk -F "=" '/region/ {print $2}' config.ini)
 
-region=$1
+echo $region
 
 ./scripts/import_osm/import_osm.sh $region
 
-cd src/
-python -m run.dataImporter $region
+python3 -m src.run.dataImporter $region

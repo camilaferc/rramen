@@ -12,9 +12,9 @@ import psycopg2
 from psycopg2._psycopg import AsIs
 from psycopg2.sql import SQL, Identifier
 
-from database.PostGISConnection import PostGISConnection
-from gtfs import GTFS
-from network.MultimodalNetwork import MultimodalNetwork
+from ..database.PostGISConnection import PostGISConnection
+from . import GTFS
+from ..network.MultimodalNetwork import MultimodalNetwork
 
 
 class GTFSImporter:

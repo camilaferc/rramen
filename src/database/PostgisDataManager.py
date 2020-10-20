@@ -11,7 +11,7 @@ from geojson.geometry import LineString
 import psycopg2
 
 from .PostGISConnection import PostGISConnection
-from gtfs import GTFS
+from ..gtfs import GTFS
 
 class PostgisDataManager:
 
@@ -22,10 +22,10 @@ class PostgisDataManager:
         sql = """SELECT ST_Extent(polygon) from neighborhoods_{0} WHERE level =
                 (SELECT min(level) FROM neighborhoods_{0});
             """
-        sql = sql.format(region);
+        sql = sql.format(region)
 
         try:
-            self.connection.connect();
+            self.connection.connect()
 
             cursor = self.connection.getCursor()
 
@@ -49,10 +49,10 @@ class PostgisDataManager:
     def getNumNodes(self, region):
         sql = """SELECT max(GREATEST(source, target)) FROM roadnet_{};
             """
-        sql = sql.format(region);
+        sql = sql.format(region)
 
         try:
-            self.connection.connect();
+            self.connection.connect()
 
             cursor = self.connection.getCursor()
 
@@ -71,11 +71,11 @@ class PostgisDataManager:
                 WHERE stop_parent = %s;
             ;
             """
-        sql = sql.format(region);
+        sql = sql.format(region)
 
         try:
             stops = []
-            self.connection.connect();
+            self.connection.connect()
 
             cursor = self.connection.getCursor()
 
@@ -100,11 +100,11 @@ class PostgisDataManager:
                 FROM neighborhoods_{};
             ;
             """
-        sql = sql.format(region);
+        sql = sql.format(region)
 
         try:
             features = []
-            self.connection.connect();
+            self.connection.connect()
 
             cursor = self.connection.getCursor()
 
@@ -134,11 +134,11 @@ class PostgisDataManager:
                 select min(level) from neighborhoods_{0}) ))
             ;
             """
-        sql = sql.format(region);
+        sql = sql.format(region)
 
         try:
             features = {}
-            self.connection.connect();
+            self.connection.connect()
 
             cursor = self.connection.getCursor()
 
@@ -181,7 +181,7 @@ class PostgisDataManager:
             route_stops = {}
             stop_routes = {}
             stop_level = {}
-            self.connection.connect();
+            self.connection.connect()
 
             cursor = self.connection.getCursor()
 
@@ -262,7 +262,7 @@ class PostgisDataManager:
 
         try:
             ids = set()
-            self.connection.connect();
+            self.connection.connect()
 
             cursor = self.connection.getCursor()
 
@@ -286,7 +286,7 @@ class PostgisDataManager:
             """.format(region)
         points = []
         try:
-            self.connection.connect();
+            self.connection.connect()
 
             cursor = self.connection.getCursor()
 
@@ -315,7 +315,7 @@ class PostgisDataManager:
             """.format(region)
 
         try:
-            self.connection.connect();
+            self.connection.connect()
 
             cursor = self.connection.getCursor()
 

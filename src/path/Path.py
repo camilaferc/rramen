@@ -29,7 +29,7 @@ class Path(object):
     
     def getPathGeometry(self, graph, node_id, region): 
         path = self.reconstructPathToNode(node_id)
-        if not path:
+        if path is None:
             return None
     
         path_geometry = [] 

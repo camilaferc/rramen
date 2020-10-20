@@ -64,7 +64,8 @@ RRAMEN employs Mapbox to display the map and visualize results. Mapbox requires 
 The `MAPBOX_ACCESS_KEY` must be set in the `config.ini` file under the `[mapbox]` section.
 
 #### c. Datasets
-In order to solve RR queries, RRAMEN requires the following datasets for a given region of interest.
+In order to solve RR queries, RRAMEN requires the following datasets for a given region of interest (e.g. berlin).
+The name of the region of interest must be set in the `config.ini` file under the `[map]` section.
 ##### OSM Map
 RRAMEN uses OSM maps ([https://www.openstreetmap.org/](https://www.openstreetmap.org/)) in order to model a city's road network.
 After downloading an OSM map for a given region, the `.osm` file must be placed in `data/osm/<region-name>/<osm-file>` under RRAMEN's root directory.
@@ -95,15 +96,15 @@ The `.txt` files from a GTFS feed must be placed in `data/gtfs/<region-name>/` u
 #### d. Data Importer
 Once the database connection values are set in `config.ini` and all required datasets are in the `data/` folder, the networks can be imported into the database. In order to do so, simply run:
 ```
-./data_importer.sh <region-name>
+./data_importer.sh
 ```
 
 #### e. Starting the server
 You can start the server by running:
 ```
-./run.sh <region-name>
+./run.sh
 ```
-Next, browse to [http://127.0.0.1:5000/rramen](http://127.0.0.1:5000/rramen) to use RRAMEN.
+Next, browse to [http://127.0.0.1:8000](http://127.0.0.1:8000) to use RRAMEN.
 
 ### 3. Background and Research
 * Theodoros Chondrogiannis, Mario A. Nascimento, Panagiotis Bouros: *Relative Reachability Analysis as a Tool for Urban Mobility Planning: Position Paper*. IWCTS@SIGSPATIAL 2019: 1:1-1:4

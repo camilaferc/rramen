@@ -9,8 +9,8 @@ import bisect
 from datetime import timedelta
 import sys
 
-from travel_time_function.TravelTimeFunction import TravelTimeFunction
-from util import TimeUtil
+from ..travel_time_function.TravelTimeFunction import TravelTimeFunction
+from ..util import TimeUtil
 
 
 class TimeTable(TravelTimeFunction):

@@ -7,9 +7,9 @@ Created on Jan 24, 2020
 from pathlib import Path
 import sys
 
-from gtfs.GTFSImporter import GTFSImporter
-from neighborhood.ImportBoundariesFromGeoJSON import ImportBoundariesFromGeoJSON
-from transit.CreateTransportationNetwork import CreateTransportationNetwork
+from ..gtfs.GTFSImporter import GTFSImporter
+from ..neighborhood.ImportBoundariesFromGeoJSON import ImportBoundariesFromGeoJSON
+from ..transit.CreateTransportationNetwork import CreateTransportationNetwork
 
 
 if __name__ == '__main__':
