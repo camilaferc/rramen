@@ -65,7 +65,7 @@ The `MAPBOX_ACCESS_KEY` must be set in the `config.ini` file under the `[mapbox]
 
 #### c. Datasets
 In order to solve RR queries, RRAMEN requires the following datasets for a given region of interest (e.g. berlin).
-The name of the region of interest must be set in the `config.ini` file under the `[map]` section.
+The name of such region must be set in the `config.ini` file under the `[map]` section.
 ##### OSM Map
 RRAMEN uses OSM maps ([https://www.openstreetmap.org/](https://www.openstreetmap.org/)) in order to model a city's road network.
 After downloading an OSM map for a given region, the `.osm` file must be placed in `data/osm/<region-name>/<osm-file>` under RRAMEN's root directory.
@@ -94,7 +94,7 @@ RRAMEN requires the following text files:
 The `.txt` files from a GTFS feed must be placed in `data/gtfs/<region-name>/` under RRAMEN's root directory.
 
 #### d. Data Importer
-Once the database connection values are set in `config.ini` and all required datasets are in the `data/` folder, the networks can be imported into the database. In order to do so, simply run:
+Once all values are set in `config.ini` and all required datasets are in the `data/` folder, the networks can be imported into the database. In order to do so, simply run:
 ```
 ./data_importer.sh
 ```
