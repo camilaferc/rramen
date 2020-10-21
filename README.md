@@ -6,6 +6,9 @@
 RRAMEN <sup id="a1">[1](#f1)</sup> is an interactive tool that supports city-scale mobility-related queries by different types of users with different needs. It is based on the concept of Relative Reachability (RR), 
 which determines the mode of transport that minimizes arrival time at a given destination location. RRAMEN's main goal is to aid individual users and urban planners in making informed choices and evaluating changes w.r.t. a city's transportation network. 
 
+### 1. Demo
+A live demo of our tool can be fount at [http://rramen.zdv.uni-mainz.de/](http://rramen.zdv.uni-mainz.de/).
+
 ### 1. Examples & Usage
 
 #### a. Individual Users
@@ -107,8 +110,17 @@ You can start the server by running:
 Next, browse to [http://127.0.0.1:8000](http://127.0.0.1:8000) to use RRAMEN.
 
 ### 3. Background and Research
-* Theodoros Chondrogiannis, Mario A. Nascimento, Panagiotis Bouros: *Relative Reachability Analysis as a Tool for Urban Mobility Planning: Position Paper*. IWCTS@SIGSPATIAL 2019: 1:1-1:4
-* Camila F. Costa, Theodoros Chondrogiannis, Mario A. Nascimento, Panagiotis Bouros: *RRAMEN: An Interactive Tool for Evaluating Choices and Changes in Transportation Networks*. To appear in the EDBT/ICDT 2020 Joint Conference.
+* Camila F. Costa, Theodoros Chondrogiannis, Mario A. Nascimento, Panagiotis Bouros: [*RRAMEN: An Interactive Tool for Evaluating Choices and Changes in Transportation Networks*](https://openproceedings.org/2020/conf/edbt/paper_272.pdf). EDBT 2020: 599-602.
+* Theodoros Chondrogiannis, Mario A. Nascimento, Panagiotis Bouros: [*Relative Reachability Analysis as a Tool for Urban Mobility Planning: Position Paper*](https://dl.acm.org/doi/10.1145/3357000.3366139). IWCTS@SIGSPATIAL 2019: 1:1-1:4
+
+### 4. Authors
+* Camila F. Costa (camila.costa@ualberta.ca), University of Alberta, Canada
+* Theodoros Chondrogiannis (theodoros.chondrogiannis@uni.kn), University of Konstanz, Germany
+* Mario A. Nascimento (mario.nascimento@ualberta.ca), University of Alberta, Canada
+* Panagiotis Bouros (bouros@uni-mainz.de), Johannes Gutenberg University of Mainz, Germany
+
+### 5. Acknowledgements
+This work was partially supported by CNPq Brazil, NSERC Canada, and Deutsche Forschungsgemeinschaft (DFG, Grant No. GR 4497/2).
 
 ---
 <b id="f1">1</b> The bowl icon used in our demo was obtained from: https://www.fourjay.org/maxpic/ioiiwbw/. [↩](#a1)
