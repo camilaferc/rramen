@@ -9,7 +9,7 @@ which determines the mode of transport that minimizes arrival time at a given de
 ### 1. Demo
 A live demo of our tool can be fount at [http://rramen.zdv.uni-mainz.de/](http://rramen.zdv.uni-mainz.de/).
 
-### 1. Examples & Usage
+### 2. Examples & Usage
 
 #### a. Individual Users
 Individual users can use RRAMEN to find easily reachable facilities within a city, or to make decisions related to their commute. Next, we show some examples of queries that can be answered by RRAMEN and are of interest to individual users.
@@ -54,7 +54,7 @@ Finally, RRAMEN also allows planners to remove/add road segments and analyze the
 
 <kbd><img src="/images/plan-many-to-region-remove-seg-ex.png" width="200px" /></kbd> <kbd><img src="/images/plan-many-to-region-remove-seg.png" width="650px"/></kbd>
 
-### 2. Installation & Setup
+### 3. Installation & Setup
 #### a. Database
 RRAMEN uses PostGIS to store road and public transportation network data. 
 It requires PostgreSQL 10.10 or higher and PostGIS 2.5 or higher.
@@ -109,17 +109,17 @@ You can start the server by running:
 ```
 Next, browse to [http://127.0.0.1:8000](http://127.0.0.1:8000) to use RRAMEN.
 
-### 3. Background and Research
+### 4. Background and Research
 * Camila F. Costa, Theodoros Chondrogiannis, Mario A. Nascimento, Panagiotis Bouros: [*RRAMEN: An Interactive Tool for Evaluating Choices and Changes in Transportation Networks*](https://openproceedings.org/2020/conf/edbt/paper_272.pdf). EDBT 2020: 599-602.
 * Theodoros Chondrogiannis, Mario A. Nascimento, Panagiotis Bouros: [*Relative Reachability Analysis as a Tool for Urban Mobility Planning: Position Paper*](https://dl.acm.org/doi/10.1145/3357000.3366139). IWCTS@SIGSPATIAL 2019: 1:1-1:4
 
-### 4. Authors
+### 5. Authors
 * Camila F. Costa (camila.costa@ualberta.ca), University of Alberta, Canada
 * Theodoros Chondrogiannis (theodoros.chondrogiannis@uni.kn), University of Konstanz, Germany
 * Mario A. Nascimento (mario.nascimento@ualberta.ca), University of Alberta, Canada
 * Panagiotis Bouros (bouros@uni-mainz.de), Johannes Gutenberg University of Mainz, Germany
 
-### 5. Acknowledgements
+### 6. Acknowledgements
 This work was partially supported by CNPq Brazil, NSERC Canada, and Deutsche Forschungsgemeinschaft (DFG, Grant No. GR 4497/2).
 
 ---
