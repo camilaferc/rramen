@@ -22,5 +22,5 @@ query-string==2019.4.13
 requests==2.22.0
 six==1.14.0
 urllib3==1.25.6
-waitress==1.4.4
+waitress==2.1.1
 Werkzeug==0.16.0
